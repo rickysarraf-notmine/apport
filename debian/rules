@@ -13,4 +13,4 @@ override_dh_installinit:
 
 override_dh_install:
 	dh_install
-	pod2man -c Debhelper -r "$(DEB_VERSION)" debhelper/dh_apport debhelper/dh_apport.1
+	pod2man -c Debhelper -r "$(DEB_VERSION)" debian/debhelper/dh_apport debian/debhelper/dh_apport.1
