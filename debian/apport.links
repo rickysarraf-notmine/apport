@@ -1,0 +1,2 @@
+/usr/share/apport/package-hooks/source_linux.py /usr/share/apport/package-hooks/source_linux-meta.py
+/usr/share/man/man1/apport-bug.1.gz /usr/share/man/man1/apport-collect.1.gz

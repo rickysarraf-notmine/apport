@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = configure ]; then
+    # directory is required for package failures even if apport is disabled
+    mkdir -p -m 1777 /var/crash
+fi
+
+#DEBHELPER#

@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+%:
+	dh "$@" --with python2
+
+override_dh_auto_test:
+ifeq (, $(findstring nocheck, $(DEB_BUILD_OPTIONS)))
+	-env -u LD_PRELOAD sh test/run
+endif
+
+override_dh_installinit:
+	dh_installinit --error-handler=true
+
+override_dh_install:
+	dh_install
+	pod2man -c Debhelper -r "$(DEB_VERSION)" debhelper/dh_apport debhelper/dh_apport.1

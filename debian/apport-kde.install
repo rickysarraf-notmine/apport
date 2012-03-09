@@ -1,0 +1,8 @@
+usr/share/apport/*kde*
+usr/share/apport/progress.ui
+usr/share/apport/error.ui
+usr/share/apport/bugreport.ui
+usr/share/apport/choices.ui
+usr/share/apport/spinner.gif
+usr/share/applications/apport-kde-mime.desktop
+usr/share/applications/apport-kde-mimelnk.desktop usr/share/mimelnk/text

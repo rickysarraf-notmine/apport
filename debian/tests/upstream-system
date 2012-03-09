@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+OUT=${TMPDIR:-/tmp}/apport-test-out
+
+# do not run tests in source directory, otherwise it will use the source
+# modules, not the system ones
+cd ${TMPDIR:-/tmp}
+
+# succeeding test must not write anything to stderr, as per DEP-8
+/usr/share/apport/testsuite/run 2>&1

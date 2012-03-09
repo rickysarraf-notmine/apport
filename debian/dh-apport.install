@@ -1,0 +1,2 @@
+../../debhelper/dh_apport usr/bin
+../../debhelper/apport.pm usr/share/perl5/Debian/Debhelper/Sequence

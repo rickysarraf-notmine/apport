@@ -1,0 +1,5 @@
+Tests: upstream-system
+Depends: apport, gdb, python-twisted-core
+Restrictions:
+Features: no-build-needed
+
