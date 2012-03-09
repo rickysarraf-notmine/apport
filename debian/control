@@ -8,6 +8,7 @@ Build-Depends: debhelper (>= 7.0.50~),
  gir1.2-glib-2.0 (>= 1.29.17),
  lsb-release,
  net-tools,
+ xauth,
  python-all
 Build-Depends-Indep: python-distutils-extra (>= 2.24~),
  python-apt (>= 0.7.9),
