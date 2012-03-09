@@ -1,0 +1,129 @@
+.TH apport\-bug 1 "September 08, 2009" "Martin Pitt"
+
+.SH NAME
+
+apport\-bug, apport\-collect \- file a bug report using Apport, or update an existing report
+
+.SH SYNOPSIS
+
+.B apport\-bug
+
+.B apport\-bug
+.I symptom \fR|\fI pid \fR|\fI package \fR|\fI program path \fR|\fI .apport/.crash file
+
+.B apport\-collect
+.I report-number
+
+.SH DESCRIPTION
+
+.B apport\-bug
+reports problems to your distribution's bug tracking system,
+using Apport to collect a lot of local information about your system to help
+the developers to fix the problem and avoid unnecessary question/answer
+turnarounds.
+
+You should always start with running
+.B apport\-bug
+without arguments, which will present a list of known symptoms. This will
+generate the most useful bug reports.
+
+If there is no matching symptom, you need to determine the affected program or
+package yourself. You can provide a package name or program name to
+.B apport\-bug\fR,
+e. g.:
+
+.RS 4
+.nf
+apport\-bug firefox
+apport\-bug /usr/bin/unzip
+.fi
+.RE
+
+In order to add more information to the bug report that could
+help the developers to fix the problem, you can also specify a process
+ID instead:
+
+.RS 4
+.nf
+$ pidof gnome-terminal
+5139
+$ apport\-bug 5139
+.fi
+.RE
+
+As a special case, to report a bug against the Linux kernel, you do not need to
+use the full package name (such as linux-image-2.6.28-4-generic); you can just use
+
+.RS 4
+.nf
+apport\-bug linux
+.fi
+.RE
+
+to report a bug against the currently running kernel.
+
+Finally, you can use this program to report a previously stored crash or bug report:
+
+.RS 4
+.nf
+apport\-bug /var/crash/_bin_bash.1000.crash
+apport\-bug /tmp/apport.firefox.332G9t.apport
+.fi
+.RE
+
+Bug reports can be written to a file by using the
+.B \-\-save
+option  or by using
+.B apport\-cli\fR.
+
+.B apport\-bug
+detects whether KDE or Gnome is running and calls
+.B apport\-gtk
+or 
+.B apport\-kde
+accordingly. If neither is available, or the session does not run
+under X11, it calls
+.B apport\-cli
+for a command-line client.
+
+.SH UPDATING EXISTING REPORTS
+
+.B apport\-collect
+collects the same information as apport\-bug, but adds it to an already
+reported problem you have submitted. This is useful if the report was
+not originally filed through Apport, and the developers ask you to attach
+information from your system.
+
+.SH OPTIONS
+Please see the 
+.BR apport\-cli(1)
+manpage for possible options.
+
+.SH ENVIRONMENT
+
+.TP
+.B APPORT_IGNORE_OBSOLETE_PACKAGES
+Apport refuses to create bug reports if the package or any dependency is not
+current. If this environment variable is set, this check is waived. Experts who
+will thoroughly check the situation before filing a bug report can define this
+in their
+.B ~/.bashrc
+or temporarily on the command line when calling
+.B apport\-bug\fR.
+
+.SH FILES
+apport crash files are written in to 
+.B /var/crash
+by default, named uniquely per binary name and user id.  They are not deleted
+after being sent to the bug tracker (but from cron when they get older than 7
+days). You can extract the core file (if any) and other information using 
+.B apport-unpack.
+
+.SH "SEE ALSO"
+.BR apport\-cli (1),
+.BR apport\-unpack (1)
+
+.SH AUTHOR
+.B apport
+and the accompanying tools are developed by Martin Pitt
+<martin.pitt@ubuntu.com>.

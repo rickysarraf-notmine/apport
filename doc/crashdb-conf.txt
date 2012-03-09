@@ -1,0 +1,114 @@
+Principal CrashDB conf file
+===========================
+
+The file is located in /etc/apport/crashdb.conf .
+
+This file contains information about the Crash Databases to use when sending a
+crash report.  Here is an excerpt of the file:
+
++-----------------
+
+default = 'ubuntu'
+
+databases = {
+    'ubuntu': { 
+        'impl': 'launchpad',
+        'distro': 'ubuntu'
+        'bug_pattern_url': 'http://people.canonical.com/~ubuntu-archive/bugpatterns/bugpatterns.xml',
+        'dupdb_url': 'http://people.canonical.com/~ubuntu-archive/apport-duplicates',
+    },
+}
++-----------------
+
+The 'default' parameter is used to specify the default database to use when
+getting a crash report.  It's one of the names used as a label in the databases
+dictionary.
+
+Standard options
+================
+
+All crash database implementations support the following options:
+
+ - bug_pattern_url: URL to an XML file describing the bug patterns for this
+   distribution. This can match existing bugs to arbitrary keys of a report
+   with regular expressions, to prevent common problems from being reported
+   over and over again. Please see apport.Report.search_bug_patterns() for the
+   format.
+
+ - dupdb_url: URL for the duplicate DB export, to prevent already known crashes
+   from being reported again. This can be generated from an existing duplicate
+   database SQLite file with "dupdb admin publish" (see manpage) or with the
+   --publish-db option of crash-digger.
+
+Third Parties crashdb databases
+===============================
+
+Third party packages can also ship a set of databases to use with Apport. Their
+configuration files should be located in /etc/apport/crashdb.conf.d/ and end
+with ".conf".
+
+Here is an example /etc/apport/crashdb.conf.d/test.conf file:
+
++-----------------
+
+mydatabase = { 
+        'impl': 'mycrashdb_impl',
+	    'option1': 'myoption1',
+	    'option2': 'myoption2'
+    }
+mydatabase1 = { 
+        'impl': 'mycrashdb_impl',
+	    'option1': 'myoption3',
+	    'option2': 'myoption4'
+    }   
++-----------------
+
+The databases specified in this file will be merged into the 'databases'
+dictionary. The result is the equivalent of having the principal file:
+
++-----------------------
+
+default = 'ubuntu'
+
+databases = {
+    'ubuntu': { 
+        'impl': 'launchpad',
+        'bug_pattern_url': 'http://people.canonical.com/~ubuntu-archive/bugpatterns/bugpatterns.xml',
+	'distro': 'ubuntu'
+    },
+    'mydatabase': { 
+        'impl': 'mycrashdb_impl',
+	    'option1': 'myoption1',
+	    'option2': 'myoption2'
+    },
+    'mydatabase1': { 
+        'impl': 'mycrashdb_impl',
+	    'option1': 'myoption3',
+	    'option2': 'myoption4'
+    }
+}
++-----------------------
+
+Crash database implementations
+==============================
+
+ * "launchpad" uses bug reports against https://launchpad.net, either projects
+   or distribution packages.
+
+   Options:
+   - distro: Name of the distribution in Launchpad
+   - project: Name of the project in Launchpad
+   (Note that exactly one of "distro" or "project" must be given.)
+   - staging: If set, this uses staging instead of production (optional).
+     This can be overriden or set by $APPORT_STAGING environment.
+   - cache_dir: Path to a permanent cache directory; by default it uses a
+     temporary one. (optional). This can be overridden or set by
+     $APPORT_LAUNCHPAD_CACHE environment.
+
+
+ * "memory" is a simple implementation of crash database interface which keeps
+   everything in RAM. This is mainly useful for testing and debugging.
+
+   The only supported option is "dummy_data"; if set to a non-False value, it
+   will populate the database with some example reports.
+

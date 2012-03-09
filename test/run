@@ -1,0 +1,90 @@
+#!/bin/sh
+# Run Apport self tests.
+#
+# Test against the source tree when run in the source tree root. Test against
+# the system libraries/programs when run from anywhere else.
+# You can specify test names as arguments to only run a subset of tests.
+#
+# Run all tests: test/run
+# Run tests of one module: test/run crashdb
+# Run one test in one module:  test/run report.test_add_os_info
+
+# Copyright (C) 2007 - 2012 Canonical Ltd.
+# Author: Martin Pitt <martin.pitt@ubuntu.com>
+# 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
+# the full text of the license.
+
+set -e
+
+mydir=`dirname "$0"`
+
+export LC_MESSAGES=C
+
+# Run against source tree when we are in the source directory
+if [ -d test -a -e setup.py ]; then
+    echo "Testing local source tree."
+    export PATH=./bin:$PATH
+    export PYTHONPATH=.
+    export APPORT_CRASHDB_CONF=./etc/apport/crashdb.conf
+    export APPORT_DATA_DIR=./data
+    export APPORT_TEST_LOCAL=1
+
+    # assert that there are no hardcoded "Ubuntu" names
+    out=$(grep -rw Ubuntu test/*.py apport/*.py gtk/apport-gtk* kde/* bin/* | grep -v Debian | grep -v X-Ubuntu-Gettext-Domain | grep -v '#.*Ubuntu') || :
+    if [ -n "$out" ]; then
+        echo "Found hardcoded 'Ubuntu' names, use DistroRelease: field or lsb_release instead:\n\n$out" >&2
+        exit 1
+    fi
+
+    if [ ! -e apport/packaging_impl.py ]; then
+	echo "You need to copy an appropriate packaging implementation from backends/ to apport/packaging_impl.py; run './setup.py build' for auto-detection." >&2
+	exit 1
+    fi
+else
+    echo "Testing installed libraries/program."
+fi
+
+xvfb=
+if type xvfb-run >/dev/null && [ -z "$APPORT_TEST_NOXVFB" ]; then
+    xvfb=xvfb-run
+fi
+
+failed=0
+
+# check command line whether to only run a subset of tests
+if [ -z "$1" ]; then
+    TESTS=$(ls $mydir/*.py | cut -f2- -d_ | cut -f1 -d.)
+else
+    while [ -n "$1" ]; do
+        if [ -e "$mydir/test_${1%%.*}.py" ]; then
+            TESTS="$TESTS $1"
+        else
+            echo "Test $1 does not exist" >&2
+            exit 1
+        fi
+        shift
+    done 
+fi
+
+for t in $TESTS; do
+    echo "--- Testing $t ---"
+    if [ "${t#ui_}" != $t ]; then
+        prefix=$xvfb
+    else
+        # ensure that non-UI modules do not require X
+        prefix="env -u DISPLAY"
+    fi
+    test_file="$mydir/test_${t%%.*}.py"
+    if [ "$t" = "${t#*.}" ]; then
+        test_name=""
+    else
+        test_name="T.${t#*.}"
+    fi
+    $prefix ${PYTHON:=python} -tt $test_file -v $test_name || failed=$((failed+1))
+done
+
+exit $failed

@@ -1,0 +1,45 @@
+#!/usr/bin/python
+#
+# Collect information about a kernel oops.
+#
+# Copyright (c) 2007 Canonical Ltd.
+# Author: Martin Pitt <martin.pitt@ubuntu.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
+# the full text of the license.
+
+import os, sys
+import apport, apport.fileutils
+
+vmcore_path = os.path.join(apport.fileutils.report_dir, 'vmcore')
+
+if not os.path.exists(vmcore_path):
+    sys.exit(0)
+
+pr = apport.Report('KernelCrash')
+pr['Package'] = apport.packaging.get_kernel_package()
+
+pr['VmCore'] = (vmcore_path,)
+pr.add_os_info()
+if os.path.exists(vmcore_path + '.log'):
+    pr['VmCoreLog'] = (vmcore_path + '.log',)
+
+# write report
+try:
+    pr.write(open(apport.fileutils.make_report_path(pr), 'w'))
+except IOError, e:
+    apport.fatal('Cannot create report: ' + str(e))
+
+# clean up the core files
+try:
+    os.unlink(vmcore_path)
+except OSError:
+    pass # huh, already gone?
+try:
+    os.unlink(vmcore_path + '.log')
+except OSError:
+    pass
+

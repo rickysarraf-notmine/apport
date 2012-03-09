@@ -1,0 +1,247 @@
+#!/usr/bin/python
+'''Test the various package hooks.'''
+
+# Copyright (C) 2007 - 2009 Canonical Ltd.
+# Author: Martin Pitt <martin.pitt@ubuntu.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
+# the full text of the license.
+
+import unittest, subprocess, tempfile, os, shutil, os.path, sys, optparse
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+import apport, apport.fileutils
+
+# parse command line options
+optparser = optparse.OptionParser('%prog [options]')
+
+datadir = os.environ.get('APPORT_DATA_DIR','/usr/share/apport')
+
+class T(unittest.TestCase):
+    def setUp(self):
+        self.orig_report_dir = apport.fileutils.report_dir
+        apport.fileutils.report_dir = tempfile.mkdtemp()
+        os.environ['APPORT_REPORT_DIR'] = apport.fileutils.report_dir
+
+        self.workdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(apport.fileutils.report_dir)
+        apport.fileutils.report_dir = self.orig_report_dir
+
+        shutil.rmtree(self.workdir)
+
+    def test_package_hook_nologs(self):
+        '''package_hook without any log files.'''
+
+        ph = subprocess.Popen(['%s/package_hook' % datadir, '-p', 'bash'],
+            stdin=subprocess.PIPE)
+        ph.communicate('something is wrong')
+        self.assertEqual(ph.returncode, 0, 'package_hook finished successfully')
+
+        reps = apport.fileutils.get_new_reports()
+        self.assertEqual(len(reps), 1, 'package_hook created a report')
+
+        r = apport.Report()
+        r.load(open(reps[0]))
+
+        self.assertEqual(r['ProblemType'], 'Package')
+        self.assertEqual(r['Package'], 'bash')
+        self.assertEqual(r['SourcePackage'], 'bash')
+        self.assertEqual(r['ErrorMessage'], 'something is wrong')
+
+    def test_package_hook_uninstalled(self):
+        '''package_hook on an uninstalled package (might fail to install).'''
+
+        pkg = apport.packaging.get_uninstalled_package()
+        ph = subprocess.Popen(['%s/package_hook' % datadir, '-p', pkg],
+            stdin=subprocess.PIPE)
+        ph.communicate('something is wrong')
+        self.assertEqual(ph.returncode, 0, 'package_hook finished successfully')
+
+        reps = apport.fileutils.get_new_reports()
+        self.assertEqual(len(reps), 1, 'package_hook created a report')
+
+        r = apport.Report()
+        r.load(open(reps[0]))
+
+        self.assertEqual(r['ProblemType'], 'Package')
+        self.assertEqual(r['Package'], pkg)
+        self.assertEqual(r['SourcePackage'], apport.packaging.get_source(pkg))
+        self.assertEqual(r['ErrorMessage'], 'something is wrong')
+
+    def test_package_hook_logs(self):
+        '''package_hook with a log dir and a log file.'''
+
+        open(os.path.join(self.workdir, 'log_1.log'), 'w').write('Log 1\nbla')
+        open(os.path.join(self.workdir, 'log2'), 'w').write('Yet\nanother\nlog')
+        os.mkdir(os.path.join(self.workdir, 'logsub'))
+        open(os.path.join(self.workdir, 'logsub', 'notme.log'), 'w').write('not me!')
+
+        ph = subprocess.Popen(['%s/package_hook' % datadir, '-p', 'bash', '-l',
+            os.path.realpath(sys.argv[0]), '-l', self.workdir],
+            stdin=subprocess.PIPE)
+        ph.communicate('something is wrong')
+        self.assertEqual(ph.returncode, 0, 'package_hook finished successfully')
+
+        reps = apport.fileutils.get_new_reports()
+        self.assertEqual(len(reps), 1, 'package_hook created a report')
+
+        r = apport.Report()
+        r.load(open(reps[0]))
+
+        filekey = None
+        log1key = None
+        log2key = None
+        for k in r.keys():
+            if k.endswith('Testhookspy'):
+                filekey = k
+            elif k.endswith('Log1log'):
+                log1key = k
+            elif k.endswith('Log2'):
+                log2key = k
+            elif 'sub' in k:
+                self.fail('logsub should not go into log files')
+
+        self.assertTrue(filekey)
+        self.assertTrue(log1key)
+        self.assertTrue(log2key)
+        self.assertTrue('0234lkjas' in r[filekey])
+        self.assertEqual(len(r[filekey]), os.path.getsize(sys.argv[0]))
+        self.assertEqual(r[log1key], 'Log 1\nbla')
+        self.assertEqual(r[log2key], 'Yet\nanother\nlog')
+
+    def test_kernel_crashdump(self):
+        '''kernel_crashdump.'''
+
+        f = open(os.path.join(apport.fileutils.report_dir, 'vmcore'), 'w')
+        f.write('\x01' * 100)
+        f.close()
+        f = open(os.path.join(apport.fileutils.report_dir, 'vmcore.log'), 'w')
+        f.write('vmcore successfully dumped')
+        f.close()
+
+        self.assertEqual(subprocess.call('%s/kernel_crashdump' % datadir), 0,
+            'kernel_crashdump finished successfully')
+
+        reps = apport.fileutils.get_new_reports()
+        self.assertEqual(len(reps), 1, 'kernel_crashdump created a report')
+
+        r = apport.Report()
+        r.load(open(reps[0]))
+
+        self.assertEqual(set(r.keys()), set(['Date', 'Package', 'ProblemType',
+            'VmCore', 'VmCoreLog', 'Uname', 'Architecture', 'DistroRelease']))
+        self.assertEqual(r['ProblemType'], 'KernelCrash')
+        self.assertEqual(r['VmCoreLog'], 'vmcore successfully dumped')
+        self.assertEqual(r['VmCore'], '\x01' * 100)
+        self.assertTrue('linux' in r['Package'])
+
+        self.assertTrue(os.uname()[2].split('-')[0] in r['Package'])
+
+        r.add_package_info(r['Package'])
+        self.assertTrue(' ' in r['Package']) # appended version number
+
+    @classmethod
+    def _gcc_version_path(klass):
+        '''Determine a valid version and executable path of gcc and return it
+        as a tuple.'''
+
+        gcc = subprocess.Popen(['gcc', '--version'], stdout=subprocess.PIPE)
+        out = gcc.communicate()[0]
+        assert gcc.returncode == 0, '"gcc --version" must work for this test suite'
+
+        gcc_ver = '.'.join(out.splitlines()[0].split()[2].split('.')[:2])
+        gcc_path = '/usr/bin/gcc-' + gcc_ver
+
+        assert subprocess.call([gcc_path, '--version'], stdout=subprocess.PIPE) == 0, \
+            gcc_path + ' must exist and work for this test suite'
+
+        return (gcc_ver, gcc_path)
+
+    def test_gcc_ide_hook_file(self):
+        '''gcc_ice_hook with a temporary file.'''
+
+        (gcc_version, gcc_path) = self._gcc_version_path()
+
+        test_source = tempfile.NamedTemporaryFile()
+        test_source.write('int f(int x);')
+        test_source.flush()
+        test_source.seek(0)
+
+        self.assertEqual(subprocess.call(['%s/gcc_ice_hook' % datadir,
+            gcc_path, test_source.name]), 0, 'gcc_ice_hook finished successfully')
+
+        reps = apport.fileutils.get_new_reports()
+        self.assertEqual(len(reps), 1, 'gcc_ice_hook created a report')
+
+        r = apport.Report()
+        r.load(open(reps[0]))
+
+        self.assertEqual(r['ProblemType'], 'Crash')
+        self.assertEqual(r['ExecutablePath'], gcc_path)
+        self.assertEqual(r['PreprocessedSource'], test_source.read())
+
+        r.add_package_info()
+
+        self.assertEqual(r['Package'].split()[0], 'gcc-' + gcc_version)
+        self.assertTrue(r['SourcePackage'].startswith('gcc'))
+
+    def test_gcc_ide_hook_pipe(self):
+        '''gcc_ice_hook with piping.'''
+
+        (gcc_version, gcc_path) = self._gcc_version_path()
+
+        test_source = 'int f(int x);'
+
+        hook = subprocess.Popen(['%s/gcc_ice_hook' % datadir, gcc_path, '-'],
+            stdin=subprocess.PIPE)
+        hook.communicate(test_source)
+        self.assertEqual(hook.returncode, 0, 'gcc_ice_hook finished successfully')
+
+        reps = apport.fileutils.get_new_reports()
+        self.assertEqual(len(reps), 1, 'gcc_ice_hook created a report')
+
+        r = apport.Report()
+        r.load(open(reps[0]))
+
+        self.assertEqual(r['ProblemType'], 'Crash')
+        self.assertEqual(r['ExecutablePath'], gcc_path)
+        self.assertEqual(r['PreprocessedSource'], test_source)
+
+        r.add_package_info()
+
+        self.assertEqual(r['Package'].split()[0], 'gcc-' + gcc_version)
+        self.assertTrue(r['SourcePackage'].startswith('gcc'))
+
+    def test_kernel_oops_hook(self):
+        test_source = '''------------[ cut here ]------------
+kernel BUG at /tmp/oops.c:5!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: oops cpufreq_stats ext2 i915 drm nf_conntrack_ipv4 ipt_REJECT iptable_filter ip_tables nf_conntrack_ipv6 xt_state nf_conntrack xt_tcpudp ip6t_ipv6header ip6t_REJECT ip6table_filter ip6_tables x_tables ipv6 loop dm_multipath rtc_cmos iTCO_wdt iTCO_vendor_support pcspkr i2c_i801 i2c_core battery video ac output power_supply button sg joydev usb_storage dm_snapshot dm_zero dm_mirror dm_mod ahci pata_acpi ata_generic ata_piix libata sd_mod scsi_mod ext3 jbd mbcache uhci_hcd ohci_hcd ehci_hcd
+'''
+        hook = subprocess.Popen(['%s/kernel_oops' % datadir],
+            stdin=subprocess.PIPE)
+        hook.communicate(test_source)
+        self.assertEqual(hook.returncode, 0, 'kernel_oops finished successfully')
+
+        reps = apport.fileutils.get_new_reports()
+        self.assertEqual(len(reps), 1, 'kernel_oops created a report')
+
+        r = apport.Report()
+        r.load(open(reps[0]))
+
+        self.assertEqual(r['ProblemType'], 'KernelOops')
+        self.assertEqual(r['OopsText'], test_source)
+
+        r.add_package_info(r['Package'])
+
+        self.assertTrue(r['Package'].startswith('linux-image-'))
+
+unittest.main()
