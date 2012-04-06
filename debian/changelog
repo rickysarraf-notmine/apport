@@ -1,5 +1,6 @@
-apport (1.94.1-1) UNRELEASED; urgency=low
+apport (1.94.1-1) experimental; urgency=low
 
   * Initial release. (Closes: #383347)
+  * Initial release to get other dependent infrastructure to align with 
 
- -- Ritesh Raj Sarraf <rrs@debian.org>  Fri, 09 Mar 2012 21:14:16 +0530
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Fri, 06 Apr 2012 20:38:44 +0530
