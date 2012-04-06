@@ -4,7 +4,6 @@ Priority: optional
 Build-Depends: debhelper (>= 7.0.50~),
  gdb,
  python-twisted-core,
- python-gi,
  gir1.2-glib-2.0 (>= 1.29.17),
  lsb-release,
  net-tools,
