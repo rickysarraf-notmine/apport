@@ -26,4 +26,5 @@ Public License can be found in `/usr/share/common-licenses/GPL-2'.
 
 The initial Debian packaging was taken from the work done by the Ubuntu team.
 The Debian packaging is currently maintained by
-Ritesh Raj Sarraf <rrs@debian.org>
+Ritesh Raj Sarraf <rrs@debian.org> and is licensed under the GPL version 2 of
+the License, or (at your opiton) any later version.
