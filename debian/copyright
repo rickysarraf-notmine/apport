@@ -24,6 +24,6 @@ On Debian systems, the complete text of the GNU General
 Public License can be found in `/usr/share/common-licenses/GPL-2'.
 
 
-The intiail Debian packaging was taken from the work done by the Ubuntu team.
+The initial Debian packaging was taken from the work done by the Ubuntu team.
 The Debian packaging is currently maintained by
 Ritesh Raj Sarraf <rrs@debian.org>
