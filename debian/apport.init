@@ -57,6 +57,11 @@ restart() {
     start
 }
 
+status() {
+    log_daemon_msg "Checking apport service"
+    grep -qi "|/usr/share/apport/apport" /proc/sys/kernel/core_pattern && log_end_msg 0 || log_end_msg 1
+}
+
 case "$1" in
     start|stop|restart)
 	$1
@@ -64,8 +69,11 @@ case "$1" in
     force-reload)
 	restart
 	;;
+    status)
+	status
+	;;
     *)
-	echo "Usage: $0 {start|stop|restart|force-reload}"
+	echo "Usage: $0 {start|stop|restart|force-reload|status}"
 	exit 1;
 	;;
 esac
