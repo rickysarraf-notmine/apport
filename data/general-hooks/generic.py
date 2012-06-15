@@ -14,6 +14,7 @@
 import os, re
 import apport.hookutils, apport.fileutils
 
+
 def add_info(report, ui):
     nm = apport.hookutils.nonfree_kernel_modules()
     if nm:
@@ -22,12 +23,13 @@ def add_info(report, ui):
     # check for low space
     mounts = {'/': 'system',
               '/var': '/var',
+              '/tmp': '/tmp',
              }
 
     home = os.getenv('HOME')
     if home:
         mounts[home] = 'home'
-    treshold = 10
+    treshold = 50
 
     for mount in mounts:
         st = os.statvfs(mount)
@@ -90,4 +92,4 @@ if __name__ == '__main__':
     r = {}
     add_info(r, None)
     for k in r:
-        print k, ':', r[k]
+        print('%s: %s' % (k, r[k]))

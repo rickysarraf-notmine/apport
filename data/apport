@@ -13,7 +13,7 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import sys, os, os.path, subprocess, time, traceback, tempfile, glob, pwd
+import sys, os, os.path, subprocess, time, traceback, pwd, io
 import signal, inspect, grp, fcntl
 
 import apport, apport.fileutils
@@ -24,6 +24,7 @@ import apport, apport.fileutils
 #
 #################################################################
 
+
 def check_lock():
     '''Abort if another instance of apport is already running.
 
@@ -33,7 +34,7 @@ def check_lock():
     # create a lock file
     lockfile = os.path.join(apport.fileutils.report_dir, '.lock')
     try:
-        fd = os.open(lockfile, os.O_WRONLY|os.O_CREAT|os.O_NOFOLLOW)
+        fd = os.open(lockfile, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW)
     except OSError as e:
         error_log('cannot create lock file (uid %i): %s' % (os.getuid(), str(e)))
         sys.exit(1)
@@ -43,6 +44,7 @@ def check_lock():
     except IOError:
         error_log('another apport instance is already running, aborting')
         sys.exit(1)
+
 
 def drop_privileges(pid, partial=False):
     '''Change user and group to match the given target process.'''
@@ -67,29 +69,36 @@ def drop_privileges(pid, partial=False):
     assert os.geteuid() == effective_uid
     assert os.getuid() == stat.st_uid
 
+
 def init_error_log():
     '''Open a suitable error log if sys.stderr is not a tty.'''
 
-    if not os.isatty(sys.stderr.fileno()):
+    if not os.isatty(2):
         log = os.environ.get('APPORT_LOG_FILE', '/var/log/apport.log')
         try:
-            f = os.open(log, os.O_WRONLY|os.O_CREAT|os.O_APPEND, 0o600)
+            f = os.open(log, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
             try:
                 admgid = grp.getgrnam('adm')[2]
                 os.chown(log, -1, admgid)
                 os.chmod(log, 0o640)
             except KeyError:
-                pass # if group adm doesn't exist, just leave it as root
-        except OSError: # on a permission error, don't touch stderr
+                pass  # if group adm doesn't exist, just leave it as root
+        except OSError:  # on a permission error, don't touch stderr
             return
-        os.dup2(f, sys.stderr.fileno())
-        os.dup2(f, sys.stdout.fileno())
+        os.dup2(f, 1)
+        os.dup2(f, 2)
         os.close(f)
+        sys.stderr = os.fdopen(2, 'wb')
+        if sys.version_info.major >= 3:
+            sys.stderr = io.TextIOWrapper(sys.stderr)
+        sys.stdout = sys.stderr
+
 
 def error_log(msg):
     '''Output something to the error log.'''
 
     apport.error('apport (pid %s) %s: %s', os.getpid(), time.asctime(), msg)
+
 
 def _log_signal_handler(sgn, frame):
     '''Internal apport signal handler. Just log the signal handler and exit.'''
@@ -104,6 +113,7 @@ def _log_signal_handler(sgn, frame):
         pass
     sys.exit(1)
 
+
 def setup_signals():
     '''Install a signal handler for all crash-like signals, so that apport is
     not called on itself when apport crashed.'''
@@ -115,33 +125,27 @@ def setup_signals():
     signal.signal(signal.SIGPIPE, _log_signal_handler)
     signal.signal(signal.SIGBUS, _log_signal_handler)
 
-def write_user_coredump(pid, cwd, limit):
+
+def write_user_coredump(pid, cwd, limit, from_report=None):
     '''Write the core into the current directory if ulimit requests it.'''
 
     # three cases:
     # limit == 0: do not write anything
-    # limit == None: unlimited or large enough, write out everything
+    # limit < 0: unlimited, write out everything
     # limit nonzero: crashed process' core size ulimit in bytes
 
-    if limit == '0':
+    if limit == 0:
         return
-    if limit:
-        limit = int(limit)
-    else:
-        assert limit is None
-
-    # limit -1 means 'unlimited'
-    if limit < 0:
-        limit = None
-    else:
+    if limit > 0:
         # ulimit specifies kB
         limit *= 1024
 
     core_path = os.path.join(cwd, 'core')
     try:
-        if open('/proc/sys/kernel/core_uses_pid').read().strip() != '0':
-            core_path += '.' + str(pid)
-        core_file = os.open(core_path, os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0o640)
+        with open('/proc/sys/kernel/core_uses_pid') as f:
+            if f.read().strip() != '0':
+                core_path += '.' + str(pid)
+        core_file = os.open(core_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o640)
     except (OSError, IOError):
         return
 
@@ -150,27 +154,42 @@ def write_user_coredump(pid, cwd, limit):
     written = 0
 
     # Priming read
-    block = sys.stdin.read(1048576)
+    if from_report:
+        r = apport.Report()
+        with open(from_report, 'rb') as f:
+            r.load(f)
+        core_size = len(r['CoreDump'])
+        if limit > 0 and core_size > limit:
+            error_log('aborting core dump writing, size %i exceeds current limit' % core_size)
+            os.close(core_file)
+            os.unlink(core_path)
+            return
+        error_log('writing core dump %s of size %i' % (core_path, core_size))
+        os.write(core_file, r['CoreDump'])
+    else:
+        # read from stdin
+        block = os.read(0, 1048576)
 
-    while True:
-        size = len(block)
-        if size == 0:
-            break
-        written += size
-        if limit and written > limit:
-            error_log('aborting core dump writing, size exceeds current limit %i' % limit)
-            os.close(core_file)
-            os.unlink(core_path)
-            return
-        if os.write(core_file, block) != size:
-            error_log('aborting core dump writing, could not write')
-            os.close(core_file)
-            os.unlink(core_path)
-            return
-        block = sys.stdin.read(1048576)
+        while True:
+            size = len(block)
+            if size == 0:
+                break
+            written += size
+            if limit > 0 and written > limit:
+                error_log('aborting core dump writing, size exceeds current limit %i' % limit)
+                os.close(core_file)
+                os.unlink(core_path)
+                return
+            if os.write(core_file, block) != size:
+                error_log('aborting core dump writing, could not write')
+                os.close(core_file)
+                os.unlink(core_path)
+                return
+            block = os.read(0, 1048576)
 
     os.close(core_file)
     return core_path
+
 
 def usable_ram():
     '''Return how many bytes of RAM is currently available that can be
@@ -178,13 +197,15 @@ def usable_ram():
 
     # abuse our excellent RFC822 parser to parse /proc/meminfo
     r = apport.Report()
-    r.load(open('/proc/meminfo'))
+    with open('/proc/meminfo', 'rb') as f:
+        r.load(f)
 
-    memfree = long(r['MemFree'].split()[0])
-    cached = long(r['Cached'].split()[0])
-    writeback = long(r['Writeback'].split()[0])
-    
-    return (memfree+cached-writeback) * 1024
+    memfree = int(r['MemFree'].split()[0])
+    cached = int(r['Cached'].split()[0])
+    writeback = int(r['Writeback'].split()[0])
+
+    return (memfree + cached - writeback) * 1024
+
 
 def is_closing_session(pid, uid):
     '''Check if pid is in a closing user session.
@@ -252,7 +273,7 @@ try:
     try:
         os.nice(10)
     except OSError:
-        pass # *shrug*, we tried
+        pass  # *shrug*, we tried
 
     # Partially drop privs to gain proper os.access() checks
     drop_privileges(pid, True)
@@ -265,7 +286,18 @@ try:
     if signum == str(signal.SIGQUIT):
         sys.exit(0)
 
-    error_log('called for pid %s, signal %s' % (pid, signum))
+    error_log('called for pid %s, signal %s, core limit %s' % (pid, signum, core_ulimit))
+
+    try:
+        core_ulimit = int(core_ulimit)
+    except ValueError:
+        error_log('core limit is invalid, disabling core files')
+        core_ulimit = 0
+    # clamp core_ulimit to a sensible size, for -1 the kernel reports something
+    # absurdly big
+    if core_ulimit > 9223372036854775807:
+        error_log('ignoring implausibly big core limit, treating as unlimited')
+        core_ulimit = -1
 
     try:
         pidstat = os.stat('/proc/' + pid)
@@ -273,9 +305,21 @@ try:
         error_log('Invalid PID')
         sys.exit(1)
 
+    # check if the executable was modified after the process started (e. g.
+    # package got upgraded in between)
+    exe_mtime = os.stat('/proc/%s/exe' % pid).st_mtime
+    process_start = os.lstat('/proc/%s/cmdline' % pid).st_mtime
+    if exe_mtime > process_start:
+        error_log('executable was modified after program start, ignoring')
+        sys.exit(1)
+
     info = apport.Report('Crash')
     info['Signal'] = signum
-    info['CoreDump'] = (sys.stdin, True, usable_ram()*3/4, True)
+    if sys.version_info.major < 3:
+        info['CoreDump'] = (sys.stdin, True, usable_ram() * 3 / 4, True)
+    else:
+        # read binary data from stdio
+        info['CoreDump'] = (sys.stdin.detach(), True, usable_ram() * 3 / 4, True)
 
     # We already need this here to figure out the ExecutableName (for scripts,
     # etc).
@@ -304,7 +348,7 @@ try:
 
     # ignore SIGXCPU and SIGXFSZ since this indicates some external
     # influence changing soft RLIMIT values when running programs.
-    if signum in [str(signal.SIGXCPU),str(signal.SIGXFSZ)]:
+    if signum in [str(signal.SIGXCPU), str(signal.SIGXFSZ)]:
         error_log('Ignoring signal %s (caused by exceeding soft RLIMIT)' % signum)
         drop_privileges(pid)
         write_user_coredump(pid, cwd, core_ulimit)
@@ -328,7 +372,8 @@ try:
         if os.path.exists(report):
             if apport.fileutils.seen_report(report):
                 # do not flood the logs and the user with repeated crashes
-                crash_counter = apport.fileutils.get_recent_crashes(open(report))
+                with open(report, 'rb') as f:
+                    crash_counter = apport.fileutils.get_recent_crashes(f)
                 crash_counter += 1
                 if crash_counter > 1:
                     drop_privileges(pid)
@@ -344,7 +389,7 @@ try:
                 write_user_coredump(pid, cwd, core_ulimit)
                 sys.exit(1)
         reportfile = os.fdopen(os.open(report,
-            os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0), 'w')
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0), 'wb')
         assert reportfile.fileno() > sys.stderr.fileno()
 
         # Make sure the crash reporting daemon can read this report
@@ -360,13 +405,6 @@ try:
     # Totally drop privs before writing out the reportfile.
     drop_privileges(pid)
 
-    # check if the user wants a core dump
-    coredump = write_user_coredump(pid, cwd, core_ulimit)
-    # Now that we've written it, it's no longer on stdin, so we need
-    # to change the CoreDump info if we want it in the crash report.
-    if coredump:
-        info['CoreDump'] = (open(coredump), True, usable_ram()*3/4)
-
     info.add_user_info()
     info.add_os_info()
 
@@ -375,6 +413,8 @@ try:
 
     try:
         info.write(reportfile)
+        if reportfile != sys.stderr:
+            reportfile.close()
     except IOError:
         if reportfile != sys.stderr:
             os.unlink(report)
@@ -383,6 +423,13 @@ try:
         os.chmod(report, 0o640)
     if reportfile != sys.stderr:
         error_log('wrote report %s' % report)
+
+    # Check if the user wants a core file. We need to create that from the
+    # written report, as we can only read stdin once and write_user_coredump()
+    # might abort reading from stdin and remove the written core file when
+    # core_ulimit is > 0 and smaller than the core size.
+    write_user_coredump(pid, cwd, core_ulimit, from_report=report)
+
 except (SystemExit, KeyboardInterrupt):
     raise
 except Exception as e:

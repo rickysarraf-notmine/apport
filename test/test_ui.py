@@ -4,14 +4,18 @@ import subprocess, errno, glob
 
 try:
     from cStringIO import StringIO
+    StringIO  # pyflakes
 except ImportError:
     from io import StringIO
+from io import BytesIO
 
 import apport.ui
 from apport.ui import _
 import apport.report
 import problem_report
 import apport.crashdb_impl.memory
+import stat
+
 
 class TestSuiteUserInterface(apport.ui.UserInterface):
     '''Concrete apport.ui.UserInterface suitable for automatic testing'''
@@ -19,11 +23,11 @@ class TestSuiteUserInterface(apport.ui.UserInterface):
     def __init__(self):
         # use our dummy crashdb
         self.crashdb_conf = tempfile.NamedTemporaryFile()
-        self.crashdb_conf.write('''default = 'testsuite'
+        self.crashdb_conf.write(b'''default = 'testsuite'
 databases = {
     'testsuite': {
         'impl': 'memory',
-        'bug_pattern_url': None
+        'bug_pattern_url': None,
     }
 }
 ''')
@@ -34,11 +38,11 @@ databases = {
         apport.ui.UserInterface.__init__(self)
 
         self.crashdb = apport.crashdb_impl.memory.CrashDatabase(None,
-                {'dummy_data': 1})
+                {'dummy_data': 1, 'dupdb_url': ''})
 
         # state of progress dialogs
         self.ic_progress_active = False
-        self.ic_progress_pulses = 0 # count the pulses
+        self.ic_progress_pulses = 0  # count the pulses
         self.upload_progress_active = False
         self.upload_progress_pulses = 0
 
@@ -59,7 +63,7 @@ databases = {
         # last message box
         self.msg_title = None
         self.msg_text = None
-        self.msg_severity = None # 'warning' or 'error'
+        self.msg_severity = None  # 'warning' or 'error'
         self.msg_choices = None
 
     def ui_present_report_details(self, is_update):
@@ -114,6 +118,7 @@ databases = {
         self.msg_text = text
         return self.question_file_response
 
+
 class T(unittest.TestCase):
     def setUp(self):
         # we test a few strings, don't get confused by translations
@@ -142,7 +147,7 @@ class T(unittest.TestCase):
         self.report['Package'] = 'libfoo1 1-1'
         self.report['SourcePackage'] = 'foo'
         self.report['Foo'] = 'A' * 1000
-        self.report['CoreDump'] = 'A' * 100000
+        self.report['CoreDump'] = problem_report.CompressedValue(b'\x01' * 100000)
 
         # write demo report into temporary file
         self.report_file = tempfile.NamedTemporaryFile()
@@ -198,9 +203,9 @@ class T(unittest.TestCase):
         self.assertEqual(self.ui.format_filesize(2560), '2.6 KB')
         self.assertEqual(self.ui.format_filesize(999999), '1000.0 KB')
         self.assertEqual(self.ui.format_filesize(1000000), '1.0 MB')
-        self.assertEqual(self.ui.format_filesize(2.7*1000000), '2.7 MB')
-        self.assertEqual(self.ui.format_filesize(1024*1000000), '1.0 GB')
-        self.assertEqual(self.ui.format_filesize(2560*1000000), '2.6 GB')
+        self.assertEqual(self.ui.format_filesize(2.7 * 1000000), '2.7 MB')
+        self.assertEqual(self.ui.format_filesize(1024 * 1000000), '1.0 GB')
+        self.assertEqual(self.ui.format_filesize(2560 * 1000000), '2.6 GB')
 
     def test_get_size_loaded(self):
         '''get_complete_size() and get_reduced_size() for loaded Reports'''
@@ -209,7 +214,7 @@ class T(unittest.TestCase):
 
         fsize = os.path.getsize(self.report_file.name)
         complete_ratio = float(self.ui.get_complete_size()) / fsize
-        self.assertTrue(complete_ratio >= 0.99 and complete_ratio <= 1.01)
+        self.assertTrue(complete_ratio >= 0.9 and complete_ratio <= 1.1)
 
         rs = self.ui.get_reduced_size()
         self.assertTrue(rs > 1000)
@@ -242,7 +247,10 @@ class T(unittest.TestCase):
 
         # valid report
         self.ui.load_report(self.report_file.name)
-        self.assertEqual(self.ui.report, self.report)
+        self.assertEqual(set(self.ui.report.keys()), set(self.report.keys()))
+        self.assertEqual(self.ui.report['Package'], self.report['Package'])
+        self.assertEqual(self.ui.report['CoreDump'].get_value(),
+                self.report['CoreDump'].get_value())
         self.assertEqual(self.ui.msg_title, None)
 
         # report without Package
@@ -261,7 +269,7 @@ class T(unittest.TestCase):
         # invalid base64 encoding
         self.report_file.seek(0)
         self.report_file.truncate()
-        self.report_file.write('''Type: test
+        self.report_file.write(b'''Type: test
 Package: foo 1-1
 CoreDump: base64
 bOgUs=
@@ -284,7 +292,7 @@ bOgUs=
         self.ui.load_report(self.report_file.name)
 
         self.ui.restart()
-        time.sleep(1) # FIXME: race condition
+        time.sleep(1)  # FIXME: race condition
         self.assertTrue(os.path.exists(p))
         self.assertTrue(not os.path.exists(r))
         os.unlink(p)
@@ -295,7 +303,7 @@ bOgUs=
         self.ui.load_report(self.report_file.name)
 
         self.ui.restart()
-        time.sleep(1) # FIXME: race condition
+        time.sleep(1)  # FIXME: race condition
         self.assertTrue(not os.path.exists(p))
         self.assertTrue(os.path.exists(r))
         os.unlink(r)
@@ -328,7 +336,7 @@ bOgUs=
         # add some tuple values, for robustness testing (might be added by
         # apport hooks)
         self.ui.report['Fstab'] = ('/etc/fstab', True)
-        self.ui.report['CompressedValue'] = problem_report.CompressedValue('Test')
+        self.ui.report['CompressedValue'] = problem_report.CompressedValue(b'Test')
         self.ui.collect_info()
         self.assertTrue(set(['SourcePackage', 'Package', 'ProblemType',
             'Uname', 'Dependencies', 'DistroRelease', 'Date',
@@ -352,6 +360,15 @@ bOgUs=
             'progress dialog for package bug info collection')
         self.assertEqual(self.ui.ic_progress_active, False,
             'progress dialog for package bug info collection finished')
+
+    def test_collect_info_permissions(self):
+        '''collect_info() leaves the report accessible to the group'''
+
+        self.ui.report = apport.Report('Bug')
+        self.ui.cur_package = 'bash'
+        self.ui.report_file = self.report_file.name
+        self.ui.collect_info()
+        self.assertTrue(os.stat(self.report_file.name).st_mode & stat.S_IRGRP)
 
     def test_handle_duplicate(self):
         '''handle_duplicate()'''
@@ -403,7 +420,7 @@ bOgUs=
         self.assertEqual(self.ui.run_argv(), True)
         output = sys.stdout.getvalue()
         sys.stdout = orig_stdout
-        self.assertEqual(output, apport.ui.__version__+"\n")
+        self.assertEqual(output, apport.ui.__version__ + '\n')
 
     def test_run_report_bug_package(self):
         '''run_report_bug() for a package'''
@@ -412,8 +429,8 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.assertEqual(self.ui.run_argv(), True)
 
         self.assertEqual(self.ui.msg_severity, None)
@@ -452,8 +469,8 @@ bOgUs=
             self.ui = TestSuiteUserInterface()
             self.ui.present_details_response = {'report': True,
                                                 'blacklist': False,
-                                                'examine' : False,
-                                                'restart' : False }
+                                                'examine': False,
+                                                'restart': False}
             self.assertEqual(self.ui.run_argv(), True)
         finally:
             # kill test process
@@ -464,7 +481,7 @@ bOgUs=
         self.assertTrue('Dependencies' in self.ui.report.keys())
         self.assertTrue('ProcMaps' in self.ui.report.keys())
         self.assertEqual(self.ui.report['ExecutablePath'], '/usr/bin/yes')
-        self.assertFalse('ProcCmdline' in self.ui.report) # privacy!
+        self.assertFalse('ProcCmdline' in self.ui.report)  # privacy!
         self.assertTrue('ProcEnviron' in self.ui.report.keys())
         self.assertEqual(self.ui.report['ProblemType'], 'Bug')
         self.assertTrue('Tags' in self.ui.report.keys())
@@ -524,7 +541,8 @@ bOgUs=
 
         # create unpackaged test program
         (fd, exename) = tempfile.mkstemp()
-        os.write(fd, open('/usr/bin/yes').read())
+        with open('/usr/bin/yes', 'rb') as f:
+            os.write(fd, f.read())
         os.close(fd)
         os.chmod(exename, 0o755)
 
@@ -550,7 +568,8 @@ bOgUs=
 
         pid = None
         for path in glob.glob('/proc/[0-9]*/stat'):
-            stat = open(path).read().split()
+            with open(path) as f:
+                stat = f.read().split()
             flags = int(stat[8])
             if flags & apport.ui.PF_KTHREAD:
                 pid = int(stat[0])
@@ -561,8 +580,8 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_argv()
 
         self.assertTrue(self.ui.report['Package'].startswith(apport.packaging.get_kernel_package()))
@@ -586,7 +605,8 @@ bOgUs=
         self.assertTrue(self.ui.ic_progress_pulses > 0)
 
         r = apport.Report()
-        r.load(open(reportfile))
+        with open(reportfile, 'rb') as f:
+            r.load(f)
 
         self.assertEqual(r['SourcePackage'], 'bash')
         self.assertTrue('Dependencies' in r.keys())
@@ -598,8 +618,8 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.assertEqual(self.ui.run_argv(), True)
 
         self.assertEqual(self.ui.msg_text, None)
@@ -651,12 +671,13 @@ bOgUs=
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
 
         # cancel crash notification dialog
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': False,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.msg_severity, None)
         self.assertEqual(self.ui.msg_title, None)
@@ -664,12 +685,13 @@ bOgUs=
         self.assertEqual(self.ui.ic_progress_pulses, 0)
 
         # report in crash notification dialog, send full report
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
         self.assertEqual(self.ui.msg_title, None)
@@ -692,12 +714,13 @@ bOgUs=
         self.assertTrue(not self.ui.report.check_ignored())
 
         # cancel crash notification dialog and blacklist
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': False,
                                             'blacklist': True,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.msg_severity, None)
         self.assertEqual(self.ui.msg_title, None)
@@ -712,14 +735,15 @@ bOgUs=
         r = self._gen_test_crash()
         r['Signal'] = '6'
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
 
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
-        self.assertEqual(self.ui.msg_severity, None,  self.ui.msg_text)
+        self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
 
         self.assertTrue('SourcePackage' in self.ui.report.keys())
         self.assertTrue('Dependencies' in self.ui.report.keys())
@@ -743,18 +767,19 @@ bOgUs=
         r['ExecutablePath'] = '/usr/bin/yes'
         r['Signal'] = '11'
         r['CoreDump'] = problem_report.CompressedValue()
-        r['CoreDump'].gzipvalue = 'AAAAAAAA'
+        r['CoreDump'].gzipvalue = b'AAAAAAAA'
         r.add_user_info()
 
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
 
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
-        self.assertEqual(self.ui.msg_severity, 'error',  self.ui.msg_text)
+        self.assertEqual(self.ui.msg_severity, 'error', self.ui.msg_text)
         self.assertTrue('decompress' in self.ui.msg_text)
         self.assertTrue(self.ui.present_details_shown)
 
@@ -769,8 +794,8 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
 
         self.assertEqual(self.ui.run_argv(), True)
 
@@ -780,15 +805,15 @@ bOgUs=
 
         # unreportable
         self.report['Package'] = 'bash'
-        self.report['UnreportableReason'] = u'It stinks. \u2665'
+        self.report['UnreportableReason'] = b'It stinks. \xe2\x99\xa5'.decode('UTF-8')
         self.update_report_file()
 
         sys.argv = ['ui-test', '-c', self.report_file.name]
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.assertEqual(self.ui.run_argv(), True)
 
         self.assertTrue('It stinks.' in self.ui.msg_text, '%s: %s' %
@@ -796,7 +821,7 @@ bOgUs=
         self.assertEqual(self.ui.msg_severity, 'info')
 
         # should not die with an exception on an invalid name
-        sys.argv = ['ui-test', '-c', '/nonexisting.crash' ]
+        sys.argv = ['ui-test', '-c', '/nonexisting.crash']
         self.ui = TestSuiteUserInterface()
         self.assertEqual(self.ui.run_argv(), True)
         self.assertEqual(self.ui.msg_severity, 'error')
@@ -810,8 +835,8 @@ bOgUs=
         self.update_report_file()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
 
         self.ui.run_crash(self.report_file.name)
 
@@ -857,7 +882,8 @@ bOgUs=
 
         # write crash report
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
 
         # run
         self.ui = TestSuiteUserInterface()
@@ -882,12 +908,13 @@ bOgUs=
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
 
         # report in crash notification dialog, cancel details report
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': False,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.msg_severity, None, 'has %s message: %s: %s' % (
             self.ui.msg_severity, str(self.ui.msg_title), str(self.ui.msg_text)))
@@ -909,14 +936,15 @@ bOgUs=
 
         # write crash report
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
-        self.ui.report.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            self.ui.report.write(f)
 
         # report it
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.cur_package, 'uninstalled_pkg')
         self.assertEqual(self.ui.msg_severity, None, 'has %s message: %s: %s' % (
@@ -931,14 +959,14 @@ bOgUs=
         r = apport.Report()
         r['ExecutablePath'] = '/bin/bash'
         r['Package'] = 'foobarbaz'
-        r['SourcePackage'] = 'foobarbaz'
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
 
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
 
         self.assertEqual(self.ui.msg_title, _('Invalid problem report'))
@@ -952,12 +980,13 @@ bOgUs=
         r['ExecutablePath'] = '/bin/nonexisting'
         r['Package'] = 'bash'
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
 
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
 
         self.assertEqual(self.ui.msg_title, _('Invalid problem report'))
@@ -989,14 +1018,15 @@ bOgUs=
         '''run_crash() on binary that got updated in the meantime'''
 
         r = self._gen_test_crash()
-        r['ExecutableTimestamp'] = str(int(r['ExecutableTimestamp'])-10)
+        r['ExecutableTimestamp'] = str(int(r['ExecutableTimestamp']) - 10)
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
 
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
 
         self.assertFalse('ExecutableTimestamp' in self.ui.report)
@@ -1021,12 +1051,13 @@ bOgUs=
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
 
         # cancel crash notification dialog
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': False,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.msg_severity, None)
         self.assertEqual(self.ui.msg_title, None)
@@ -1035,12 +1066,13 @@ bOgUs=
         self.assertTrue(self.ui.present_details_shown)
 
         # report in crash notification dialog, send report
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.msg_severity, None)
         self.assertEqual(self.ui.msg_title, None)
@@ -1075,12 +1107,13 @@ bOgUs=
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
 
         # cancel crash notification dialog
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': False,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.msg_severity, None, 'error: %s - %s' %
             (self.ui.msg_title, self.ui.msg_text))
@@ -1090,12 +1123,13 @@ bOgUs=
         self.assertTrue(self.ui.present_details_shown)
 
         # report in crash notification dialog, send report
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
         self.assertEqual(self.ui.msg_severity, None, str(self.ui.msg_title) +
             ' ' + str(self.ui.msg_text))
@@ -1112,28 +1146,112 @@ bOgUs=
         '''run_crash() anonymization'''
 
         r = self._gen_test_crash()
-        r['ProcUnicodeValue'] = u'ä %s ♥ ' % os.uname()[1]
-        r['ProcByteArrayValue'] = b'ä %s ♥ ' % os.uname()[1]
+        utf8_val = b'\xc3\xa4 ' + os.uname()[1].encode('UTF-8') + b' \xe2\x99\xa5 '
+        r['ProcUnicodeValue'] = utf8_val.decode('UTF-8')
+        r['ProcByteArrayValue'] = utf8_val
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
-        r.write(open(report_file, 'w'))
+        with open(report_file, 'wb') as f:
+            r.write(f)
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.run_crash(report_file)
-        self.assertEqual(self.ui.msg_severity, None,  self.ui.msg_text)
+        self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
 
         self.assertFalse('ProcCwd' in self.ui.report)
 
-        dump = StringIO()
+        dump = BytesIO()
         self.ui.report.write(dump)
+        report = dump.getvalue().decode('UTF-8')
 
         p = pwd.getpwuid(os.getuid())
         bad_strings = [os.uname()[1], p[0], p[4], p[5], os.getcwd()]
 
         for s in bad_strings:
-            self.assertFalse(s in dump.getvalue(), 'dump contains sensitive string: %s' % s)
+            self.assertFalse(s in report, 'dump contains sensitive string: %s' % s)
+
+    def test_run_crash_anonymity_order(self):
+        '''run_crash() anonymization runs after info and duplicate collection'''
+
+        # pretend the hostname looks like a hex number which matches
+        # the stack trace address
+        uname = os.uname()
+        uname = (uname[0], '0xDEADBEEF', uname[2], uname[3], uname[4])
+        orig_uname = os.uname
+        orig_add_gdb_info = apport.report.Report.add_gdb_info
+        os.uname = lambda: uname
+
+        def fake_add_gdb_info(self):
+            self['Stacktrace'] = '''#0  0xDEADBEEF in h (p=0x0) at crash.c:25
+#1  0x10000042 in g (x=1, y=42) at crash.c:26
+#1  0x10000001 in main () at crash.c:40
+'''
+            self['ProcMaps'] = '''
+10000000-DEADBEF0 r-xp 00000000 08:02 100000           /bin/crash
+'''
+            assert self.crash_signature_addresses() != None
+
+        try:
+            r = self._gen_test_crash()
+            apport.report.Report.add_gdb_info = fake_add_gdb_info
+            r['ProcAuxInfo'] = 'my 0xDEADBEEF'
+            report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
+            with open(report_file, 'wb') as f:
+                r.write(f)
+
+            # if this runs anonymization before the duplicate signature, then this
+            # will fail, as 0xDEADhostname is an invalid address
+            self.ui = TestSuiteUserInterface()
+            self.ui.present_details_response = {'report': True,
+                                                'blacklist': False,
+                                                'examine': False,
+                                                'restart': False}
+            self.ui.run_crash(report_file)
+            self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
+
+            self.assertEqual(self.ui.report['ProcAuxInfo'], 'my hostname')
+            # after anonymization this should mess up Stacktrace; this mostly
+            # confirms that our test logic works
+            self.assertEqual(self.ui.report.crash_signature_addresses(), None)
+        finally:
+            os.uname = orig_uname
+            apport.report.Report.add_gdb_info = orig_add_gdb_info
+
+    def test_run_crash_anonymity_substring(self):
+        '''run_crash() anonymization only catches whole words'''
+
+        # pretend the hostname is "ed", a substring of e. g. "crashed"
+        uname = os.uname()
+        uname = (uname[0], 'ed', uname[2], uname[3], uname[4])
+        orig_uname = os.uname
+        os.uname = lambda: uname
+
+        try:
+            r = self._gen_test_crash()
+            r['ProcInfo1'] = 'my ed'
+            r['ProcInfo2'] = '"ed.localnet"'
+            r['ProcInfo3'] = 'education'
+            report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
+            with open(report_file, 'wb') as f:
+                r.write(f)
+
+            self.ui = TestSuiteUserInterface()
+            self.ui.present_details_response = {'report': True,
+                                                'blacklist': False,
+                                                'examine': False,
+                                                'restart': False}
+            self.ui.run_crash(report_file)
+            self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
+
+            self.assertTrue(self.ui.report['Title'].startswith('yes crashed with SIGSEGV'),
+                self.ui.report['Title'])
+            self.assertEqual(self.ui.report['ProcInfo1'], 'my hostname')
+            self.assertEqual(self.ui.report['ProcInfo2'], '"hostname.localnet"')
+            self.assertEqual(self.ui.report['ProcInfo3'], 'education')
+        finally:
+            os.uname = orig_uname
 
     def test_run_crash_known(self):
         '''run_crash() for already known problem'''
@@ -1143,11 +1261,11 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
 
         # known without URL
-        with open(report_file, 'w') as f:
+        with open(report_file, 'wb') as f:
             r.write(f)
         self.ui.crashdb.known = lambda r: True
         self.ui.run_crash(report_file)
@@ -1158,10 +1276,10 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         # known with URL
-        with open(report_file, 'w') as f:
+        with open(report_file, 'wb') as f:
             r.write(f)
         self.ui.crashdb.known = lambda r: 'http://myreport/1'
         self.ui.run_crash(report_file)
@@ -1198,8 +1316,8 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
 
         self.ui.crashdb.download(1)['SourcePackage'] = 'bash'
         self.ui.crashdb.download(1)['Package'] = 'bash'
@@ -1221,8 +1339,8 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
 
         self.assertEqual(self.ui.run_argv(), True)
         self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
@@ -1243,8 +1361,8 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
 
         self.assertEqual(self.ui.run_argv(), True)
         self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
@@ -1264,12 +1382,11 @@ bOgUs=
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
 
-        f = open(os.path.join(self.hookdir, 'source_foo.py'), 'w')
-        f.write('def add_info(r, ui):\n  r["MachineType"]="Laptop"\n')
-        f.close()
+        with open(os.path.join(self.hookdir, 'source_foo.py'), 'w') as f:
+            f.write('def add_info(r, ui):\n  r["MachineType"]="Laptop"\n')
 
         self.assertEqual(self.ui.run_argv(), True, self.ui.report)
         self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
@@ -1279,6 +1396,41 @@ bOgUs=
 
         self.assertTrue(self.ui.ic_progress_pulses > 0)
         self.assertEqual(self.ui.report['Package'], 'foo (not installed)')
+        self.assertEqual(self.ui.report['MachineType'], 'Laptop')
+        self.assertTrue('ProcEnviron' in self.ui.report.keys())
+
+    def test_run_update_report_different_binary_source(self):
+        '''run_update_report() on a source package which does not have a binary of the same name'''
+
+        kernel_pkg = apport.packaging.get_kernel_package()
+        kernel_src = apport.packaging.get_source(kernel_pkg)
+        self.assertNotEqual(kernel_pkg, kernel_src,
+                'this test assumes that the kernel binary package != kernel source package')
+        self.assertNotEqual(apport.packaging.get_version(kernel_pkg), '',
+                'this test assumes that the kernel binary package %s is installed' % kernel_pkg)
+
+        # this test assumes that the kernel source package name is not an
+        # installed binary package
+        self.assertRaises(ValueError, apport.packaging.get_version, kernel_src)
+
+        sys.argv = ['ui-test', '-p', kernel_src, '-u', '1']
+        self.ui = TestSuiteUserInterface()
+        self.ui.present_details_response = {'report': True,
+                                            'blacklist': False,
+                                            'examine': False,
+                                            'restart': False}
+
+        with open(os.path.join(self.hookdir, 'source_%s.py' % kernel_src), 'w') as f:
+            f.write('def add_info(r, ui):\n  r["MachineType"]="Laptop"\n')
+
+        self.assertEqual(self.ui.run_argv(), True, self.ui.report)
+        self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
+        self.assertEqual(self.ui.msg_title, None)
+        self.assertEqual(self.ui.opened_url, None)
+        self.assertTrue(self.ui.present_details_shown)
+
+        self.assertTrue(self.ui.ic_progress_pulses > 0)
+        self.assertEqual(self.ui.report['Package'], '%s (not installed)' % kernel_src)
         self.assertEqual(self.ui.report['MachineType'], 'Laptop')
         self.assertTrue('ProcEnviron' in self.ui.report.keys())
 
@@ -1295,8 +1447,8 @@ bOgUs=
 
         self.ui.present_details_response = {'report': False,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self._run_hook('''report['begin'] = '1'
 ui.information('InfoText')
 report['end'] = '1'
@@ -1310,8 +1462,8 @@ report['end'] = '1'
 
         self.ui.present_details_response = {'report': False,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.question_yesno_response = True
         self._run_hook('''report['begin'] = '1'
 report['answer'] = str(ui.yesno('YesNo?'))
@@ -1337,8 +1489,8 @@ report['end'] = '1'
 
         self.ui.present_details_response = {'report': False,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.question_file_response = '/etc/fstab'
         self._run_hook('''report['begin'] = '1'
 report['answer'] = str(ui.file('YourFile?'))
@@ -1359,8 +1511,8 @@ report['end'] = '1'
 
         self.ui.present_details_response = {'report': False,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.question_choice_response = [1]
         self._run_hook('''report['begin'] = '1'
 report['answer'] = str(ui.choice('YourChoice?', ['foo', 'bar']))
@@ -1389,12 +1541,12 @@ report['end'] = '1'
         '''run_symptom()'''
 
         # unknown symptom
-        sys.argv = ['ui-test', '-s', 'foobar' ]
+        sys.argv = ['ui-test', '-s', 'foobar']
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.assertEqual(self.ui.run_argv(), True)
         self.assertTrue('foobar" is not known' in self.ui.msg_text)
         self.assertEqual(self.ui.msg_severity, 'error')
@@ -1404,7 +1556,7 @@ report['end'] = '1'
         f.write('def run(report, ui):\n    pass\n')
         f.close()
         orig_stderr = sys.stderr
-        sys.argv = ['ui-test', '-s', 'nopkg' ]
+        sys.argv = ['ui-test', '-s', 'nopkg']
         self.ui = TestSuiteUserInterface()
         sys.stderr = StringIO()
         self.assertRaises(SystemExit, self.ui.run_argv)
@@ -1416,7 +1568,7 @@ report['end'] = '1'
         f = open(os.path.join(apport.ui.symptom_script_dir, 'norun.py'), 'w')
         f.write('def something(x, y):\n    return 1\n')
         f.close()
-        sys.argv = ['ui-test', '-s', 'norun' ]
+        sys.argv = ['ui-test', '-s', 'norun']
         self.ui = TestSuiteUserInterface()
         sys.stderr = StringIO()
         self.assertRaises(SystemExit, self.ui.run_argv)
@@ -1428,7 +1580,7 @@ report['end'] = '1'
         f = open(os.path.join(apport.ui.symptom_script_dir, 'crash.py'), 'w')
         f.write('def run(report, ui):\n    return 1/0\n')
         f.close()
-        sys.argv = ['ui-test', '-s', 'crash' ]
+        sys.argv = ['ui-test', '-s', 'crash']
         self.ui = TestSuiteUserInterface()
         sys.stderr = StringIO()
         self.assertRaises(SystemExit, self.ui.run_argv)
@@ -1441,12 +1593,12 @@ report['end'] = '1'
         f = open(os.path.join(apport.ui.symptom_script_dir, 'itching.py'), 'w')
         f.write('def run(report, ui):\n  report["itch"] = "scratch"\n  return "bash"\n')
         f.close()
-        sys.argv = ['ui-test', '-s', 'itching' ]
+        sys.argv = ['ui-test', '-s', 'itching']
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.assertEqual(self.ui.run_argv(), True)
         self.assertEqual(self.ui.msg_text, None)
         self.assertEqual(self.ui.msg_severity, None)
@@ -1459,12 +1611,12 @@ report['end'] = '1'
         self.assertEqual(self.ui.report['ProblemType'], 'Bug')
 
         # working noninteractive script with extra tag
-        sys.argv = ['ui-test', '--tag', 'foo', '-s', 'itching' ]
+        sys.argv = ['ui-test', '--tag', 'foo', '-s', 'itching']
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.assertEqual(self.ui.run_argv(), True)
         self.assertEqual(self.ui.msg_text, None)
         self.assertEqual(self.ui.msg_severity, None)
@@ -1481,12 +1633,12 @@ report['end'] = '1'
     return 'bash'
 ''')
         f.close()
-        sys.argv = ['ui-test', '-s', 'itching' ]
+        sys.argv = ['ui-test', '-s', 'itching']
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
         self.ui.question_yesno_response = True
         self.assertEqual(self.ui.run_argv(), True)
         self.assertTrue(self.ui.present_details_shown)
@@ -1516,8 +1668,8 @@ def run(report, ui):
         self.ui = TestSuiteUserInterface()
         self.ui.present_details_response = {'report': True,
                                             'blacklist': False,
-                                            'examine' : False,
-                                            'restart' : False }
+                                            'examine': False,
+                                            'restart': False}
 
         self.ui.question_choice_response = None
         self.assertEqual(self.ui.run_argv(), True)
@@ -1747,5 +1899,39 @@ return 'bash'
         finally:
             self.ui.ui_run_terminal = orig_fn
 
-unittest.main()
+    def test_db_no_accept(self):
+        '''crash database does not accept report'''
 
+        # FIXME: This behaviour is not really correct, but necessary as long as
+        # we only support a single crashdb and have whoopsie hardcoded
+        # (see LP#957177)
+
+        latest_id_before = self.ui.crashdb.latest_id()
+
+        sys.argv = ['ui-test', '-f', '-p', 'bash']
+        self.ui = TestSuiteUserInterface()
+
+        # Pretend it does not accept report
+        self.ui.crashdb.accepts = lambda r: False
+        self.ui.present_details_response = {'report': True,
+                                            'blacklist': False,
+                                            'examine': False,
+                                            'restart': False}
+        self.assertEqual(self.ui.run_argv(), True)
+
+        self.assertEqual(self.ui.msg_severity, None)
+        self.assertEqual(self.ui.msg_title, None)
+        self.assertTrue(self.ui.present_details_shown)
+
+        # data was collected for whoopsie
+        self.assertEqual(self.ui.report['SourcePackage'], 'bash')
+        self.assertTrue('Dependencies' in self.ui.report.keys())
+        self.assertTrue('ProcEnviron' in self.ui.report.keys())
+        self.assertEqual(self.ui.report['ProblemType'], 'Bug')
+
+        # no upload happend
+        self.assertEqual(self.ui.opened_url, None)
+        self.assertEqual(self.ui.upload_progress_pulses, 0)
+        self.assertEqual(self.ui.crashdb.latest_id(), latest_id_before)
+
+unittest.main()

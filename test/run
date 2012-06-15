@@ -28,10 +28,31 @@ export LC_MESSAGES=C
 if [ -d test -a -e setup.py ]; then
     echo "Testing local source tree."
     export PATH=./bin:$PATH
-    export PYTHONPATH=.
+    export PYTHONPATH=`pwd`
     export APPORT_CRASHDB_CONF=./etc/apport/crashdb.conf
     export APPORT_DATA_DIR=./data
     export APPORT_TEST_LOCAL=1
+
+    # PEP8 tests, if pep8 is available
+    if type pep8 >/dev/null 2>&1; then
+        echo "Running pep8..."
+        # . catches all *.py modules; we explicitly need to specify the programs
+        pep8 -r --ignore=E401,E501 --exclude=test_problem_report.py,report.py,is-enabled,apport-bug .  `find bin data -type f -executable`
+        # those tests deliberately have trailing whitespace in test files, ignore
+        pep8 -r --ignore=E401,E501,W291,W293 test/test_problem_report.py
+        # has_key is minidom API, not the dict operator here
+        pep8 -r --ignore=E401,E501,W601 apport/report.py
+    else
+        echo "Skipping PEP 8 tests, pep8 is not installed"
+    fi
+
+    # pyflakes, if available
+    if type pyflakes >/dev/null 2>&1; then
+        echo "Running pyflakes..."
+        pyflakes `find -name '*.py'` `find bin data -type f -executable ! -name is-enabled ! -name apport-bug`
+    else
+        echo "Skipping pyflakes tests, pyflakes is not installed"
+    fi
 
     # assert that there are no hardcoded "Ubuntu" names
     out=$(grep -rw Ubuntu test/*.py apport/*.py gtk/apport-gtk* kde/* bin/* | grep -v Debian | grep -v X-Ubuntu-Gettext-Domain | grep -v '#.*Ubuntu') || :
@@ -47,6 +68,13 @@ if [ -d test -a -e setup.py ]; then
 else
     echo "Testing installed libraries/program."
 fi
+
+# avoid breaking the UI tests due to obsolete packages
+export APPORT_IGNORE_OBSOLETE_PACKAGES=1
+
+# avoid breaking tests due to translated strings
+export LC_MESSAGES=C
+unset LANGUAGE
 
 xvfb=
 if type xvfb-run >/dev/null && [ -z "$APPORT_TEST_NOXVFB" ]; then
@@ -84,7 +112,7 @@ for t in $TESTS; do
     else
         test_name="T.${t#*.}"
     fi
-    $prefix ${PYTHON:=python} -tt $test_file -v $test_name || failed=$((failed+1))
+    $prefix ${PYTHON:=python3} -tt $test_file -v $test_name || failed=$((failed+1))
 done
 
 exit $failed

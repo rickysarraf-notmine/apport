@@ -24,12 +24,14 @@ from apport import unicode_gettext as _
 
 log_timestamps = False
 
+
 def log(message):
     '''Log the given string to stdout. Prepend timestamp if requested'''
 
     if log_timestamps:
         sys.stdout.write('%s: ' % time.strftime('%x %X'))
     print(message)
+
 
 def parse_options():
     '''Parse command line options and return (reportfile, options) tuple.'''
@@ -59,6 +61,8 @@ def parse_options():
         help=_('Prepend timestamps to log messages, for batch operation'))
     optparser.add_option('-C', '--cache', metavar='DIR',
         help=_('Cache directory for packages downloaded in the sandbox'))
+    optparser.add_option('--sandbox-dir', metavar='DIR',
+        help=_('Directory for unpacked packages. Future runs will assume that any already downloaded package is also extracted to this sandbox.'))
     optparser.add_option('-p', '--extra-package', action='append', default=[],
         help=_('Install an extra package into the sandbox (can be specified multiple times)'))
     optparser.add_option('--auth',
@@ -84,6 +88,7 @@ def parse_options():
 
     return (args[0], opts)
 
+
 def getch():
     '''Read a single character from stdin.'''
 
@@ -95,6 +100,7 @@ def getch():
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
     return ch
+
 
 def confirm_traces(report):
     '''Display the retraced stack traces and ask the user whether or not to
@@ -112,6 +118,7 @@ def confirm_traces(report):
 
     return ch == 'y'
 
+
 def find_file_dir(name, dir, limit=None):
     '''Return a path list of all files with given name which are in or below
     dir.
@@ -127,6 +134,7 @@ def find_file_dir(name, dir, limit=None):
                 break
     return result
 
+
 def get_code(srcdir, filename, line, context=5):
     '''Find the given filename in the srcdir directory and return the code
     lines around the given line number.'''
@@ -138,14 +146,16 @@ def get_code(srcdir, filename, line, context=5):
     result = ''
     lineno = 0
     # make enough room for all line numbers
-    format = '  %%%ii: %%s' % len(str(line+context))
+    format = '  %%%ii: %%s' % len(str(line + context))
 
-    for l in open(files[0]):
-        lineno += 1
-        if lineno >= line-context and lineno <= line+context:
-            result += format % (lineno, l)
+    with open(files[0]) as f:
+        for l in f:
+            lineno += 1
+            if lineno >= line - context and lineno <= line + context:
+                result += format % (lineno, l)
 
     return result
+
 
 def gen_source_stacktrace(report):
     '''Generate StacktraceSource, a version of Stacktrace with the surrounding
@@ -181,6 +191,7 @@ def gen_source_stacktrace(report):
         shutil.rmtree(workdir)
         pass
 
+
 def needed_packages(report):
     '''Determine necessary packages for given report.
 
@@ -202,6 +213,7 @@ def needed_packages(report):
         pkgs[pkg] = version
 
     return [(p, v) for (p, v) in pkgs.items()]
+
 
 def needed_runtime_packages(report, sandbox, cache_dir, verbose=False):
     '''Determine necessary runtime packages for given report.
@@ -244,6 +256,7 @@ def needed_runtime_packages(report, sandbox, cache_dir, verbose=False):
 
     return [(p, None) for p in pkgs]
 
+
 def print_traces(report):
     '''Print stack traces from given report'''
 
@@ -270,7 +283,8 @@ crashdb = get_crashdb(options.auth)
 if os.path.exists(reportfile):
     try:
         report = apport.Report()
-        report.load(open(reportfile))
+        with open(reportfile, 'rb') as f:
+            report.load(f)
     except (MemoryError, TypeError, ValueError, IOError, zlib.error) as e:
         apport.fatal('Cannot open report file: %s', str(e))
 elif reportfile.isdigit():
@@ -312,32 +326,41 @@ else:
             reportfile)
 
 if options.core_file:
-    report['CoreDump'] = open(options.core_file).read()
+    with open(options.core_file, 'rb') as f:
+        report['CoreDump'] = f.read()
 if options.executable:
     report['ExecutablePath'] = options.executable
 if options.procmaps:
-    report['ProcMaps'] = open(options.procmaps).read()
+    with open(options.procmaps, 'r') as f:
+        report['ProcMaps'] = f.read()
 if options.rebuild_package_info and 'ExecutablePath' in report:
     report.add_package_info()
 
 # sanity checks
 required_fields = set(['CoreDump', 'ExecutablePath', 'Package', 'DistroRelease'])
 if report['ProblemType'] == 'KernelCrash':
-    if not set(['Package','VmCore']).issubset(set(report.keys())):
+    if not set(['Package', 'VmCore']).issubset(set(report.keys())):
         apport.error('report file does not contain the required fields')
         sys.exit(0)
     apport.error('KernelCrash processing not implemented yet')
     sys.exit(0)
 elif not required_fields.issubset(set(report.keys())):
     apport.error('report file does not contain one of the required fields: ' + \
-	' '.join(required_fields))
+        ' '.join(required_fields))
     sys.exit(0)
 
 sandbox = None
 outdated_msg = None
 if options.sandbox:
-    sandbox = tempfile.mkdtemp()
-    atexit.register(shutil.rmtree, sandbox)
+    if options.sandbox_dir:
+        sandbox = os.path.abspath(options.sandbox_dir)
+        if not os.path.isdir(sandbox):
+            os.makedirs(sandbox)
+        permanent_rootdir = True
+    else:
+        sandbox = tempfile.mkdtemp()
+        atexit.register(shutil.rmtree, sandbox)
+        permanent_rootdir = False
 
     pkgs = needed_packages(report)
     for p in options.extra_package:
@@ -355,7 +378,8 @@ if options.sandbox:
 
     try:
         outdated_msg = apport.packaging.install_packages(sandbox, sandbox_arg,
-            report['DistroRelease'], pkgs, options.verbose, options.cache)
+            report['DistroRelease'], pkgs, options.verbose, options.cache,
+            permanent_rootdir)
     except SystemError as e:
         sys.stderr.write(str(e) + '\n')
         sys.exit(1)
@@ -386,6 +410,9 @@ if options.sandbox:
             apport.error('%s %s does not exist (report specified package %s)',
                     path, sandbox + report[path], report['Package'])
             sys.exit(0)
+
+    if outdated_msg:
+        report['RetraceOutdatedPackages'] = outdated_msg
 
 # interactive gdb session
 if options.gdb:
@@ -475,10 +502,13 @@ Thank you for your understanding, and sorry for the inconvenience!
 
     else:
         if options.output == None:
-            out = open(reportfile, 'w')
+            out = open(reportfile, 'wb')
         elif options.output == '-':
-            out = sys.stdout
+            if sys.version[0] < '3':
+                out = sys.stdout
+            else:
+                out = sys.stdout.detach()
         else:
-            out = open(options.output, 'w')
+            out = open(options.output, 'wb')
 
         report.write(out)

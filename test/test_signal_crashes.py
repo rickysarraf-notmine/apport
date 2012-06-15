@@ -76,6 +76,7 @@ class T(unittest.TestCase):
 
     def test_crash_apport(self):
         '''report generation with apport'''
+
         self.do_crash()
 
         # check crash report
@@ -96,7 +97,8 @@ class T(unittest.TestCase):
         self.assertNotEqual(st, st2, 'original seen report gets overwritten')
 
         pr = apport.Report()
-        pr.load(open(self.test_report))
+        with open(self.test_report, 'rb') as f:
+            pr.load(f)
         self.assertTrue(set(required_fields).issubset(set(pr.keys())),
                 'report has required fields')
         self.assertEqual(pr['ExecutablePath'], test_executable)
@@ -130,7 +132,7 @@ class T(unittest.TestCase):
             app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
                 close_fds=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            time.sleep(0.5) # give it some time to grab the lock
+            time.sleep(0.5)  # give it some time to grab the lock
 
             app2 = subprocess.Popen([apport_path, str(test_proc2), '42', '0'],
                 close_fds=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -150,7 +152,7 @@ class T(unittest.TestCase):
 
             # properly terminate app and app2
             app2.stdin.close()
-            app.stdin.write('boo')
+            app.stdin.write(b'boo')
             app.stdin.close()
 
             self.assertEqual(app.wait(), 0, app.stderr.read())
@@ -176,7 +178,7 @@ class T(unittest.TestCase):
         try:
             app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
                 close_fds=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            app.stdin.write('boo')
+            app.stdin.write(b'boo')
             app.stdin.close()
 
             self.assertNotEqual(app.wait(), 0, app.stderr.read())
@@ -194,7 +196,7 @@ class T(unittest.TestCase):
         with open(local_exe, 'wb') as dest:
             with open(test_executable, 'rb') as src:
                 dest.write(src.read())
-        os.chmod(local_exe, 0755)
+        os.chmod(local_exe, 0o755)
         self.do_crash(command=local_exe)
         self.assertEqual(apport.fileutils.get_all_reports(), [])
 
@@ -204,7 +206,7 @@ class T(unittest.TestCase):
         local_exe = os.path.join(self.workdir, 'myscript')
         with open(local_exe, 'w') as f:
             f.write('#!/bin/sh\nkill -SEGV $$')
-        os.chmod(local_exe, 0755)
+        os.chmod(local_exe, 0o755)
         self.do_crash(command=local_exe)
 
         # absolute path
@@ -227,13 +229,14 @@ class T(unittest.TestCase):
         local_exe = os.path.join(self.workdir, 'myscript')
         with open(local_exe, 'w') as f:
             f.write('#!/usr/bin/perl\nsystem("mv $0 $0.exe");\nsystem("ln -sf /etc/shadow $0");\n$0="..$0";\nsleep(10);\n')
-        os.chmod(local_exe, 0755)
+        os.chmod(local_exe, 0o755)
         self.do_crash(check_running=False, command=local_exe, sleep=2)
 
         leak = os.path.join(apport.fileutils.report_dir, '_usr_bin_perl.%i.crash' %
             (os.getuid()))
         pr = apport.Report()
-        pr.load(open(leak))
+        with open(leak, 'rb') as f:
+            pr.load(f)
         # On a leak, no report is created since the executable path will be replaced
         # by the symlink path, and it doesn't belong to any package.
         self.assertEqual(pr['ExecutablePath'], '/usr/bin/perl')
@@ -263,7 +266,8 @@ class T(unittest.TestCase):
         self.do_crash()
         pr = apport.Report()
         self.assertTrue(os.path.exists(self.test_report))
-        pr.load(open(self.test_report))
+        with open(self.test_report, 'rb') as f:
+            pr.load(f)
         assert set(required_fields).issubset(set(pr.keys()))
 
     def test_core_dump_packaged(self):
@@ -275,30 +279,35 @@ class T(unittest.TestCase):
         self.assertEqual(apport.fileutils.get_all_reports(), [])
         resource.setrlimit(resource.RLIMIT_CORE, (10, -1))
         self.do_crash(expect_corefile=False)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
+        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
+        self.check_report_coredump(self.test_report)
         apport.fileutils.delete_report(self.test_report)
         resource.setrlimit(resource.RLIMIT_CORE, (10000, -1))
         self.do_crash(expect_corefile=True)
         self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
+        self.check_report_coredump(self.test_report)
         apport.fileutils.delete_report(self.test_report)
         resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
         self.do_crash(expect_corefile=True)
         self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
+        self.check_report_coredump(self.test_report)
         apport.fileutils.delete_report(self.test_report)
 
         # for SIGABRT
         resource.setrlimit(resource.RLIMIT_CORE, (1, -1))
         self.do_crash(expect_coredump=False, expect_corefile=False, sig=signal.SIGABRT)
-        apport.fileutils.delete_report(self.test_report)
+        self.assertEqual(apport.fileutils.get_all_reports(), [])
         resource.setrlimit(resource.RLIMIT_CORE, (10, -1))
         self.do_crash(expect_corefile=False, sig=signal.SIGABRT)
+        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
         apport.fileutils.delete_report(self.test_report)
         resource.setrlimit(resource.RLIMIT_CORE, (10000, -1))
         self.do_crash(expect_corefile=True, sig=signal.SIGABRT)
+        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
         apport.fileutils.delete_report(self.test_report)
         resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
         self.do_crash(expect_corefile=True, sig=signal.SIGABRT)
-        apport.fileutils.delete_report(self.test_report)
+        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
 
         # creates core file with existing crash report, too
         self.do_crash(expect_corefile=True)
@@ -310,7 +319,7 @@ class T(unittest.TestCase):
         with open(local_exe, 'wb') as dest:
             with open(test_executable, 'rb') as src:
                 dest.write(src.read())
-        os.chmod(local_exe, 0755)
+        os.chmod(local_exe, 0o755)
 
         # for SIGSEGV
         resource.setrlimit(resource.RLIMIT_CORE, (1, -1))
@@ -345,10 +354,10 @@ class T(unittest.TestCase):
         # determine how much data we have to pump into apport in order to make sure
         # that it will refuse the core dump
         r = apport.Report()
-        with open('/proc/meminfo') as f:
+        with open('/proc/meminfo', 'rb') as f:
             r.load(f)
-        totalmb = long(r['MemFree'].split()[0]) + long(r['Cached'].split()[0])
-        totalmb /= 1024
+        totalmb = int(r['MemFree'].split()[0]) + int(r['Cached'].split()[0])
+        totalmb = int(totalmb / 1024)
         r = None
 
         test_proc = self.create_test_process()
@@ -383,7 +392,7 @@ class T(unittest.TestCase):
         self.assertEqual(len(reports), 1)
 
         pr = apport.Report()
-        with open(reports[0]) as f:
+        with open(reports[0], 'rb') as f:
             pr.load(f)
         os.unlink(reports[0])
 
@@ -400,7 +409,7 @@ class T(unittest.TestCase):
         self.assertEqual(len(reports), 1)
 
         pr = apport.Report()
-        with open(reports[0]) as f:
+        with open(reports[0], 'rb') as f:
             pr.load(f)
         os.unlink(reports[0])
 
@@ -409,6 +418,113 @@ class T(unittest.TestCase):
         self.do_crash()
         self.assertEqual(apport.fileutils.get_all_reports(), [])
 
+    def test_modify_after_start(self):
+        '''ignores executables which got modified after process started'''
+
+        # create executable in a path we can modify which apport regards as
+        # likely packaged
+        (fd, myexe) = tempfile.mkstemp(dir='/var/tmp')
+        try:
+            with open(test_executable, 'rb') as f:
+                os.write(fd, f.read())
+            os.close(fd)
+            os.chmod(myexe, 0o755)
+            time.sleep(1)
+
+            try:
+                test_proc = self.create_test_process(command=myexe)
+
+                # bump mtime of myexe to make it more recent than process start
+                # time; ensure this works with file systems with only second
+                # resolution
+                time.sleep(1.1)
+                os.utime(myexe, None)
+
+                app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
+                    close_fds=True, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+                app.stdin.write(b'boo')
+                app.stdin.close()
+                err = app.stderr.read().decode()
+                self.assertNotEqual(app.wait(), 0, err)
+            finally:
+                os.kill(test_proc, 9)
+                os.waitpid(test_proc, 0)
+
+            self.assertEqual(self.get_temp_all_reports(), [])
+        finally:
+            os.unlink(myexe)
+
+    def test_logging_file(self):
+        '''outputs to log file, if available'''
+
+        test_proc = self.create_test_process()
+        log = os.path.join(self.workdir, 'apport.log')
+        try:
+            env = os.environ.copy()
+            env['APPORT_LOG_FILE'] = log
+            app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
+                                   close_fds=True, stdin=subprocess.PIPE, env=env,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   universal_newlines=True)
+            (out, err) = app.communicate(b'hel\x01lo')
+        finally:
+            os.kill(test_proc, 9)
+            os.waitpid(test_proc, 0)
+
+        self.assertEqual(out, '')
+        self.assertEqual(err, '')
+        self.assertEqual(app.returncode, 0, err)
+        with open(log) as f:
+            logged = f.read()
+        self.assertTrue('called for pid' in logged, logged)
+        self.assertTrue('wrote report' in logged, logged)
+        self.assertFalse('Traceback' in logged, logged)
+
+        reports = self.get_temp_all_reports()
+        self.assertEqual(len(reports), 1)
+
+        pr = apport.Report()
+        with open(reports[0], 'rb') as f:
+            pr.load(f)
+        os.unlink(reports[0])
+
+        self.assertEqual(pr['Signal'], '42')
+        self.assertEqual(pr['ExecutablePath'], test_executable)
+        self.assertEqual(pr['CoreDump'], b'hel\x01lo')
+
+    def test_logging_stderr(self):
+        '''outputs to stderr if log is not available'''
+
+        test_proc = self.create_test_process()
+        try:
+            env = os.environ.copy()
+            env['APPORT_LOG_FILE'] = '/not/existing/apport.log'
+            app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
+                                   close_fds=True, stdin=subprocess.PIPE, env=env,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                   universal_newlines=True)
+            (out, err) = app.communicate(b'hel\x01lo')
+        finally:
+            os.kill(test_proc, 9)
+            os.waitpid(test_proc, 0)
+
+        self.assertEqual(out, '')
+        self.assertEqual(app.returncode, 0, err)
+        self.assertTrue('called for pid' in err, err)
+        self.assertTrue('wrote report' in err, err)
+        self.assertFalse('Traceback' in err, err)
+
+        reports = self.get_temp_all_reports()
+        self.assertEqual(len(reports), 1)
+
+        pr = apport.Report()
+        with open(reports[0], 'rb') as f:
+            pr.load(f)
+        os.unlink(reports[0])
+
+        self.assertEqual(pr['Signal'], '42')
+        self.assertEqual(pr['ExecutablePath'], test_executable)
+        self.assertEqual(pr['CoreDump'], b'hel\x01lo')
 
     #
     # Helper methods
@@ -432,9 +548,15 @@ class T(unittest.TestCase):
             assert False, 'Could not execute ' + command
 
         # wait until child process has execv()ed properly
-        while 'test-apport' in open('/proc/%i/cmdline' % pid).read():
-            time.sleep(0.1)
-        time.sleep(0.3) # needs some more setup time
+        while True:
+            with open('/proc/%i/cmdline' % pid) as f:
+                cmdline = f.read()
+            if 'test_signal' in cmdline:
+                time.sleep(0.1)
+            else:
+                break
+
+        time.sleep(0.3)  # needs some more setup time
         return pid
 
     def do_crash(self, expect_coredump=True, expect_corefile=False,
@@ -483,12 +605,15 @@ class T(unittest.TestCase):
                     stderr=subprocess.PIPE)
                 (out, err) = gdb.communicate()
                 self.assertEqual(gdb.returncode, 0)
-                err = err.strip()
+                out = out.decode()
+                err = err.decode().strip()
                 self.assertTrue(err == '' or err.startswith('warning'), err)
             finally:
                 os.unlink('/tmp/core')
         else:
-            self.assertFalse(os.path.exists('/tmp/core'), 'leaves unexpected core file behind')
+            if os.path.exists('/tmp/core'):
+                os.unlink('/tmp/core')
+                self.fail('leaves unexpected core file behind')
 
     def get_temp_all_reports(self):
         '''Call apport.fileutils.get_all_reports() for our temp dir'''
@@ -499,11 +624,24 @@ class T(unittest.TestCase):
         apport.fileutils.report_dir = old_dir
         return reports
 
+    def check_report_coredump(self, report_path):
+        '''Check that given report file has a valid core dump'''
+
+        r = apport.Report()
+        with open(report_path, 'rb') as f:
+            r.load(f)
+        self.assertTrue('CoreDump' in r)
+        self.assertGreater(len(r['CoreDump']), 5000)
+        r.add_gdb_info()
+        self.assertTrue('\n#2' in r.get('Stacktrace', ''),
+                r.get('Stacktrace', 'no Stacktrace field'))
+
 #
 # main
 #
 
-core_pattern = open('/proc/sys/kernel/core_pattern').read().strip()
+with open('/proc/sys/kernel/core_pattern') as f:
+    core_pattern = f.read().strip()
 if core_pattern[0] != '|':
     sys.stderr.write('kernel crash dump helper is not active; please enable before running this test.\n')
     sys.exit(0)

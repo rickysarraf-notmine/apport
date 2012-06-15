@@ -12,7 +12,7 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import sys, os.path, optparse
+import sys, optparse
 
 from apport.fileutils import get_new_reports, get_new_system_reports
 import apport
@@ -31,7 +31,7 @@ else:
 
 if len(reports) > 0:
     for r in reports:
-        print r.split('.')[0].split('_')[-1]
+        print(r.split('.')[0].split('_')[-1])
     if apport.packaging.enabled():
         sys.exit(0)
     else:

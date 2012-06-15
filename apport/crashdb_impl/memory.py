@@ -12,6 +12,7 @@
 import apport.crashdb
 import apport
 
+
 class CrashDatabase(apport.crashdb.CrashDatabase):
     '''Simple implementation of crash database interface which keeps everything
     in memory.
@@ -25,21 +26,23 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         apport.crashdb.CrashDatabase.__init__(self, auth_file, options)
 
-        self.reports = [] # list of dictionaries with keys: report, fixed_version, dup_of, comment
+        self.reports = []  # list of dictionaries with keys: report, fixed_version, dup_of, comment
         self.unretraced = set()
         self.dup_unchecked = set()
 
         if 'dummy_data' in options:
             self.add_dummy_data()
 
-    def upload(self, report, progress_callback = None):
+    def upload(self, report, progress_callback=None):
         '''Store the report and return a handle number (starting from 0).
 
-        This does not support (nor need) progress callbacks.'''
+        This does not support (nor need) progress callbacks.
+        '''
+        assert self.accepts(report)
 
         self.reports.append({'report': report, 'fixed_version': None, 'dup_of':
             None, 'comment:': ''})
-        id = len(self.reports)-1
+        id = len(self.reports) - 1
         if 'Traceback' in report:
             self.dup_unchecked.add(id)
         else:
@@ -187,7 +190,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         try:
             self.dup_unchecked.remove(id)
         except KeyError:
-            pass # happens when trying to check for dup twice
+            pass  # happens when trying to check for dup twice
 
     def mark_retraced(self, id):
         '''Mark crash id as retraced.'''
@@ -213,7 +216,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
     def latest_id(self):
         '''Return the ID of the most recently filed report.'''
 
-        return len(self.reports)-1
+        return len(self.reports) - 1
 
     def add_dummy_data(self):
         '''Add some dummy crash reports.
@@ -274,7 +277,7 @@ d (x=1) at crash.c:29'''
         r['ExecutablePath'] = '/usr/bin/pygoo'
         r['Traceback'] = '''Traceback (most recent call last):
   File "test.py", line 7, in <module>
-    print _f(5)
+    print(_f(5))
   File "test.py", line 5, in _f
     return g_foo00(x+1)
   File "test.py", line 2, in g_foo00
@@ -290,7 +293,7 @@ ZeroDivisionError: integer division or modulo by zero'''
         r['ExecutablePath'] = '/usr/bin/pygoo'
         r['Traceback'] = '''Traceback (most recent call last):
   File "test.py", line 7, in <module>
-    print _f(5)
+    print(_f(5))
   File "test.py", line 5, in _f
     return g_foo00(x+1)
   File "test.py", line 2, in g_foo00

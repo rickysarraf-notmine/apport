@@ -9,17 +9,22 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import os, os.path, sys, shutil, urllib
+import os, os.path, sys, shutil
 
 try:
     from exceptions import Exception
-    from urllib import quote_plus
+    from urllib import quote_plus, urlopen
+    URLError = IOError
+    (quote_plus, urlopen)  # pyflakes
 except ImportError:
     # python 3
     from functools import cmp_to_key
     from urllib.parse import quote_plus
+    from urllib.request import urlopen
+    from urllib.error import URLError
 
 import apport
+
 
 def _u(str):
     '''Convert str to an unicode if it isn't already.'''
@@ -27,6 +32,7 @@ def _u(str):
     if type(str) == type(b''):
         return str.decode('UTF-8', 'ignore')
     return str
+
 
 class CrashDatabase:
     def __init__(self, auth_file, options):
@@ -50,6 +56,17 @@ class CrashDatabase:
         function returns None, bug patterns are disabled.
         '''
         return self.options.get('bug_pattern_url')
+
+    def accepts(self, report):
+        '''Check if this report can be uploaded to this database.
+
+        Crash databases might limit the types of reports they get with e. g.
+        the "problem_types" option.
+        '''
+        if 'problem_types' in self.options:
+            return report.get('ProblemType') in self.options['problem_types']
+
+        return True
 
     #
     # API for duplicate detection
@@ -196,7 +213,7 @@ class CrashDatabase:
                         self.close_duplicate(report, master_id, addr_match)
                         self._duplicate_db_merge_id(master_id, addr_match)
                         master_id = addr_match
-                        master_ver = None # no version tracking for address signatures yet
+                        master_ver = None  # no version tracking for address signatures yet
 
         if master_id is not None:
             if addr_sig:
@@ -235,55 +252,56 @@ class CrashDatabase:
         Subclasses are free to override this with a custom implementation, such
         as a real database lookup.
         '''
-        if 'dupdb_url' not in self.options:
+        if not self.options.get('dupdb_url'):
             return None
 
-        # get signature
-        if 'DuplicateSignature' in report:
-            sig = report['DuplicateSignature']
-        else:
-            sig = report.crash_signature()
+        for kind in ('sig', 'address'):
+            # get signature
+            if kind == 'sig':
+                if 'DuplicateSignature' in report:
+                    sig = report['DuplicateSignature']
+                else:
+                    sig = report.crash_signature()
+            else:
+                sig = report.crash_signature_addresses()
 
-        if sig:
-            category = 'sig'
-        else:
-            sig = report.crash_signature_addresses()
-            category = 'address'
-
-        if not sig:
-            return None
-
-        # build URL where the data should be
-        h = self.duplicate_sig_hash(sig)
-        if not h:
-            return None
-
-        url = os.path.join(self.options['dupdb_url'], category, h)
-
-        # read data file
-        try:
-            f = urllib.urlopen(url)
-            contents = f.read()
-            f.close()
-            if '<title>404 Not Found' in contents:
-                return None
-        except Exception:
-            # does not exist, failed to load, etc.
-            return None
-
-        # now check if we find our signature
-        for line in contents.splitlines():
-            try:
-                id, s = line.split(None, 1)
-                id = int(id)
-            except ValueError:
+            if not sig:
                 continue
-            if s == sig:
-                result = self.get_id_url(report, id)
-                if not result:
-                    # if we can't have an URL, just report as "known"
-                    result = '1'
-                return result
+
+            # build URL where the data should be
+            h = self.duplicate_sig_hash(sig)
+            if not h:
+                return None
+
+            # the hash is already quoted, but we really want to open the quoted
+            # file names; as urlopen() unquotes, we need to double-quote here
+            # again so that urlopen() sees the single-quoted file names
+            url = os.path.join(self.options['dupdb_url'], kind, quote_plus(h))
+
+            # read data file
+            try:
+                f = urlopen(url)
+                contents = f.read().decode('UTF-8')
+                f.close()
+                if '<title>404 Not Found' in contents:
+                    continue
+            except (IOError, URLError):
+                # does not exist, failed to load, etc.
+                continue
+
+            # now check if we find our signature
+            for line in contents.splitlines():
+                try:
+                    id, s = line.split(None, 1)
+                    id = int(id)
+                except ValueError:
+                    continue
+                if s == sig:
+                    result = self.get_id_url(report, id)
+                    if not result:
+                        # if we can't have an URL, just report as "known"
+                        result = '1'
+                    return result
 
         return None
 
@@ -358,7 +376,6 @@ class CrashDatabase:
 
         cur.execute('SELECT * from address_signatures ORDER BY signature')
         for (sig, id) in cur.fetchall():
-            sig = sig.encode('UTF-8')
             h = self.duplicate_sig_hash(sig)
             if h is None:
                 # some entries can't be represented in a single line
@@ -367,7 +384,7 @@ class CrashDatabase:
                 cur_hash = h
                 if cur_file:
                     cur_file.close()
-                cur_file = open(os.path.join(addr_base, cur_hash), 'wb')
+                cur_file = open(os.path.join(addr_base, cur_hash), 'w')
 
             cur_file.write('%i %s\n' % (id, sig))
 
@@ -382,7 +399,6 @@ class CrashDatabase:
 
         cur.execute('SELECT signature, crash_id from crashes ORDER BY signature')
         for (sig, id) in cur.fetchall():
-            sig = sig.encode('UTF-8')
             h = self.duplicate_sig_hash(sig)
             if h is None:
                 # some entries can't be represented in a single line
@@ -393,7 +409,7 @@ class CrashDatabase:
                     cur_file.close()
                 cur_file = open(os.path.join(sig_base, cur_hash), 'wb')
 
-            cur_file.write('%i %s\n' % (id, sig))
+            cur_file.write(('%i %s\n' % (id, sig)).encode('UTF-8'))
 
         if cur_file:
             cur_file.close()
@@ -583,16 +599,16 @@ class CrashDatabase:
         i = '_'.join(i.split(':', 2)[:2])
         # we manually quote '/' to make them nicer to read
         i = i.replace('/', '_')
-        # just in case, avoid too long file names
+        i = quote_plus(i.encode('UTF-8'))
+        # avoid too long file names
         i = i[:200]
-        i = quote_plus(i)
         return i
 
     #
     # Abstract functions that need to be implemented by subclasses
     #
 
-    def upload(self, report, progress_callback = None):
+    def upload(self, report, progress_callback=None):
         '''Upload given problem report return a handle for it.
 
         This should happen noninteractively.
@@ -601,6 +617,10 @@ class CrashDatabase:
         passed, that is called repeatedly with two arguments: the number of
         bytes already sent, and the total number of bytes to send. This can be
         used to provide a proper upload progress indication on frontends.
+
+        Implementations ought to "assert self.accepts(report)". The UI logic
+        already prevents uploading a report to a database which does not accept
+        it, but for third-party users of the API this should still be checked.
 
         This method can raise a NeedsCredentials exception in case of failure.
         '''
@@ -777,7 +797,8 @@ class CrashDatabase:
 # factory
 #
 
-def get_crashdb(auth_file, name = None, conf = None):
+
+def get_crashdb(auth_file, name=None, conf=None):
     '''Return a CrashDatabase object for the given crash db name.
 
     This reads the configuration file 'conf'.
@@ -795,7 +816,7 @@ def get_crashdb(auth_file, name = None, conf = None):
       dictionaries. These need to have at least the key 'impl' (Python module
       in apport.crashdb_impl which contains a concrete 'CrashDatabase' class
       implementation for that crash db type). Other generally known options are
-      'bug_pattern_url' and 'dupdb_url'.
+      'bug_pattern_url', 'dupdb_url', and 'problem_types'.
     '''
     if not conf:
         conf = os.environ.get('APPORT_CRASHDB_CONF', '/etc/apport/crashdb.conf')
@@ -824,6 +845,7 @@ def get_crashdb(auth_file, name = None, conf = None):
 
     m = __import__('apport.crashdb_impl.' + db['impl'], globals(), locals(), ['CrashDatabase'])
     return m.CrashDatabase(auth_file, db)
+
 
 class NeedsCredentials(Exception):
     '''This may be raised when unable to log in to the crashdb.'''

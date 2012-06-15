@@ -10,20 +10,33 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import urllib, tempfile, os.path, re, gzip, sys
-import email
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+import urllib, tempfile, os.path, re, gzip, sys, email, time
 
-from launchpadlib.errors import HTTPError
-from launchpadlib.launchpad import Launchpad
+from io import BytesIO
+
+if sys.version_info.major == 2:
+    from urllib2 import HTTPSHandler, Request, build_opener
+    from httplib import HTTPSConnection
+    from urllib import urlencode, urlopen
+    (HTTPSHandler, Request, build_opener, HTTPSConnection, urlencode, urlopen)  # pyflakes
+else:
+    from urllib.request import HTTPSHandler, Request, build_opener, urlopen
+    from urllib.parse import urlencode
+    from http.client import HTTPSConnection
+
+try:
+    from launchpadlib.errors import HTTPError
+    from launchpadlib.launchpad import Launchpad
+    Launchpad  # pyflakes
+except ImportError:
+    # if launchpadlib is not available, only client-side reporting will work
+    Launchpad = None
 
 import apport.crashdb
 import apport
 
 default_credentials_path = os.path.expanduser('~/.cache/apport/launchpad.credentials')
+
 
 def filter_filename(attachments):
     for attachment in attachments:
@@ -35,6 +48,7 @@ def filter_filename(attachments):
         name = f.filename
         if name.endswith('.txt') or name.endswith('.gz'):
             yield f
+
 
 def id_set(tasks):
     # same as set(int(i.bug.id) for i in tasks) but faster
@@ -65,6 +79,13 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
           a bug once it gets the 10th duplicate.
         - escalation_tag: This adds the given tag to a bug once it gets more
           than 10 duplicates.
+        - initial_subscriber: The Launchpad user which gets subscribed to newly
+          filed bugs (default: "apport"). It should be a bot user which the
+          crash-digger instance runs as, as this will get to see all bug
+          details immediately.
+        - triaging_team: The Launchpad user/team which gets subscribed after
+          updating a crash report bug by the retracer (default:
+          "ubuntu-crashes-universe")
         '''
         if os.getenv('APPORT_LAUNCHPAD_INSTANCE'):
             options['launchpad_instance'] = os.getenv(
@@ -99,6 +120,10 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         if self.__launchpad:
             return self.__launchpad
 
+        if Launchpad is None:
+            sys.stderr.write('ERROR: The launchpadlib Python module is not installed. This functionality is not available.\n')
+            sys.exit(1)
+
         if self.options.get('launchpad_instance'):
             launchpad_instance = self.options.get('launchpad_instance')
         else:
@@ -112,7 +137,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             self.__launchpad = Launchpad.login_with('apport-collect',
                     launchpad_instance, launchpadlib_dir=self.__lpcache,
                     allow_access_levels=['WRITE_PRIVATE'],
-                    credentials_file = self.auth,
+                    credentials_file=self.auth,
                     version='1.0')
         except Exception as e:
             if hasattr(e, 'content'):
@@ -120,7 +145,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             else:
                 msg = str(e)
             apport.error('connecting to Launchpad failed: %s\nYou can reset the credentials by removing the file "%s"', msg, self.auth)
-            sys.exit(99) # transient error
+            sys.exit(99)  # transient error
 
         return self.__launchpad
 
@@ -141,7 +166,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             self.__lp_distro = self.launchpad.distributions[self.distro]
         return self.__lp_distro
 
-    def upload(self, report, progress_callback = None):
+    def upload(self, report, progress_callback=None):
         '''Upload given problem report return a handle for it.
 
         This should happen noninteractively.
@@ -149,7 +174,9 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         If the implementation supports it, and a function progress_callback is
         passed, that is called repeatedly with two arguments: the number of
         bytes already sent, and the total number of bytes to send. This can be
-        used to provide a proper upload progress indication on frontends.'''
+        used to provide a proper upload progress indication on frontends.
+        '''
+        assert self.accepts(report)
 
         # set reprocessing tags
         hdr = {}
@@ -167,7 +194,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         if 'DistroRelease' in report:
             if a and ('VmCore' in report or 'CoreDump' in report):
                 hdr['Private'] = 'yes'
-                hdr['Subscribers'] = 'apport'
+                hdr['Subscribers'] = self.options.get('initial_subscriber', 'apport')
                 hdr['Tags'] += ' need-%s-retrace' % a
             elif 'Traceback' in report:
                 hdr['Private'] = 'yes'
@@ -182,8 +209,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             hdr['HWDB-Submission'] = report['CheckboxSubmission']
 
         # order in which keys should appear in the temporary file
-        order = [ 'ProblemType', 'DistroRelease', 'Package', 'Regression', 'Reproducible',
-        'TestedUpstream', 'ProcVersionSignature', 'Uname', 'NonfreeKernelModules' ]
+        order = ['ProblemType', 'DistroRelease', 'Package', 'Regression', 'Reproducible',
+        'TestedUpstream', 'ProcVersionSignature', 'Uname', 'NonfreeKernelModules']
 
         # write MIME/Multipart version into temporary file
         mime = tempfile.TemporaryFile()
@@ -233,13 +260,13 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         if not project:
             if 'SourcePackage' in report:
                 return 'https://bugs.%s/%s/+source/%s/+filebug/%s?%s' % (
-                    hostname, self.distro, report['SourcePackage'], handle, urllib.urlencode(args))
+                    hostname, self.distro, report['SourcePackage'], handle, urlencode(args))
             else:
                 return 'https://bugs.%s/%s/+filebug/%s?%s' % (
-                    hostname, self.distro, handle, urllib.urlencode(args))
+                    hostname, self.distro, handle, urlencode(args))
         else:
             return 'https://bugs.%s/%s/+filebug/%s?%s' % (
-                hostname, project, handle, urllib.urlencode(args))
+                hostname, project, handle, urlencode(args))
 
     def get_id_url(self, report, id):
         '''Return URL for a given report ID.
@@ -278,7 +305,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                 # just parse out the Apport block; e. g. LP #269539
                 description = description.split('\n\n', 1)[0]
 
-        report.load(StringIO(description))
+        report.load(BytesIO(description))
 
         if 'Date' not in report:
             # We had not submitted this field for a while, claiming it
@@ -379,14 +406,14 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         if not key_filter:
             # when we update a complete report, we are updating an existing bug
             # with apport-collect
-            x = bug.tags[:] # LP#254901 workaround
+            x = bug.tags[:]  # LP#254901 workaround
             x.append('apport-collected')
             # add any tags (like the release) to the bug
             if 'Tags' in report:
                 x += report['Tags'].lower().split()
             bug.tags = x
             bug.lp_save()
-            bug = self.launchpad.bugs[id] # fresh bug object, LP#336866 workaround
+            bug = self.launchpad.bugs[id]  # fresh bug object, LP#336866 workaround
 
         # short text data
         if change_description:
@@ -430,14 +457,14 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                     try:
                         a.removeFromBug()
                     except HTTPError:
-                        pass # LP#249950 workaround
+                        pass  # LP#249950 workaround
             try:
                 task = self._get_distro_tasks(bug.bug_tasks).next()
                 if task.importance == 'Undecided':
                     task.importance = 'Medium'
                     task.lp_save()
             except StopIteration:
-                pass # no distro tasks
+                pass  # no distro tasks
 
             # update bug title with retraced function name
             fn = report.stacktrace_top_function()
@@ -448,7 +475,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                     try:
                         bug.lp_save()
                     except HTTPError:
-                        pass # LP#336866 workaround
+                        pass  # LP#336866 workaround
                     bug = self.launchpad.bugs[id]
 
         self._subscribe_triaging_team(bug, report)
@@ -518,7 +545,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             return id_set(bugs)
         except Exception as e:
             apport.error('connecting to Launchpad failed: %s', str(e))
-            sys.exit(99) # transient error
+            sys.exit(99)  # transient error
 
     def get_dup_unchecked(self):
         '''Return an ID set of all crashes which have not been checked for
@@ -533,7 +560,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             return id_set(bugs)
         except Exception as e:
             apport.error('connecting to Launchpad failed: %s', str(e))
-            sys.exit(99) # transient error
+            sys.exit(99)  # transient error
 
     def get_unfixed(self):
         '''Return an ID set of all crashes which are not yet fixed.
@@ -585,10 +612,10 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         if b.duplicate_of:
             return 'invalid'
 
-        tasks = list(b.bug_tasks) # just fetch it once
+        tasks = list(b.bug_tasks)  # just fetch it once
 
         if self.distro:
-            distro_identifier = '(%s)' %self.distro.lower()
+            distro_identifier = '(%s)' % self.distro.lower()
             fixed_tasks = filter(lambda task: task.status == 'Fix Released' and \
                     distro_identifier in task.bug_target_display_name.lower(), tasks)
 
@@ -670,9 +697,9 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                     try:
                         a.removeFromBug()
                     except HTTPError:
-                        pass # LP#249950 workaround
+                        pass  # LP#249950 workaround
 
-            bug = self.launchpad.bugs[id] # fresh bug object, LP#336866 workaround
+            bug = self.launchpad.bugs[id]  # fresh bug object, LP#336866 workaround
             bug.newMessage(content='Thank you for taking the time to report this crash and helping \
 to make this software better.  This particular crash has already been reported and \
 is a duplicate of bug #%i, so is being marked as such.  Please look at the \
@@ -682,7 +709,7 @@ further discussion regarding the bug should occur in the other report.  \
 Please continue to report any other bugs you may find.' % master_id,
                 subject='This bug is a duplicate')
 
-            bug = self.launchpad.bugs[id] # refresh, LP#336866 workaround
+            bug = self.launchpad.bugs[id]  # refresh, LP#336866 workaround
             if bug.private:
                 bug.private = False
 
@@ -690,27 +717,31 @@ Please continue to report any other bugs you may find.' % master_id,
             if not bug.duplicate_of:
                 bug.duplicate_of = master
 
+            # cache tags of master bug report instead of performing multiple
+            # queries
+            master_tags = master.tags
+
             if len(master.duplicates) == 10:
                 if 'escalation_tag' in self.options and \
-                    self.options['escalation_tag'] not in master.tags and \
-                    self.options.get('escalated_tag', ' invalid ') not in master.tags:
-                        master.tags = master.tags + [self.options['escalation_tag']] # LP#254901 workaround
+                    self.options['escalation_tag'] not in master_tags and \
+                    self.options.get('escalated_tag', ' invalid ') not in master_tags:
+                        master.tags = master_tags + [self.options['escalation_tag']]  # LP#254901 workaround
                         master.lp_save()
 
                 if 'escalation_subscription' in self.options and \
-                    self.options.get('escalated_tag', ' invalid ') not in master.tags:
+                    self.options.get('escalated_tag', ' invalid ') not in master_tags:
                     p = self.launchpad.people[self.options['escalation_subscription']]
                     master.subscribe(person=p)
 
             # requesting updated stack trace?
-            if report.has_useful_stacktrace() and ('apport-request-retrace' in master.tags
-                    or 'apport-failed-retrace' in master.tags):
+            if report.has_useful_stacktrace() and ('apport-request-retrace' in master_tags
+                    or 'apport-failed-retrace' in master_tags):
                 self.update(master_id, report, 'Updated stack trace from duplicate bug %i' % id,
                         key_filter=['Stacktrace', 'ThreadStacktrace',
                             'Package', 'Dependencies', 'ProcMaps', 'ProcCmdline'])
 
                 master = self.launchpad.bugs[master_id]
-                x = master.tags[:] # LP#254901 workaround
+                x = master.tags[:]  # LP#254901 workaround
                 try:
                     x.remove('apport-failed-retrace')
                 except ValueError:
@@ -723,13 +754,33 @@ Please continue to report any other bugs you may find.' % master_id,
                 try:
                     master.lp_save()
                 except HTTPError:
-                    pass # LP#336866 workaround
+                    pass  # LP#336866 workaround
+
+            # white list of tags to copy from duplicates bugs to the master
+            tags_to_copy = ['bugpattern-needed', 'running-unity']
+            for series in self.lp_distro.series:
+                if series.status not in ['Active Development',
+                    'Current Stable Release', 'Supported']:
+                    continue
+                tags_to_copy.append(series.name)
+            # copy tags over from the duplicate bug to the master bug
+            dupe_tags = set(bug.tags)
+            # reload master tags as they may have changed
+            master_tags = master.tags
+            missing_tags = dupe_tags.difference(master_tags)
+
+            for tag in missing_tags:
+                if tag in tags_to_copy:
+                    master_tags.append(tag)
+
+            master.tags = master_tags
+            master.lp_save()
 
         else:
             if bug.duplicate_of:
                 bug.duplicate_of = None
 
-        if bug._dirty_attributes: # LP#336866 workaround
+        if bug._dirty_attributes:  # LP#336866 workaround
             bug.lp_save()
 
     def mark_regression(self, id, master):
@@ -742,8 +793,8 @@ However, the latter was already fixed in an earlier package version than the \
 one in this report. This might be a regression or because the problem is \
 in a dependent package.' % master,
             subject='Possible regression detected')
-        bug = self.launchpad.bugs[id] # fresh bug object, LP#336866 workaround
-        bug.tags = bug.tags + ['regression-retracer'] # LP#254901 workaround
+        bug = self.launchpad.bugs[id]  # fresh bug object, LP#336866 workaround
+        bug.tags = bug.tags + ['regression-retracer']  # LP#254901 workaround
         bug.lp_save()
 
     def mark_retraced(self, id):
@@ -751,13 +802,13 @@ in a dependent package.' % master,
 
         bug = self.launchpad.bugs[id]
         if self.arch_tag in bug.tags:
-            x = bug.tags[:] # LP#254901 workaround
+            x = bug.tags[:]  # LP#254901 workaround
             x.remove(self.arch_tag)
             bug.tags = x
             try:
                 bug.lp_save()
             except HTTPError:
-                pass # LP#336866 workaround
+                pass  # LP#336866 workaround
 
     def mark_retrace_failed(self, id, invalid_msg=None):
         '''Mark crash id as 'failed to retrace'.'''
@@ -779,10 +830,10 @@ in a dependent package.' % master,
                     try:
                         a.removeFromBug()
                     except HTTPError:
-                        pass # LP#249950 workaround
+                        pass  # LP#249950 workaround
         else:
             if 'apport-failed-retrace' not in bug.tags:
-                bug.tags = bug.tags + ['apport-failed-retrace'] # LP#254901 workaround
+                bug.tags = bug.tags + ['apport-failed-retrace']  # LP#254901 workaround
                 bug.lp_save()
 
     def _mark_dup_checked(self, id, report):
@@ -801,10 +852,16 @@ in a dependent package.' % master,
                     break
 
         if 'need-duplicate-check' in bug.tags:
-            x = bug.tags[:] # LP#254901 workaround
+            x = bug.tags[:]  # LP#254901 workaround
             x.remove('need-duplicate-check')
             bug.tags = x
             bug.lp_save()
+            if 'Traceback' in report:
+                for task in bug.bug_tasks:
+                    if task.target.resource_type_link.endswith('#distribution'):
+                        if task.importance == 'Undecided':
+                            task.importance = 'Medium'
+                            task.lp_save()
         self._subscribe_triaging_team(bug, report)
 
     def known(self, report):
@@ -837,7 +894,7 @@ in a dependent package.' % master,
         report['DuplicateOf'] = url
 
         try:
-            f = urllib.urlopen(url + '/+text')
+            f = urlopen(url + '/+text')
         except IOError:
             # if we are offline, or LP is down, upload will fail anyway, so we
             # can just as well avoid the upload
@@ -869,25 +926,25 @@ in a dependent package.' % master,
         #gets a real crash db; see https://wiki.ubuntu.com/CrashReporting
 
         if 'DistroRelease' in report and report['DistroRelease'].split()[0] != 'Ubuntu':
-            return # only Ubuntu bugs are filed private
+            return  # only Ubuntu bugs are filed private
 
         #use a url hack here, it is faster
-        person = '%s~ubuntu-crashes-universe' %self.launchpad._root_uri
+        person = '%s~%s' % (self.launchpad._root_uri,
+            self.options.get('triaging_team', 'ubuntu-crashes-universe'))
         bug.subscribe(person=person)
 
 #
 # Launchpad storeblob API (should go into launchpadlib, see LP #315358)
 #
 
-import multipartpost_handler, urllib2, time, httplib
-
 _https_upload_callback = None
+
 
 #
 # This progress code is based on KodakLoader by Jason Hildebrand
 # <jason@opensky.ca>. See http://www.opensky.ca/~jdhildeb/software/kodakloader/
 # for details.
-class HTTPSProgressConnection(httplib.HTTPSConnection):
+class HTTPSProgressConnection(HTTPSConnection):
     '''Implement a HTTPSConnection with an optional callback function for
     upload progress.'''
 
@@ -896,7 +953,7 @@ class HTTPSProgressConnection(httplib.HTTPSConnection):
 
         # if callback has not been set, call the old method
         if not _https_upload_callback:
-            httplib.HTTPSConnection.send(self, data)
+            HTTPSConnection.send(self, data)
             return
 
         sent = 0
@@ -905,7 +962,7 @@ class HTTPSProgressConnection(httplib.HTTPSConnection):
         while sent < total:
             _https_upload_callback(sent, total)
             t1 = time.time()
-            httplib.HTTPSConnection.send(self, data[sent:sent+chunksize])
+            HTTPSConnection.send(self, data[sent:(sent + chunksize)])
             sent += chunksize
             t2 = time.time()
 
@@ -916,12 +973,14 @@ class HTTPSProgressConnection(httplib.HTTPSConnection):
             elif t2 - t1 > 2:
                 chunksize /= 2
 
-class HTTPSProgressHandler(urllib2.HTTPSHandler):
+
+class HTTPSProgressHandler(HTTPSHandler):
 
     def https_open(self, req):
         return self.do_open(HTTPSProgressConnection, req)
 
-def upload_blob(blob, progress_callback = None, hostname='launchpad.net'):
+
+def upload_blob(blob, progress_callback=None, hostname='launchpad.net'):
     '''Upload blob (file-like object) to Launchpad.
 
     progress_callback can be set to a function(sent, total) which is regularly
@@ -936,16 +995,39 @@ def upload_blob(blob, progress_callback = None, hostname='launchpad.net'):
     instance for testing.
     '''
     ticket = None
+    url = 'https://%s/+storeblob' % hostname
 
     global _https_upload_callback
     _https_upload_callback = progress_callback
 
-    opener = urllib2.build_opener(HTTPSProgressHandler, multipartpost_handler.MultipartPostHandler)
-    url = 'https://%s/+storeblob' % hostname
-    result = opener.open(url,
-        { 'FORM_SUBMIT': '1', 'field.blob': blob })
+    # build the form-data multipart/MIME request
+    data = email.mime.multipart.MIMEMultipart()
+
+    submit = email.mime.text.MIMEText('1')
+    submit.add_header('Content-Disposition', 'form-data; name="FORM_SUBMIT"')
+    data.attach(submit)
+
+    form_blob = email.mime.base.MIMEBase('application', 'octet-stream')
+    form_blob.add_header('Content-Disposition', 'form-data; name="field.blob"; filename="x"')
+    form_blob.set_payload(blob.read().decode('ascii'))
+    data.attach(form_blob)
+
+    data_flat = BytesIO()
+    if sys.version_info.major == 2:
+        gen = email.generator.Generator(data_flat, mangle_from_=False)
+    else:
+        gen = email.generator.BytesGenerator(data_flat, mangle_from_=False)
+    gen.flatten(data)
+
+    # do the request; we need to explicitly set the content type here, as it
+    # defaults to x-www-form-urlencoded
+    req = Request(url, data_flat.getvalue())
+    req.add_header('Content-Type', 'multipart/form-data; boundary=' + data.get_boundary())
+    opener = build_opener(HTTPSProgressHandler)
+    result = opener.open(req)
     ticket = result.info().get('X-Launchpad-Blob-Token')
 
+    assert ticket
     return ticket
 
 #
@@ -953,7 +1035,7 @@ def upload_blob(blob, progress_callback = None, hostname='launchpad.net'):
 #
 
 if __name__ == '__main__':
-    import unittest, urllib2, atexit, shutil, subprocess
+    import unittest, atexit, shutil, subprocess
 
     crashdb = None
     segv_report = None
@@ -1156,7 +1238,7 @@ NameError: global name 'weird' is not defined'''
             self.assertTrue('Dependencies' in r)
             self.assertTrue('Disassembly' in r)
             self.assertTrue('Registers' in r)
-            self.assertTrue('Stacktrace' in r) # TODO: ascertain that it's the updated one
+            self.assertTrue('Stacktrace' in r)  # TODO: ascertain that it's the updated one
             self.assertTrue('ThreadStacktrace' in r)
             self.assertFalse('FooBar' in r)
             self.assertEqual(r['Title'], 'crash crashed with SIGSEGV in f()')
@@ -1189,7 +1271,7 @@ NameError: global name 'weird' is not defined'''
             try:
                 bug.lp_save()
             except HTTPError:
-                pass # LP#336866 workaround
+                pass  # LP#336866 workaround
             r['StacktraceTop'] = 'read () from /lib/libc.6.so\nfoo (i=1) from /usr/lib/libfoo.so'
             self.crashdb.update_traces(segv_report, r, 'good retrace with title amendment')
             r = self.crashdb.download(segv_report)
@@ -1201,7 +1283,7 @@ NameError: global name 'weird' is not defined'''
             try:
                 bug.lp_save()
             except HTTPError:
-                pass # LP#336866 workaround
+                pass  # LP#336866 workaround
 
             r['StacktraceTop'] = 'read () from /lib/libc.6.so\nfoo (i=1) from /usr/lib/libfoo.so'
             self.crashdb.update_traces(segv_report, r, 'good retrace with custom title')
@@ -1209,8 +1291,8 @@ NameError: global name 'weird' is not defined'''
             self.assertEqual(r['Title'], 'crash is crashy')
 
             # test various situations which caused crashes
-            r['Stacktrace'] = '' # empty file
-            r['ThreadStacktrace'] = '"]\xb6"\n' # not interpretable as UTF-8, LP #353805
+            r['Stacktrace'] = ''  # empty file
+            r['ThreadStacktrace'] = '"]\xb6"\n'  # not interpretable as UTF-8, LP #353805
             r['StacktraceSource'] = 'a\nb\nc\nd\ne\n\xff\xff\xff\n\f'
             self.crashdb.update_traces(segv_report, r, 'tests')
 
@@ -1572,7 +1654,7 @@ NameError: global name 'weird' is not defined'''
             for attachment in processed_blob['attachments']:
                 filename = description = attachment['description']
                 # Download the attachment data.
-                data = urllib.urlopen(urllib.basejoin(librarian_url,
+                data = urlopen(urllib.basejoin(librarian_url,
                     str(attachment['file_alias_id']) + '/' + filename)).read()
                 # Add the attachment to the newly created bug report.
                 bug.addAttachment(
@@ -1713,7 +1795,7 @@ NameError: global name 'weird' is not defined'''
             p = db.launchpad.people[db.options['escalation_subscription']].self_link
             first_dup = 59
             try:
-                for b in range(first_dup, first_dup+13):
+                for b in range(first_dup, first_dup + 13):
                     count += 1
                     sys.stderr.write('%i ' % b)
                     db.close_duplicate(apport.Report(), b, segv_report)
@@ -1727,7 +1809,7 @@ NameError: global name 'weird' is not defined'''
                         self.assertTrue(has_escalation_tag)
                         self.assertTrue(has_escalation_subscription)
             finally:
-                for b in range(first_dup, first_dup+count):
+                for b in range(first_dup, first_dup + count):
                     sys.stderr.write('R%i ' % b)
                     db.close_duplicate(apport.Report(), b, None)
             sys.stderr.write('\n')

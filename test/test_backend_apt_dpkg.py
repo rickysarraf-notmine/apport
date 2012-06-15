@@ -1,29 +1,33 @@
 import unittest, gzip, imp, subprocess, tempfile, shutil, os, os.path, time
+import glob, urllib
+from apt import apt_pkg
 
 if os.environ.get('APPORT_TEST_LOCAL'):
     impl = imp.load_source('', 'backends/packaging-apt-dpkg.py').impl
 else:
     from apport.packaging_impl import impl
 
-def _has_default_route():
-    '''Return if there is a default route.
 
-    This is a reasonable indicator that online tests can be run.
+def _has_internet():
+    '''Return if there is sufficient network connection for the tests.
+
+    This checks if http://ddebs.ubuntu.com/ can be downloaded from, to check if
+    we can run the online tests.
     '''
     if os.environ.get('SKIP_ONLINE_TESTS'):
         return False
-    if _has_default_route.cache is None:
-        _has_default_route.cache = False
-        route = subprocess.Popen(['/sbin/route', '-n'],
-            stdout=subprocess.PIPE)
-        for l in route.stdout:
-            if l.decode('UTF-8').startswith('0.0.0.0 '):
-                _has_default_route.cache = True
-        route.wait()
+    if _has_internet.cache is None:
+        _has_internet.cache = False
+        try:
+            f = urllib.request.urlopen('http://ddebs.ubuntu.com/dbgsym-release-key.asc', timeout=30)
+            if f.readline().startswith(b'-----BEGIN PGP'):
+                _has_internet.cache = True
+        except (IOError, urllib.error.URLError):
+            pass
+    return _has_internet.cache
 
-    return _has_default_route.cache
+_has_internet.cache = None
 
-_has_default_route.cache = None
 
 class T(unittest.TestCase):
     def setUp(self):
@@ -54,10 +58,10 @@ class T(unittest.TestCase):
             with open(f2, 'w') as fd:
                 fd.write('More stuff')
             # use one relative and one absolute path in checksums file
-            with open(sumfile, 'w') as fd:
-                fd.write('''2e41290da2fa3f68bd3313174467e3b5  %s
-f6423dfbc4faf022e58b4d3f5ff71a70  %s
-''' % (f1[1:], f2))
+            with open(sumfile, 'wb') as fd:
+                fd.write(b'2e41290da2fa3f68bd3313174467e3b5  ' + f1[1:].encode() + b'\n')
+                fd.write(b'f6423dfbc4faf022e58b4d3f5ff71a70  ' + f2.encode() + b'\n')
+                fd.write(b'deadbeef000001111110000011110000  /bin/\xc3\xa4')
             self.assertEqual(impl._check_files_md5(sumfile), [], 'correct md5sums')
 
             with open(f1, 'w') as fd:
@@ -71,7 +75,7 @@ f6423dfbc4faf022e58b4d3f5ff71a70  %s
             self.assertEqual(impl._check_files_md5(sumfile), [f2], 'file 2 wrong')
 
             # check using a direct md5 list as argument
-            with open(sumfile) as fd:
+            with open(sumfile, 'rb') as fd:
                 self.assertEqual(impl._check_files_md5(fd.read()),
                     [f2], 'file 2 wrong')
 
@@ -95,21 +99,21 @@ f6423dfbc4faf022e58b4d3f5ff71a70  %s
         '''get_dependencies().'''
 
         # package with both Depends: and Pre-Depends:
-        d  = impl.get_dependencies('bash')
+        d = impl.get_dependencies('bash')
         self.assertTrue(len(d) > 2)
         self.assertTrue('libc6' in d)
         for dep in d:
             self.assertTrue(impl.get_version(dep))
 
         # Pre-Depends: only
-        d  = impl.get_dependencies('coreutils')
+        d = impl.get_dependencies('coreutils')
         self.assertTrue(len(d) >= 1)
         self.assertTrue('libc6' in d)
         for dep in d:
             self.assertTrue(impl.get_version(dep))
 
         # Depends: only
-        d  = impl.get_dependencies('libc6')
+        d = impl.get_dependencies('libc6')
         self.assertTrue(len(d) >= 1)
         for dep in d:
             self.assertTrue(impl.get_version(dep))
@@ -220,7 +224,7 @@ bo/gu/s                                                 na/mypackage
             # outdated cache, must refresh the cache and hit the invalid
             # mirror
             now = int(time.time())
-            os.utime(os.path.join(cache_dir, cache_file), (now, now-90000))
+            os.utime(os.path.join(cache_dir, cache_file), (now, now - 90000))
 
             self.assertRaises(IOError, impl.get_file_package, '/bo/gu/s', True, cache_dir)
         finally:
@@ -317,7 +321,7 @@ bo/gu/s                                                 na/mypackage
         self.assertEqual(impl.package_name_glob('bash'), ['bash'])
         self.assertEqual(impl.package_name_glob('xzywef*'), [])
 
-    @unittest.skipUnless(_has_default_route(), 'online test')
+    @unittest.skipUnless(_has_internet(), 'online test')
     def test_install_packages_versioned(self):
         '''install_packages() with versions and with cache'''
 
@@ -330,9 +334,8 @@ bo/gu/s                                                 na/mypackage
 
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
             'usr/bin/stat')))
-        if self.has_dbgsym:
-            self.assertTrue(os.path.exists(os.path.join(self.rootdir,
-                'usr/lib/debug/usr/bin/stat')))
+        self.assertTrue(os.path.exists(os.path.join(self.rootdir,
+            'usr/lib/debug/usr/bin/stat')))
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
             'usr/share/zoneinfo/zone.tab')))
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
@@ -348,7 +351,7 @@ bo/gu/s                                                 na/mypackage
             'var', 'cache', 'apt', 'archives'))
         cache_names = [p.split('_')[0] for p in cache]
         self.assertTrue('coreutils' in cache_names)
-        self.assertEqual('coreutils-dbgsym' in cache_names, self.has_dbgsym)
+        self.assertTrue('coreutils-dbgsym' in cache_names)
         self.assertTrue('tzdata' in cache_names)
         self.assertTrue('libc6' in cache_names)
         self.assertTrue('libc6-dbg' in cache_names)
@@ -398,7 +401,7 @@ bo/gu/s                                                 na/mypackage
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
             'usr/bin/dpkg')))
 
-    @unittest.skipUnless(_has_default_route(), 'online test')
+    @unittest.skipUnless(_has_internet(), 'online test')
     def test_install_packages_unversioned(self):
         '''install_packages() without versions and no cache'''
 
@@ -410,9 +413,8 @@ bo/gu/s                                                 na/mypackage
 
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
             'usr/bin/stat')))
-        if self.has_dbgsym:
-            self.assertTrue(os.path.exists(os.path.join(self.rootdir,
-                'usr/lib/debug/usr/bin/stat')))
+        self.assertTrue(os.path.exists(os.path.join(self.rootdir,
+            'usr/lib/debug/usr/bin/stat')))
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
             'usr/share/zoneinfo/zone.tab')))
 
@@ -424,7 +426,7 @@ bo/gu/s                                                 na/mypackage
         # no cache
         self.assertEqual(os.listdir(self.cachedir), [])
 
-    @unittest.skipUnless(_has_default_route(), 'online test')
+    @unittest.skipUnless(_has_internet(), 'online test')
     def test_install_packages_system(self):
         '''install_packages() with system configuration'''
 
@@ -469,7 +471,7 @@ bo/gu/s                                                 na/mypackage
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
             'usr/bin/stat')))
 
-    @unittest.skipUnless(_has_default_route(), 'online test')
+    @unittest.skipUnless(_has_internet(), 'online test')
     def test_install_packages_error(self):
         '''install_packages() with errors'''
 
@@ -497,6 +499,67 @@ bo/gu/s                                                 na/mypackage
         except SystemError as e:
             self.assertTrue('nosuchdistro' in str(e), str(e))
             self.assertTrue('index files failed to download' in str(e))
+
+    @unittest.skipUnless(_has_internet(), 'online test')
+    def test_install_packages_permanent_sandbox(self):
+        '''install_packages() with a permanent sandbox'''
+
+        self._setup_foonux_config()
+        zonetab = os.path.join(self.rootdir, 'usr/share/zoneinfo/zone.tab')
+
+        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+            [('tzdata', None)], False, self.cachedir, permanent_rootdir=True)
+
+        # This will now be using a Cache with our rootdir.
+        archives = apt_pkg.config.find_dir('Dir::Cache::archives')
+        tzdata = glob.glob(os.path.join(archives, 'tzdata*.deb'))
+        if not tzdata:
+            self.fail('tzdata was not downloaded')
+        tzdata_written = os.path.getctime(tzdata[0])
+        zonetab_written = os.path.getctime(zonetab)
+
+        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+            [('coreutils', None), ('tzdata', None)], False, self.cachedir,
+            permanent_rootdir=True)
+
+        if not glob.glob(os.path.join(archives, 'coreutils*.deb')):
+            self.fail('coreutils was not downloaded.')
+        self.assertEqual(os.path.getctime(tzdata[0]), tzdata_written,
+            'tzdata downloaded twice.')
+        self.assertEqual(zonetab_written, os.path.getctime(zonetab),
+            'zonetab written twice.')
+        self.assertTrue(os.path.exists(os.path.join(self.rootdir,
+            'usr/bin/stat')))
+
+        # Prevent packages from downloading.
+        apt_pkg.config.set('Acquire::http::Proxy', 'http://nonexistent')
+        self.assertRaises(SystemExit, impl.install_packages, self.rootdir,
+            self.configdir, 'Foonux 1.2', [('libc6', None)], False,
+            self.cachedir, permanent_rootdir=True)
+        # These packages exist, so attempting to install them should not fail.
+        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+            [('coreutils', None), ('tzdata', None)], False, self.cachedir,
+            permanent_rootdir=True)
+        apt_pkg.config.set('Acquire::http::Proxy', '')
+
+    @unittest.skipUnless(_has_internet(), 'online test')
+    def test_install_packages_permanent_sandbox_repack(self):
+        self._setup_foonux_config()
+        apache_bin_path = os.path.join(self.rootdir, 'usr/sbin/apache2')
+        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+            [('apache2-mpm-worker', None)], False, self.cachedir,
+            permanent_rootdir=True)
+        self.assertTrue(os.readlink(apache_bin_path).endswith('mpm-worker/apache2'))
+        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+            [('apache2-mpm-event', None)], False, self.cachedir,
+            permanent_rootdir=True)
+        self.assertTrue(os.readlink(apache_bin_path).endswith('mpm-event/apache2'),
+            'should have installed mpm-event, but have mpm-worker.')
+        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+            [('apache2-mpm-worker', None)], False, self.cachedir,
+            permanent_rootdir=True)
+        self.assertTrue(os.readlink(apache_bin_path).endswith('mpm-worker/apache2'),
+            'should have installed mpm-worker, but have mpm-event.')
 
     def _setup_foonux_config(self):
         '''Set up directories and configuration for install_packages()'''

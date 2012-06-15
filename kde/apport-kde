@@ -12,7 +12,6 @@
 # the full text of the license.
 
 import os.path
-import subprocess
 import sys
 import os
 
@@ -32,7 +31,7 @@ try:
                               KStandardGuiItem)
     import apport.ui
     from apport import unicode_gettext as _
-except ImportError, e:
+except ImportError as e:
     # this can happen while upgrading python packages
     apport.fatal('Could not import module, is a package upgrade in progress?  Error: %s', str(e))
 
@@ -109,8 +108,11 @@ class ProgressDialog(Dialog):
 class ReportDialog(Dialog):
     '''Report dialog wrapper'''
 
-    def __init__(self, report, allowed_to_report, ui, desktop_file):
-        Dialog.__init__(self, 'bugreport.ui', '', '', '')
+    def __init__(self, report, allowed_to_report, ui, desktop_info):
+        if 'DistroRelease' not in report:
+            report.add_os_info()
+        distro = report['DistroRelease']
+        Dialog.__init__(self, 'bugreport.ui', distro.split()[0], '', '')
         self.details = self.findChild(QPushButton, 'show_details')
         self.details.clicked.connect(self.on_show_details_clicked)
         self.continue_button = self.findChild(QPushButton, 'continue_button')
@@ -129,9 +131,6 @@ class ReportDialog(Dialog):
         self.ui = ui
         self.collect_called = False
         icon = None
-        if 'DistroRelease' not in report:
-            report.add_os_info()
-        distro = report['DistroRelease']
         report_type = report.get('ProblemType')
 
         self.spinner = QLabel('', parent=self.treeview)
@@ -153,6 +152,13 @@ class ReportDialog(Dialog):
 
         self.cancel_button.hide()
         if not self.ui.report_file:
+            # This is a bug generated through `apport-bug $package`, or
+            # `apport-collect $id`.
+
+            # avoid collecting information again, in this mode we already have it 
+            if 'Uname' in report:
+                self.collect_called = True
+                self.ui.ui_update_view(self)
             self.heading.setText(_('Send problem report to the developers?'))
             self.text.hide()
             self.closed_button.hide()
@@ -185,15 +191,19 @@ class ReportDialog(Dialog):
                                    'software.'))
         else:
             # Regular crash.
-            if desktop_file:
-                icon = desktop_file.getIcon()
+            if desktop_info:
+                icon = desktop_info.get('icon')
                 self.heading.setText(_('The application %s has closed '
                                        'unexpectedly.') %
-                                       desktop_file.getName())
+                                       desktop_info['name'])
                 self.text.hide()
-                self.closed_button.show()
-                self.closed_button.setText(_('Leave Closed'))
-                self.continue_button.setText(_('Relaunch'))
+                if 'ProcCmdline' in report:
+                    self.closed_button.show()
+                    self.closed_button.setText(_('Leave Closed'))
+                    self.continue_button.setText(_('Relaunch'))
+                else:
+                    self.closed_button.hide()
+                    self.continue_button.setText(_('Continue'))
             else:
                 icon = 'distributor-logo'
                 self.heading.setText(_('Sorry, %s has experienced an '
@@ -203,6 +213,7 @@ class ReportDialog(Dialog):
                                     'try restarting the computer.'))
                 self.closed_button.hide()
                 self.continue_button.setText(_('Continue'))
+                self.ignore_future_problems.setText(_('Ignore future problems of this type'))
             if report.get('CrashCounter'):
                 self.ignore_future_problems.show()
             else:
@@ -249,6 +260,7 @@ class ReportDialog(Dialog):
     def showtree(self, visible):
         self.treeview.setVisible(visible)
         if visible and not self.collect_called:
+            self.ui.ui_update_view(self, ['ExecutablePath'])
             QTimer.singleShot(0, lambda: self.ui.collect_info(on_finished=self.collect_done))
             self.collect_called = True
         if visible:
@@ -284,10 +296,15 @@ class MainUserInterface(apport.ui.UserInterface):
     # ui_* implementation of abstract UserInterface classes
     #
 
-    def ui_update_view(self, dialog):
+    def ui_update_view(self, dialog, shown_keys=None):
         # report contents
         details = dialog.findChild(QTreeWidget, 'details')
-        for key in sorted(self.report):
+        if shown_keys:
+            keys = set(self.report.keys()) & set(shown_keys)
+        else:
+            keys = self.report.keys()
+        details.clear()
+        for key in sorted(keys):
             keyitem = QTreeWidgetItem([key])
             details.addTopLevelItem(keyitem)
 
@@ -305,9 +322,9 @@ class MainUserInterface(apport.ui.UserInterface):
 
 
     def ui_present_report_details(self, allowed_to_report=True):
-        desktop_file = self.get_desktop_entry()
+        desktop_info = self.get_desktop_entry()
         self.dialog = ReportDialog(self.report, allowed_to_report, self,
-                              desktop_file)
+                              desktop_info)
 
         response = self.dialog.exec_()
 
@@ -319,7 +336,7 @@ class MainUserInterface(apport.ui.UserInterface):
             return_value['examine'] = True
             return return_value
 
-        text = self.dialog.continue_button.text().remove('&')
+        text = self.dialog.continue_button.text().replace('&', '')
         if response == 1 and text == _('Relaunch'):
             return_value['restart'] = True
         if self.dialog.send_error_report.isChecked():
@@ -342,8 +359,8 @@ class MainUserInterface(apport.ui.UserInterface):
                                      rect.height() / 2 - self.dialog.spinner.height() / 2,
                                      self.dialog.spinner.width(), self.dialog.spinner.height())
             self.dialog.movie.start()
-        else:
-            # show a progress dialog
+        elif self.crashdb.accepts(self.report):
+            # show a progress dialog if our DB accepts the crash
             self.progress = ProgressDialog(
                     _('Collecting Problem Information'),
                     _('Collecting problem information'),
@@ -464,11 +481,11 @@ if __name__ == '__main__':
 
     appName = 'apport-kde'
     catalog = 'apport'
-    programName = ki18n('Apport KDE')
+    programName = ki18n(b'Apport KDE')
     version = '1.0'
-    description = ki18n('KDE 4 frontend for the apport crash report system')
+    description = ki18n(b'KDE 4 frontend for the apport crash report system')
     license = KAboutData.License_GPL
-    copyright = ki18n('2009 Canonical Ltd.')
+    copyright = ki18n(b'2009 Canonical Ltd.')
     text = KLocalizedString()
     homePage = 'https://wiki.ubuntu.com/Apport'
     bugEmail = 'kubuntu-devel@lists.ubuntu.com'
@@ -476,8 +493,8 @@ if __name__ == '__main__':
     aboutData = KAboutData(appName, catalog, programName, version, description,
                            license, copyright, text, homePage, bugEmail)
 
-    aboutData.addAuthor(ki18n('Richard A. Johnson'), ki18n('Author'))
-    aboutData.addAuthor(ki18n('Michael Hofmann'), ki18n('Original Qt4 Author'))
+    aboutData.addAuthor(ki18n(b'Richard A. Johnson'), ki18n(b'Author'))
+    aboutData.addAuthor(ki18n(b'Michael Hofmann'), ki18n(b'Original Qt4 Author'))
 
     KCmdLineArgs.init([''], aboutData)
 

@@ -1,4 +1,3 @@
-#!/usr/bin/python
 '''Test crash-digger'''
 
 # Copyright (C) 2007 - 2009 Canonical Ltd.
@@ -12,6 +11,7 @@
 
 import unittest, subprocess, tempfile, os, shutil, os.path
 
+
 class T(unittest.TestCase):
     def setUp(self):
         '''Set up dummy config dir, crashdb.conf, and apport-retrace'''
@@ -19,7 +19,8 @@ class T(unittest.TestCase):
         self.workdir = tempfile.mkdtemp()
 
         crashdb_conf = os.path.join(self.workdir, 'crashdb.conf')
-        open(crashdb_conf, 'w').write('''default = 'memory'
+        with open(crashdb_conf, 'w') as f:
+            f.write('''default = 'memory'
 databases = { 'memory': {
     'impl': 'memory', 'distro': 'Testux', 'dummy_data': '1',
     'dupdb_url': '%s'}
@@ -33,9 +34,10 @@ databases = { 'memory': {
         self.apport_retrace_log = os.path.join(self.workdir, 'apport-retrace.log')
 
         self.apport_retrace = os.path.join(self.workdir, 'apport-retrace')
-        open(self.apport_retrace, 'w').write('''#!/bin/sh
+        with open(self.apport_retrace, 'w') as f:
+            f.write('''#!/bin/sh
 echo "$@" >> %s''' % self.apport_retrace_log)
-        os.chmod(self.apport_retrace, 0755)
+        os.chmod(self.apport_retrace, 0o755)
 
         self.lock_file = os.path.join(self.workdir, 'lock')
 
@@ -54,7 +56,7 @@ echo "$@" >> %s''' % self.apport_retrace_log)
             self.apport_retrace] + args, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (out, err) = s.communicate()
-        return (out, err)
+        return (out.decode('UTF-8'), err.decode('UTF-8'))
 
     def test_crashes(self):
         '''Crash retracing'''
@@ -71,12 +73,13 @@ echo "$@" >> %s''' % self.apport_retrace_log)
         self.assertFalse('#3' in out, 'dupcheck crashes are not retraced')
         self.assertFalse('#4' in out, 'dupcheck crashes are not retraced')
 
-        retrace_log = open(self.apport_retrace_log).read()
+        with open(self.apport_retrace_log) as f:
+            retrace_log = f.read()
         self.assertEqual(len(retrace_log.splitlines()), 2)
         self.assertFalse('dup.db -v 0\n' in retrace_log)
         self.assertTrue('dup.db -v 1\n' in retrace_log)
         self.assertTrue('dup.db -v 2\n' in retrace_log)
-        self.assertFalse (os.path.exists(self.lock_file))
+        self.assertFalse(os.path.exists(self.lock_file))
 
         self.assertFalse(os.path.isdir(os.path.join(self.workdir, 'dupdb', 'sig')))
 
@@ -85,7 +88,8 @@ echo "$@" >> %s''' % self.apport_retrace_log)
 
         # make apport-retrace fail on bug 1
         os.rename(self.apport_retrace, self.apport_retrace + '.bak')
-        open(self.apport_retrace, 'w').write('''#!/bin/sh
+        with open(self.apport_retrace, 'w') as f:
+            f.write('''#!/bin/sh
 echo "$@" >> %s
 while [ -n "$2" ]; do shift; done
 if [ "$1" = 1 ]; then
@@ -93,7 +97,7 @@ if [ "$1" = 1 ]; then
     exit 1
 fi
 ''' % self.apport_retrace_log)
-        os.chmod(self.apport_retrace, 0755)
+        os.chmod(self.apport_retrace, 0o755)
 
         (out, err) = self.call(['-c', self.config_dir, '-a', '/dev/zero', '-d',
             os.path.join(self.workdir, 'dup.db'), '-vl', self.lock_file])
@@ -109,7 +113,8 @@ fi
         self.assertFalse('#3' in out, 'dupcheck crashes are not retraced')
         self.assertFalse('#4' in out, 'dupcheck crashes are not retraced')
 
-        retrace_log = open(self.apport_retrace_log).read()
+        with open(self.apport_retrace_log) as f:
+            retrace_log = f.read()
         self.assertEqual(len(retrace_log.splitlines()), 1)
         self.assertFalse('dup.db -v 0\n' in retrace_log)
         self.assertTrue('dup.db -v 1\n' in retrace_log)
@@ -132,14 +137,15 @@ fi
             os.path.join(self.workdir, 'dup.db'), '-vl', self.lock_file])
         self.assertTrue('retracing #2' in out)
         self.assertEqual(err, '', 'no error messages:\n' + err)
-        self.assertFalse (os.path.exists(self.lock_file))
+        self.assertFalse(os.path.exists(self.lock_file))
 
     def test_crashes_transient_error(self):
         '''Crash retracing if apport-retrace reports a transient error'''
 
         # make apport-retrace fail on bug 1
         os.rename(self.apport_retrace, self.apport_retrace + '.bak')
-        open(self.apport_retrace, 'w').write('''#!/bin/sh
+        with open(self.apport_retrace, 'w') as f:
+            f.write('''#!/bin/sh
 echo "$@" >> %s
 while [ -n "$2" ]; do shift; done
 if [ "$1" = 1 ]; then
@@ -147,7 +153,7 @@ if [ "$1" = 1 ]; then
     exit 99
 fi
 ''' % self.apport_retrace_log)
-        os.chmod(self.apport_retrace, 0755)
+        os.chmod(self.apport_retrace, 0o755)
 
         (out, err) = self.call(['-c', self.config_dir, '-a', '/dev/zero', '-d',
             os.path.join(self.workdir, 'dup.db'), '-vl', self.lock_file])
@@ -157,7 +163,8 @@ fi
         self.assertFalse('retracing #2' in out, 'should not continue after errors')
         self.assertTrue('transient error reported; halting' in out)
 
-        retrace_log = open(self.apport_retrace_log).read()
+        with open(self.apport_retrace_log) as f:
+            retrace_log = f.read()
         self.assertTrue('dup.db -v 1\n' in retrace_log)
         # stops after failing #1
         self.assertFalse('dup.db -v 2\n' in retrace_log)
@@ -176,12 +183,13 @@ fi
         self.assertTrue('checking #4 for duplicate' in out)
         self.assertTrue('Report is a duplicate of #3 (not fixed yet)' in out)
         self.assertFalse(os.path.exists(self.apport_retrace_log))
-        self.assertFalse (os.path.exists(self.lock_file))
+        self.assertFalse(os.path.exists(self.lock_file))
 
     def test_stderr_redirection(self):
         '''apport-retrace's stderr is redirected to stdout'''
 
-        open(self.apport_retrace, 'w').write('''#!/bin/sh
+        with open(self.apport_retrace, 'w') as f:
+            f.write('''#!/bin/sh
 echo ApportRetraceError >&2''')
         (out, err) = self.call(['-c', self.config_dir, '-a', '/dev/zero', '-d',
             os.path.join(self.workdir, 'dup.db'), '-vl', self.lock_file])

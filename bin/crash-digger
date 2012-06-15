@@ -9,24 +9,27 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import os, time, optparse, subprocess, sys, signal, zlib, errno, stat, shutil
+import os, time, optparse, subprocess, sys, zlib, errno, shutil
 
 import apport
 from apport.crashdb import get_crashdb
+
 
 #
 # classes
 #
 
 class CrashDigger:
-    def __init__(self, config_dir, auth_file, cache_dir, apport_retrace,
-            verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None):
+    def __init__(self, config_dir, auth_file, cache_dir, sandbox_dir,
+            apport_retrace, verbose=False, dup_db=None, dupcheck_mode=False,
+            publish_dir=None):
         '''Initialize pools.'''
 
         self.retrace_pool = set()
         self.dupcheck_pool = set()
         self.config_dir = config_dir
         self.cache_dir = cache_dir
+        self.sandbox_dir = sandbox_dir
         self.verbose = verbose
         self.auth_file = auth_file
         self.dup_db = dup_db
@@ -83,6 +86,8 @@ class CrashDigger:
                 self.auth_file, '--timestamps']
         if self.cache_dir:
             argv += ['--cache', self.cache_dir]
+        if self.sandbox_dir:
+            argv += ['--sandbox-dir', self.sandbox_dir]
         if self.dup_db:
             argv += ['--duplicate-db', self.dup_db]
         if self.verbose:
@@ -137,6 +142,7 @@ class CrashDigger:
         if self.publish_dir:
             self.crashdb.duplicate_db_publish(self.publish_dir)
 
+
 #
 # functions
 #
@@ -147,6 +153,8 @@ def parse_options():
     optparser = optparse.OptionParser('%prog [options]')
     optparser.add_option('-c', '--config-dir', metavar='DIR',
         help='Packaging system configuration base directory.')
+    optparser.add_option('--sandbox-dir', metavar='DIR',
+        help='Directory for unpacked packages. Future runs will assume that any already downloaded package is also extracted to this sandbox.')
     optparser.add_option('-C', '--cache', metavar='DIR',
         help='Cache directory for packages downloaded in the sandbox')
     optparser.add_option('-a', '--auth',
@@ -197,7 +205,7 @@ if not opts.apport_retrace:
 
 if opts.lockfile:
     try:
-        f = os.open(opts.lockfile, os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0o666)
+        f = os.open(opts.lockfile, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
         os.close(f)
     except OSError as e:
         if e.errno == errno.EEXIST:
@@ -206,14 +214,14 @@ if opts.lockfile:
             raise
 
 try:
-    CrashDigger(opts.config_dir, opts.auth_file, opts.cache,
-            opts.apport_retrace, opts.verbose, opts.dup_db,
-            opts.dupcheck_mode, opts.publish_db).run()
+    CrashDigger(opts.config_dir, opts.auth_file, opts.cache, opts.sandbox_dir,
+                opts.apport_retrace, opts.verbose, opts.dup_db,
+                opts.dupcheck_mode, opts.publish_db).run()
 except SystemExit as exit:
     if exit.code == 99:
-        pass # fall through lock cleanup
+        pass  # fall through lock cleanup
     else:
-       raise
+        raise
 
 if opts.lockfile:
     os.unlink(opts.lockfile)

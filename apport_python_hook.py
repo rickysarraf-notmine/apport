@@ -15,18 +15,21 @@ import sys
 
 CONFIG = '/etc/default/apport'
 
-# This doesn't use apport.packaging.enabled() because it is too heavyweight
-# See LP: #528355
+
 def enabled():
     '''Return whether Apport should generate crash reports.'''
 
+    # This doesn't use apport.packaging.enabled() because it is too heavyweight
+    # See LP: #528355
     import re
     try:
-        conf = open(CONFIG).read()
+        with open(CONFIG) as f:
+            conf = f.read()
         return re.search('^\s*enabled\s*=\s*0\s*$', conf, re.M) is None
     except IOError:
         # if the file does not exist, assume it's enabled
         return True
+
 
 def apport_excepthook(exc_type, exc_obj, exc_tb):
     '''Catch an uncaught exception and make a traceback.'''
@@ -52,11 +55,12 @@ def apport_excepthook(exc_type, exc_obj, exc_tb):
 
         # org.freedesktop.DBus.Error.NoReply is an useless crash, needs actual
         # crash from D-BUS backend (LP# 914220)
-        if str(exc_obj).startswith('org.freedesktop.DBus.Error.NoReply'):
+        if 'org.freedesktop.DBus.Error.NoReply' in str(exc_obj):
             return
 
         try:
             from cStringIO import StringIO
+            StringIO  # pyflakes
         except ImportError:
             from io import StringIO
 
@@ -65,7 +69,7 @@ def apport_excepthook(exc_type, exc_obj, exc_tb):
 
         # apport will look up the package from the executable path.
         try:
-            binary = os.path.realpath(os.path.join(os.getcwdu(), sys.argv[0]))
+            binary = os.path.realpath(os.path.join(os.getcwd(), sys.argv[0]))
         except (TypeError, AttributeError, IndexError):
             # the module has mutated sys.argv, plan B
             try:
@@ -92,7 +96,7 @@ def apport_excepthook(exc_type, exc_obj, exc_tb):
         pr['Traceback'] = tb_file.getvalue().strip()
         pr.add_proc_info()
         pr.add_user_info()
-        # override the ExecutablePath with the script that was actually running.
+        # override the ExecutablePath with the script that was actually running
         pr['ExecutablePath'] = binary
         try:
             pr['PythonArgs'] = '%r' % sys.argv
@@ -109,7 +113,8 @@ def apport_excepthook(exc_type, exc_obj, exc_tb):
         if os.path.exists(pr_filename):
             if apport.fileutils.seen_report(pr_filename):
                 # flood protection
-                crash_counter = get_recent_crashes(open(pr_filename)) + 1
+                with open(pr_filename, 'rb') as f:
+                    crash_counter = get_recent_crashes(f) + 1
                 if crash_counter > 1:
                     return
 
@@ -122,12 +127,9 @@ def apport_excepthook(exc_type, exc_obj, exc_tb):
 
         if crash_counter:
             pr['CrashCounter'] = str(crash_counter)
-        report_file = os.fdopen(os.open(pr_filename,
-            os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0o640), 'w')
-        try:
-            pr.write(report_file)
-        finally:
-            report_file.close()
+        with os.fdopen(os.open(pr_filename,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o640), 'wb') as f:
+            pr.write(f)
 
     finally:
         # resume original processing to get the default behaviour,
@@ -140,4 +142,3 @@ def install():
     '''Install the python apport hook.'''
 
     sys.excepthook = apport_excepthook
-

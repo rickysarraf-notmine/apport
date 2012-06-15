@@ -10,13 +10,14 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import unittest, tempfile, subprocess, os, stat, sys, shutil, atexit
+import unittest, tempfile, subprocess, os, stat, shutil, atexit
 
 temp_report_dir = tempfile.mkdtemp()
 os.environ['APPORT_REPORT_DIR'] = temp_report_dir
 atexit.register(shutil.rmtree, temp_report_dir)
 
 import apport.fileutils, problem_report
+
 
 class T(unittest.TestCase):
     def tearDown(self):
@@ -30,26 +31,26 @@ class T(unittest.TestCase):
         # hook
         if scriptname:
             script = scriptname
-            fd = os.open(scriptname, os.O_CREAT|os.O_WRONLY)
+            fd = os.open(scriptname, os.O_CREAT | os.O_WRONLY)
         else:
             (fd, script) = tempfile.mkstemp(dir='/var/tmp')
         try:
-            os.write(fd, '''#!/usr/bin/python
+            os.write(fd, ('''#!/usr/bin/env %s
 import apport_python_hook
 apport_python_hook.install()
 
 def func(x):
-    raise Exception, 'This should happen.'
+    raise Exception('This should happen.')
 
 %s
 func(42)
-''' % extracode)
+''' % (os.getenv('PYTHON', 'python3'), extracode)).encode())
             os.close(fd)
             os.chmod(script, 0o755)
 
             p = subprocess.Popen([script, 'testarg1', 'testarg2'],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=os.environ)
-            err = p.communicate()[1]
+            err = p.communicate()[1].decode()
             self.assertEqual(p.returncode, 1,
                 'crashing test python program exits with failure code')
             self.assertTrue('Exception: This should happen.' in err)
@@ -72,7 +73,8 @@ func(42)
             0o640, 'report has correct permissions')
 
         pr = problem_report.ProblemReport()
-        pr.load(open(reports[0]))
+        with open(reports[0], 'rb') as f:
+            pr.load(f)
 
         # check report contents
         expected_keys = ['InterpreterPath', 'PythonArgs',
@@ -85,7 +87,8 @@ func(42)
         self.assertEqual(pr['ExecutablePath'], script)
         self.assertEqual(pr['PythonArgs'], "['%s', 'testarg1', 'testarg2']" % script)
         self.assertTrue(pr['Traceback'].startswith('Traceback'))
-        self.assertTrue("func\n    raise Exception, 'This should happen." in pr['Traceback'])
+        self.assertTrue("func\n    raise Exception('This should happen.')" in pr['Traceback'],
+                pr['Traceback'])
 
     def test_existing(self):
         '''Python crash hook overwrites seen existing files.'''
@@ -126,7 +129,8 @@ func(42)
             0o640, 'report has correct permissions')
 
         pr = problem_report.ProblemReport()
-        pr.load(open(reports[0]))
+        with open(reports[0], 'rb') as f:
+            pr.load(f)
 
         # check report contents
         expected_keys = ['InterpreterPath',
@@ -154,7 +158,9 @@ func(42)
                 os.chdir(d)
                 p = subprocess.Popen(['python'], stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                (out, err) = p.communicate('raise ValueError')
+                (out, err) = p.communicate(b'raise ValueError')
+                out = out.decode()
+                err = err.decode()
                 assert p.returncode != 0
                 assert out == ''
                 assert 'ValueError' in err
@@ -171,15 +177,15 @@ func(42)
         ifpath = os.path.expanduser(apport.report._ignore_file)
         orig_ignore_file = None
         try:
-            os.write(fd, '''#!/usr/bin/python
+            os.write(fd, ('''#!/usr/bin/env %s
 import apport_python_hook
 apport_python_hook.install()
 
 def func(x):
-    raise Exception, 'This should happen.'
+    raise Exception('This should happen.')
 
 func(42)
-''')
+''' % os.getenv('PYTHON', 'python3')).encode('ascii'))
             os.close(fd)
             os.chmod(script, 0o755)
 
@@ -196,10 +202,10 @@ func(42)
 
             p = subprocess.Popen([script, 'testarg1', 'testarg2'],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            err = p.communicate()[1]
+            err = p.communicate()[1].decode()
             self.assertEqual(p.returncode, 1,
                 'crashing test python program exits with failure code')
-            self.assertTrue('Exception: This should happen.' in err)
+            self.assertTrue('Exception: This should happen.' in err, err)
 
         finally:
             os.unlink(script)

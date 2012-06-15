@@ -28,11 +28,12 @@ import apport.crashdb_impl.memory
 if os.environ.get('APPORT_TEST_LOCAL'):
     apport_kde_path = 'kde/apport-kde'
 else:
-    apport_kde_path = os.path.join(os.environ.get('APPORT_DATA_DIR','/usr/share/apport'), 'apport-kde')
+    apport_kde_path = os.path.join(os.environ.get('APPORT_DATA_DIR', '/usr/share/apport'), 'apport-kde')
 MainUserInterface = imp.load_source('', apport_kde_path).MainUserInterface
 
 # Work around MainUserInterface using basename to find the KDE UI file.
 sys.argv[0] = apport_kde_path
+
 
 class T(unittest.TestCase):
     @classmethod
@@ -50,14 +51,20 @@ class T(unittest.TestCase):
         # use in-memory crashdb
         self.app.crashdb = apport.crashdb_impl.memory.CrashDatabase(None, {})
 
+        # disable package hooks, as they might ask for sudo password and other
+        # interactive bits; allow tests to install their own hooks
+        self.hook_dir = tempfile.mkdtemp()
+        apport.report._hook_dir = self.hook_dir
+        apport.report._common_hook_dir = self.hook_dir
+
         # test report
         self.app.report_file = os.path.join(self.report_dir, 'bash.crash')
 
         self.app.report = apport.Report()
         self.app.report['ExecutablePath'] = '/bin/bash'
         self.app.report['Signal'] = '11'
-        self.app.report['CoreDump'] = ''
-        with open(self.app.report_file, 'w') as f:
+        self.app.report['CoreDump'] = b'\x01\x02'
+        with open(self.app.report_file, 'wb') as f:
             self.app.report.write(f)
 
     def tearDown(self):
@@ -67,6 +74,7 @@ class T(unittest.TestCase):
             QCoreApplication.processEvents()
 
         shutil.rmtree(self.report_dir)
+        shutil.rmtree(self.hook_dir)
 
     def test_close_button(self):
         '''Clicking the close button on the window does not report the crash.'''
@@ -90,6 +98,8 @@ class T(unittest.TestCase):
         self.app.report['ProblemType'] = 'KernelCrash'
         QTimer.singleShot(0, QCoreApplication.quit)
         self.app.ui_present_report_details(True)
+        self.assertEqual(self.app.dialog.windowTitle(),
+            self.distro.split()[0])
         self.assertEqual(self.app.dialog.heading.text(),
               _('Sorry, %s has experienced an internal error.') % self.distro)
         self.assertTrue(self.app.dialog.send_error_report.isVisible())
@@ -115,6 +125,8 @@ class T(unittest.TestCase):
         self.app.report['Package'] = 'apport 1.2.3~0ubuntu1'
         QTimer.singleShot(0, QCoreApplication.quit)
         self.app.ui_present_report_details(True)
+        self.assertEqual(self.app.dialog.windowTitle(),
+            self.distro.split()[0])
         self.assertEqual(self.app.dialog.heading.text(),
              _('Sorry, a problem occurred while installing software.'))
         self.assertTrue(self.app.dialog.send_error_report.isVisible())
@@ -132,14 +144,16 @@ class T(unittest.TestCase):
         | [ apport ] The application Apport has closed unexpectedly.      |
         |                                                                 |
         |            [x] Send an error report to help fix this problem.   |
+        |            [ ] Ignore future problems of this program version.  |
         |                                                                 |
-        | [ Show Details ]                 [ Leave Closed ]  [ Relaunch ] |
+        | [ Show Details ]                                   [ Continue ] |
         +-----------------------------------------------------------------+
         '''
         self.app.report['ProblemType'] = 'Crash'
+        self.app.report['CrashCounter'] = '1'
         self.app.report['Package'] = 'apport 1.2.3~0ubuntu1'
         with tempfile.NamedTemporaryFile() as fp:
-            fp.write('''[Desktop Entry]
+            fp.write(b'''[Desktop Entry]
 Version=1.0
 Name=Apport
 Type=Application''')
@@ -147,6 +161,49 @@ Type=Application''')
             self.app.report['DesktopFile'] = fp.name
             QTimer.singleShot(0, QCoreApplication.quit)
             self.app.ui_present_report_details(True)
+        self.assertEqual(self.app.dialog.windowTitle(),
+            self.distro.split()[0])
+        self.assertEqual(self.app.dialog.heading.text(),
+             _('The application Apport has closed unexpectedly.'))
+        self.assertTrue(self.app.dialog.send_error_report.isVisible())
+        self.assertTrue(self.app.dialog.send_error_report.isChecked())
+        self.assertTrue(self.app.dialog.details.isVisible())
+        # no ProcCmdline, cannot restart
+        self.assertTrue(self.app.dialog.continue_button.isVisible())
+        self.assertEqual(self.app.dialog.continue_button.text(), _('Continue'))
+        self.assertFalse(self.app.dialog.closed_button.isVisible())
+        self.assertFalse(self.app.dialog.text.isVisible())
+        self.assertFalse(self.app.dialog.text.isVisible())
+        self.assertTrue(self.app.dialog.ignore_future_problems.isVisible())
+        self.assertTrue(str(self.app.dialog.ignore_future_problems.text()).endswith(
+            'of this program version'))
+
+    def test_regular_crash_layout_restart(self):
+        '''
+        +-----------------------------------------------------------------+
+        | [ apport ] The application Apport has closed unexpectedly.      |
+        |                                                                 |
+        |            [x] Send an error report to help fix this problem.   |
+        |            [ ] Ignore future problems of this program version.  |
+        |                                                                 |
+        | [ Show Details ]                 [ Leave Closed ]  [ Relaunch ] |
+        +-----------------------------------------------------------------+
+        '''
+        self.app.report['ProblemType'] = 'Crash'
+        self.app.report['CrashCounter'] = '1'
+        self.app.report['ProcCmdline'] = 'apport-bug apport'
+        self.app.report['Package'] = 'apport 1.2.3~0ubuntu1'
+        with tempfile.NamedTemporaryFile() as fp:
+            fp.write(b'''[Desktop Entry]
+Version=1.0
+Name=Apport
+Type=Application''')
+            fp.flush()
+            self.app.report['DesktopFile'] = fp.name
+            QTimer.singleShot(0, QCoreApplication.quit)
+            self.app.ui_present_report_details(True)
+        self.assertEqual(self.app.dialog.windowTitle(),
+            self.distro.split()[0])
         self.assertEqual(self.app.dialog.heading.text(),
              _('The application Apport has closed unexpectedly.'))
         self.assertTrue(self.app.dialog.send_error_report.isVisible())
@@ -156,6 +213,10 @@ Type=Application''')
         self.assertEqual(self.app.dialog.continue_button.text(), _('Relaunch'))
         self.assertTrue(self.app.dialog.closed_button.isVisible())
         self.assertFalse(self.app.dialog.text.isVisible())
+        self.assertFalse(self.app.dialog.text.isVisible())
+        self.assertTrue(self.app.dialog.ignore_future_problems.isVisible())
+        self.assertTrue(str(self.app.dialog.ignore_future_problems.text()).endswith(
+            'of this program version'))
 
     def test_system_crash_layout(self):
         '''
@@ -165,14 +226,18 @@ Type=Application''')
         |            computer                                             |
         |                                                                 |
         |            [x] Send an error report to help fix this problem.   |
+        |            [ ] Ignore future problems of this type.             |
         |                                                                 |
         | [ Show Details ]                                   [ Continue ] |
         +-----------------------------------------------------------------+
         '''
         self.app.report['ProblemType'] = 'Crash'
+        self.app.report['CrashCounter'] = '1'
         self.app.report['Package'] = 'apport 1.2.3~0ubuntu1'
         QTimer.singleShot(0, QCoreApplication.quit)
         self.app.ui_present_report_details(True)
+        self.assertEqual(self.app.dialog.windowTitle(),
+            self.distro.split()[0])
         self.assertEqual(self.app.dialog.heading.text(),
              _('Sorry, %s has experienced an internal error.') % self.distro)
         self.assertEqual(self.app.dialog.text.text(),
@@ -184,6 +249,9 @@ Type=Application''')
         self.assertTrue(self.app.dialog.continue_button.isVisible())
         self.assertEqual(self.app.dialog.continue_button.text(), _('Continue'))
         self.assertFalse(self.app.dialog.closed_button.isVisible())
+        self.assertTrue(self.app.dialog.ignore_future_problems.isVisible())
+        self.assertTrue(str(self.app.dialog.ignore_future_problems.text()).endswith(
+            'of this type'))
 
     def test_apport_bug_package_layout(self):
         '''
@@ -201,6 +269,8 @@ Type=Application''')
         self.app.report_file = None
         QTimer.singleShot(0, QCoreApplication.quit)
         self.app.ui_present_report_details(True)
+        self.assertEqual(self.app.dialog.windowTitle(),
+            self.distro.split()[0])
         self.assertEqual(self.app.dialog.heading.text(),
              _('Send problem report to the developers?'))
         self.assertFalse(self.app.dialog.text.isVisible())
@@ -217,12 +287,18 @@ Type=Application''')
     def test_1_crash_nodetails(self, *args):
         '''Crash report without showing details'''
 
+        self.visible_progress = None
+
         def cont(*args):
             if self.app.dialog and self.app.dialog.continue_button.isVisible():
                 self.app.dialog.continue_button.click()
+                QTimer.singleShot(500, check_progress)
                 return
             # try again
             QTimer.singleShot(1000, cont)
+
+        def check_progress(*args):
+            self.visible_progress = (self.app.progress != None)
 
         QTimer.singleShot(1000, cont)
         self.app.run_crash(self.app.report_file)
@@ -232,6 +308,9 @@ Type=Application''')
         r = self.app.crashdb.download(0)
         self.assertEqual(r['ProblemType'], 'Crash')
         self.assertEqual(r['ExecutablePath'], '/bin/bash')
+
+        # should show a progress bar for info collection
+        self.assertEqual(self.visible_progress, True)
 
         # data was collected
         self.assertTrue(r['Package'].startswith('bash '))
@@ -244,6 +323,8 @@ Type=Application''')
     @patch.object(MainUserInterface, 'open_url')
     def test_1_crash_details(self, *args):
         '''Crash report with showing details'''
+
+        self.visible_progress = None
 
         def show_details(*args):
             if self.app.dialog and self.app.dialog.show_details.isVisible():
@@ -263,9 +344,13 @@ Type=Application''')
 
             if self.app.dialog and self.app.dialog.continue_button.isVisible():
                 self.app.dialog.continue_button.click()
+                QTimer.singleShot(500, check_progress)
                 return
             # try again
             QTimer.singleShot(200, cont)
+
+        def check_progress(*args):
+            self.visible_progress = (self.app.progress != None)
 
         QTimer.singleShot(200, show_details)
         self.app.run_crash(self.app.report_file)
@@ -276,6 +361,9 @@ Type=Application''')
         self.assertEqual(r['ProblemType'], 'Crash')
         self.assertEqual(r['ExecutablePath'], '/bin/bash')
 
+        # we already collected details, do not show the progress dialog again
+        self.assertEqual(self.visible_progress, False)
+
         # data was collected
         self.assertTrue(r['Package'].startswith('bash '))
         self.assertTrue('libc' in r['Dependencies'])
@@ -283,6 +371,42 @@ Type=Application''')
 
         # URL was opened
         self.assertEqual(self.app.open_url.call_count, 1)
+
+    @patch.object(MainUserInterface, 'open_url')
+    def test_1_crash_noaccept(self, *args):
+        '''Crash report with non-accepting crash DB'''
+
+        self.visible_progress = None
+
+        def cont(*args):
+            if self.app.dialog and self.app.dialog.continue_button.isVisible():
+                self.app.dialog.continue_button.click()
+                QTimer.singleShot(500, check_progress)
+                return
+            # try again
+            QTimer.singleShot(1000, cont)
+
+        def check_progress(*args):
+            self.visible_progress = (self.app.progress != None)
+
+        QTimer.singleShot(1000, cont)
+        self.app.crashdb.options['problem_types'] = ['bug']
+        self.app.run_crash(self.app.report_file)
+
+        # we should not have reported the crash
+        self.assertEqual(self.app.crashdb.latest_id(), -1)
+        self.assertEqual(self.app.open_url.call_count, 0)
+
+        # no progress dialog for non-accepting DB
+        self.assertEqual(self.visible_progress, False)
+
+        # data was collected for whoopsie
+        r = self.app.report
+        self.assertEqual(r['ProblemType'], 'Crash')
+        self.assertEqual(r['ExecutablePath'], '/bin/bash')
+        self.assertTrue(r['Package'].startswith('bash '))
+        self.assertTrue('libc' in r['Dependencies'])
+        self.assertTrue('Stacktrace' in r)
 
     def test_bug_report_installed_package(self):
         '''Bug report for installed package'''
@@ -362,6 +486,57 @@ Type=Application''')
         # No URL in this mode
         self.assertEqual(self.app.open_url.call_count, 0)
 
+    @patch.object(MainUserInterface, 'open_url')
+    def test_1_update_report_different_binary_source(self, *args):
+        '''Updating an existing report on a source package which does not have a binary of the same name'''
+
+        self.app.report_file = None
+
+        def cont(*args):
+            if self.app.dialog and self.app.dialog.continue_button.isVisible():
+                self.app.dialog.continue_button.click()
+                return
+            # try again
+            QTimer.singleShot(200, cont)
+
+        kernel_pkg = apport.packaging.get_kernel_package()
+        kernel_src = apport.packaging.get_source(kernel_pkg)
+        self.assertNotEqual(kernel_pkg, kernel_src,
+                'this test assumes that the kernel binary package != kernel source package')
+        self.assertNotEqual(apport.packaging.get_version(kernel_pkg), '',
+                'this test assumes that the kernel binary package %s is installed' % kernel_pkg)
+        # this test assumes that the kernel source package name is not an
+        # installed binary package
+        self.assertRaises(ValueError, apport.packaging.get_version, kernel_src)
+
+        # create source package hook, as otherwise there is nothing to collect
+        with open(os.path.join(self.hook_dir, 'source_%s.py' % kernel_src), 'w') as f:
+            f.write('def add_info(r, ui):\n r["MachineType"]="Laptop"\n')
+
+        # upload empty report
+        id = self.app.crashdb.upload({})
+        self.assertEqual(id, 0)
+
+        # run in update mode for that bug
+        self.app.options.update_report = 0
+        self.app.options.package = kernel_src
+
+        QTimer.singleShot(200, cont)
+        self.app.run_update_report()
+
+        # no new bug reported
+        self.assertEqual(self.app.crashdb.latest_id(), 0)
+
+        # bug was updated
+        r = self.app.crashdb.download(0)
+        self.assertTrue('ProcEnviron' in r)
+        self.assertTrue('DistroRelease' in r)
+        self.assertTrue('Uname' in r)
+        self.assertEqual(r['MachineType'], 'Laptop')
+
+        # No URL in this mode
+        self.assertEqual(self.app.open_url.call_count, 0)
+
     def test_administrator_disabled_reporting(self):
         QTimer.singleShot(0, QCoreApplication.quit)
         self.app.ui_present_report_details(False)
@@ -370,11 +545,11 @@ Type=Application''')
 
 appName = 'apport-kde'
 catalog = 'apport'
-programName = ki18n('Apport KDE')
+programName = ki18n(b'Apport KDE')
 version = '1.0'
-description = ki18n('KDE 4 frontend tests for the apport')
+description = ki18n(b'KDE 4 frontend tests for the apport')
 license = KAboutData.License_GPL
-copyright = ki18n('2012 Canonical Ltd.')
+copyright = ki18n(b'2012 Canonical Ltd.')
 text = KLocalizedString()
 homePage = 'https://wiki.ubuntu.com/AutomatedProblemReports'
 bugEmail = 'kubuntu-devel@lists.ubuntu.com'

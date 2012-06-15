@@ -1,7 +1,8 @@
 # coding: UTF-8
-import unittest, tempfile, locale, subprocess, re, shutil, os.path
+import unittest, tempfile, locale, subprocess, re, shutil, os.path, sys
 
 import apport.hookutils
+
 
 class T(unittest.TestCase):
     def setUp(self):
@@ -20,11 +21,11 @@ class T(unittest.TestCase):
             asm.flush()
             ko = tempfile.NamedTemporaryFile(prefix='%s-' % (license),
                                              suffix='.ko')
-            subprocess.call(['/usr/bin/as',asm.name,'-o',ko.name])
+            subprocess.call(['/usr/bin/as', asm.name, '-o', ko.name])
             return ko
 
         good_ko = _build_ko('GPL')
-        bad_ko  = _build_ko('BAD')
+        bad_ko = _build_ko('BAD')
 
         # test:
         #  - loaded real module
@@ -41,7 +42,7 @@ class T(unittest.TestCase):
         # check via nonfree_kernel_modules logic
         f = tempfile.NamedTemporaryFile()
         f.write(('isofs\ndoes-not-exist\n%s\n%s\n' %
-                (good_ko.name,bad_ko.name)).encode())
+                (good_ko.name, bad_ko.name)).encode())
         f.flush()
         nonfree = apport.hookutils.nonfree_kernel_modules(f.name)
         self.assertFalse('isofs' in nonfree)
@@ -57,7 +58,7 @@ class T(unittest.TestCase):
         apport.hookutils.attach_dmesg(report)
         self.assertTrue(report['BootDmesg'].startswith('['))
         self.assertTrue(len(report['BootDmesg']) > 500)
-        self.assertTrue(report['CurrentDmesg'].startswith(b'['))
+        self.assertTrue(report['CurrentDmesg'].startswith('['))
 
     def test_dmesg_overwrite(self):
         '''attach_dmesg() does not overwrite already existing data'''
@@ -66,9 +67,9 @@ class T(unittest.TestCase):
 
         apport.hookutils.attach_dmesg(report)
         self.assertEqual(report['BootDmesg'][:50], 'existingboot')
-        self.assertTrue(report['CurrentDmesg'].startswith(b'['))
+        self.assertTrue(report['CurrentDmesg'].startswith('['))
 
-        report = {'BootDmesg': 'existingboot', 'CurrentDmesg': 'existingcurrent' }
+        report = {'BootDmesg': 'existingboot', 'CurrentDmesg': 'existingcurrent'}
 
         apport.hookutils.attach_dmesg(report)
         self.assertEqual(report['BootDmesg'], 'existingboot')
@@ -77,9 +78,9 @@ class T(unittest.TestCase):
     def test_attach_file(self):
         '''attach_file()'''
 
-        with open('/etc/motd', 'rb') as f:
+        with open('/etc/motd') as f:
             motd_contents = f.read().strip()
-        with open('/etc/issue', 'rb') as f:
+        with open('/etc/issue') as f:
             issue_contents = f.read().strip()
 
         # default key name
@@ -112,10 +113,24 @@ class T(unittest.TestCase):
         self.assertEqual(report['.etc.motd'], motd_contents)
         self.assertEqual(report['.etc.motd_'], issue_contents)
 
+    def test_attach_file_binary(self):
+        '''attach_file() for binary files'''
+
+        myfile = os.path.join(self.workdir, 'data')
+        with open(myfile, 'wb') as f:
+            f.write(b'a\xc3\xb6b\xffx')
+
+        report = {}
+        apport.hookutils.attach_file(report, myfile, key='data')
+        self.assertEqual(report['data'], b'a\xc3\xb6b\xffx')
+
+        apport.hookutils.attach_file(report, myfile, key='data', force_unicode=True)
+        self.assertEqual(report['data'], b'a\xc3\xb6b\xef\xbf\xbdx'.decode('UTF-8'))
+
     def test_attach_file_if_exists(self):
         '''attach_file_if_exists()'''
 
-        with open('/etc/motd', 'rb') as f:
+        with open('/etc/motd') as f:
             motd_contents = f.read().strip()
 
         # default key name
@@ -136,9 +151,32 @@ class T(unittest.TestCase):
         self.assertEqual(list(report), [])
 
     def test_recent_logfile(self):
+        '''recent_logfile'''
+
         self.assertEqual(apport.hookutils.recent_logfile('/nonexisting', re.compile('.')), '')
         self.assertEqual(apport.hookutils.recent_syslog(re.compile('ThisCantPossiblyHitAnything')), '')
         self.assertNotEqual(len(apport.hookutils.recent_syslog(re.compile('.'))), 0)
+
+    def test_recent_logfile_overflow(self):
+        '''recent_logfile on a huge file'''
+
+        log = os.path.join(self.workdir, 'syslog')
+        with open(log, 'w') as f:
+            lines = 1000000
+            while lines >= 0:
+                f.write('Apr 20 11:30:00 komputer kernel: bogus message\n')
+                lines -= 1
+
+        mem_before = self._get_mem_usage()
+        data = apport.hookutils.recent_logfile(log, re.compile('kernel'))
+        mem_after = self._get_mem_usage()
+        delta_kb = mem_after - mem_before
+        sys.stderr.write('[Δ %i kB] ' % delta_kb)
+        self.assertLess(delta_kb, 5000)
+
+        self.assertTrue(data.startswith('Apr 20 11:30:00 komputer kernel: bogus message\n'))
+        self.assertGreater(len(data), 100000)
+        self.assertLess(len(data), 1000000)
 
     @unittest.skipIf(apport.hookutils.apport.hookutils.in_session_of_problem(apport.Report()) is None, 'no ConsoleKit session')
     def test_in_session_of_problem(self):
@@ -174,7 +212,7 @@ class T(unittest.TestCase):
     def test_xsession_errors(self):
         '''xsession_errors()'''
 
-        with open(os.path.join(self.workdir, '.xsession-errors'), 'w') as f:
+        with open(os.path.join(self.workdir, '.xsession-errors'), 'w', encoding='UTF-8') as f:
             f.write('''Loading profile from /etc/profile
 gnome-session[1948]: WARNING: standard glib warning
 EggSMClient-CRITICAL **: egg_sm_client_set_mode: standard glib assertion
@@ -243,5 +281,42 @@ GdkPixbuf-CRITICAL **: gdk_pixbuf_scale_simple: another standard glib assertion
         apport.hookutils.attach_conffiles(report, 'nonexisting')
         apport.hookutils.attach_upstart_overrides(report, 'apport')
         apport.hookutils.attach_upstart_overrides(report, 'nonexisting')
+        apport.hookutils.attach_default_grub(report)
+
+    def test_command_output(self):
+        orig_lcm = os.environ.get('LC_MESSAGES')
+        os.environ['LC_MESSAGES'] = 'en_US.UTF-8'
+        try:
+            # default mode: disable translations
+            out = apport.hookutils.command_output(['env'])
+            self.assertTrue('LC_MESSAGES=C' in out)
+
+            # keep locale
+            out = apport.hookutils.command_output(['env'], keep_locale=True)
+            self.assertFalse('LC_MESSAGES=C' in out, out)
+        finally:
+            if orig_lcm is not None:
+                os.environ['LC_MESSAGES'] = orig_lcm
+            else:
+                os.unsetenv('LC_MESSAGES')
+
+        # nonexisting binary
+        out = apport.hookutils.command_output(['/non existing'])
+        self.assertTrue(out.startswith('Error: [Errno 2]'))
+
+        # stdin
+        out = apport.hookutils.command_output(['cat'], input=b'hello')
+        self.assertEqual(out, 'hello')
+
+    @classmethod
+    def _get_mem_usage(klass):
+        '''Get current memory usage in kB'''
+
+        with open('/proc/self/status') as f:
+            for line in f:
+                if line.startswith('VmSize:'):
+                    return int(line.split()[1])
+            else:
+                raise SystemError('did not find VmSize: in /proc/self/status')
 
 unittest.main()

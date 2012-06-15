@@ -1,6 +1,6 @@
 '''Convenience functions for use in package hooks.'''
 
-# Copyright (C) 2008 - 2011 Canonical Ltd.
+# Copyright (C) 2008 - 2012 Canonical Ltd.
 # Authors:
 #   Matt Zimmerman <mdz@canonical.com>
 #   Brian Murray <brian@ubuntu.com>
@@ -39,6 +39,7 @@ except AttributeError:
     import string
     _path_key_trans = string.maketrans('#/-_+ ', '....._')
 
+
 def path_to_key(path):
     '''Generate a valid report key name from a file path.
 
@@ -52,7 +53,8 @@ def path_to_key(path):
             path = path.encode('UTF-8')
     return path.translate(_path_key_trans)
 
-def attach_file_if_exists(report, path, key=None, overwrite=True):
+
+def attach_file_if_exists(report, path, key=None, overwrite=True, force_unicode=False):
     '''Attach file contents if file exists.
 
     If key is not specified, the key name will be derived from the file
@@ -60,26 +62,40 @@ def attach_file_if_exists(report, path, key=None, overwrite=True):
 
     If overwrite is True, an existing key will be updated. If it is False, a
     new key with '_' appended will be added instead.
+
+    If the contents is valid UTF-8, or force_unicode is True, then the value
+    will a string, otherwise it will be bytes.
     '''
     if not key:
         key = path_to_key(path)
 
     if os.path.exists(path):
-        attach_file(report, path, key, overwrite)
+        attach_file(report, path, key, overwrite, force_unicode)
 
-def read_file(path):
+
+def read_file(path, force_unicode=False):
     '''Return the contents of the specified path.
+
+    If the contents is valid UTF-8, or force_unicode is True, then the value
+    will a string, otherwise it will be bytes.
 
     Upon error, this will deliver a text representation of the error,
     instead of failing.
     '''
     try:
         with open(path, 'rb') as f:
-            return f.read().strip()
+            contents = f.read().strip()
+        if force_unicode:
+            return contents.decode('UTF-8', errors='replace')
+        try:
+            return contents.decode('UTF-8')
+        except UnicodeDecodeError:
+            return contents
     except Exception as e:
         return 'Error: ' + str(e)
 
-def attach_file(report, path, key=None, overwrite=True):
+
+def attach_file(report, path, key=None, overwrite=True, force_unicode=False):
     '''Attach a file to the report.
 
     If key is not specified, the key name will be derived from the file
@@ -87,6 +103,9 @@ def attach_file(report, path, key=None, overwrite=True):
 
     If overwrite is True, an existing key will be updated. If it is False, a
     new key with '_' appended will be added instead.
+
+    If the contents is valid UTF-8, or force_unicode is True, then the value
+    will a string, otherwise it will be bytes.
     '''
     if not key:
         key = path_to_key(path)
@@ -95,7 +114,8 @@ def attach_file(report, path, key=None, overwrite=True):
     if not overwrite:
         while key in report:
             key += '_'
-    report[key] = read_file(path)
+    report[key] = read_file(path, force_unicode=force_unicode)
+
 
 def attach_conffiles(report, package, conffiles=None, ui=None):
     '''Attach information about any modified or deleted conffiles.
@@ -127,6 +147,7 @@ def attach_conffiles(report, package, conffiles=None, ui=None):
         mtime = datetime.datetime.fromtimestamp(os.stat(path).st_mtime)
         report['mtime.conffile.' + path_to_key(path)] = mtime.isoformat()
 
+
 def attach_upstart_overrides(report, package):
     '''Attach information about any Upstart override files'''
 
@@ -140,6 +161,7 @@ def attach_upstart_overrides(report, package):
             override = file.replace('.conf', '.override')
             key = 'upstart.' + override.replace('/etc/init/', '')
             attach_file_if_exists(report, override, key)
+
 
 def attach_dmesg(report):
     '''Attach information from the kernel ring buffer (dmesg).
@@ -155,10 +177,11 @@ def attach_dmesg(report):
     if not report.get('CurrentDmesg', '').strip():
         dmesg = command_output(['sh', '-c', 'dmesg | comm -13 --nocheck-order /var/log/dmesg -'])
         # if an initial message was truncated by the ring buffer, skip over it
-        first_newline = dmesg.find(b'\n[')
+        first_newline = dmesg.find('\n[')
         if first_newline != -1:
-            dmesg = dmesg[first_newline+1:]
+            dmesg = dmesg[first_newline + 1:]
         report['CurrentDmesg'] = dmesg
+
 
 def attach_dmi(report):
     dmi_dir = '/sys/class/dmi/id'
@@ -180,6 +203,7 @@ def attach_dmi(report):
             if value:
                 report['dmi.' + f.replace('_', '.')] = value
 
+
 def attach_hardware(report):
     '''Attach a standard set of hardware-related data to the report, including:
 
@@ -200,23 +224,23 @@ def attach_hardware(report):
     attach_file(report, '/proc/interrupts', 'ProcInterrupts')
     attach_file(report, '/proc/cpuinfo', 'ProcCpuinfo')
     attach_file(report, '/proc/cmdline', 'ProcKernelCmdLine')
-    attach_file(report, '/var/log/udev', 'UdevLog')
+    attach_file(report, '/var/log/udev', 'UdevLog', force_unicode=True)
 
     if os.path.exists('/sys/bus/pci'):
-        report['Lspci'] = command_output(['lspci','-vvnn'])
+        report['Lspci'] = command_output(['lspci', '-vvnn'])
     report['Lsusb'] = command_output(['lsusb'])
     report['ProcModules'] = command_output(['sort', '/proc/modules'])
     report['UdevDb'] = command_output(['udevadm', 'info', '--export-db'])
 
     # anonymize partition labels
-    l = report['UdevLog'].decode('UTF-8', errors='replace')
+    l = report['UdevLog']
     l = re.sub('ID_FS_LABEL=(.*)', 'ID_FS_LABEL=<hidden>', l)
     l = re.sub('ID_FS_LABEL_ENC=(.*)', 'ID_FS_LABEL_ENC=<hidden>', l)
     l = re.sub('by-label/(.*)', 'by-label/<hidden>', l)
     l = re.sub('ID_FS_LABEL=(.*)', 'ID_FS_LABEL=<hidden>', l)
     l = re.sub('ID_FS_LABEL_ENC=(.*)', 'ID_FS_LABEL_ENC=<hidden>', l)
     l = re.sub('by-label/(.*)', 'by-label/<hidden>', l)
-    report['UdevLog'] = l.encode('UTF-8')
+    report['UdevLog'] = l
 
     attach_dmi(report)
 
@@ -236,6 +260,7 @@ def attach_hardware(report):
         if out:
             report['PccardctlIdent'] = out
 
+
 def attach_alsa(report):
     '''Attach ALSA subsystem information to the report.
 
@@ -249,9 +274,9 @@ def attach_alsa(report):
     attach_file_if_exists(report, '/proc/asound/version', 'AlsaVersion')
     attach_file(report, '/proc/cpuinfo', 'ProcCpuinfo')
 
-    report['AlsaDevices'] = command_output(['ls','-l','/dev/snd/'])
-    report['AplayDevices'] = command_output(['aplay','-l'])
-    report['ArecordDevices'] = command_output(['arecord','-l'])
+    report['AlsaDevices'] = command_output(['ls', '-l', '/dev/snd/'])
+    report['AplayDevices'] = command_output(['aplay', '-l'])
+    report['ArecordDevices'] = command_output(['arecord', '-l'])
 
     report['PciMultimedia'] = pci_devices(PCI_MULTIMEDIA)
 
@@ -282,19 +307,19 @@ def attach_alsa(report):
                     attach_file(report, path, key)
 
     report['AudioDevicesInUse'] = command_output(
-        ['fuser','-v'] + glob.glob('/dev/dsp*')
+        ['fuser', '-v'] + glob.glob('/dev/dsp*')
             + glob.glob('/dev/snd/*')
-            + glob.glob('/dev/seq*') )
+            + glob.glob('/dev/seq*'))
 
     if os.path.exists('/usr/bin/pacmd'):
-        report['PulseSinks'] = command_output(['pacmd', 'list-sinks'])
-        report['PulseSources'] = command_output(['pacmd', 'list-sources'])
+        report['PulseList'] = command_output(['pacmd', 'list'])
 
     attach_dmi(report)
     attach_dmesg(report)
 
     # This seems redundant with the amixer info, do we need it?
     #report['AlsactlStore'] = command-output(['alsactl', '-f', '-', 'store'])
+
 
 def command_available(command):
     '''Is given command on the executable search path?'''
@@ -309,26 +334,39 @@ def command_available(command):
             return True
     return False
 
-def command_output(command, input = None, stderr = subprocess.STDOUT):
+
+def command_output(command, input=None, stderr=subprocess.STDOUT,
+        keep_locale=False, decode_utf8=True):
     '''Try to execute given command (array) and return its stdout.
 
     In case of failure, a textual error gets returned. This function forces
     LC_MESSAGES to C, to avoid translated output in bug reports.
+
+    If decode_utf8 is True (default), the output will be converted to a string,
+    otherwise left as bytes.
     '''
     env = os.environ.copy()
-    env['LC_MESSAGES'] = 'C'
+    if not keep_locale:
+        env['LC_MESSAGES'] = 'C'
     try:
-       sp = subprocess.Popen(command, stdout=subprocess.PIPE,
-                             stderr=stderr, close_fds=True, env=env)
+        sp = subprocess.Popen(command, stdout=subprocess.PIPE,
+                              stderr=stderr,
+                              stdin=(input and subprocess.PIPE or None),
+                              close_fds=True, env=env)
     except OSError as e:
-       return 'Error: ' + str(e)
+        return 'Error: ' + str(e)
 
     out = sp.communicate(input)[0]
     if sp.returncode == 0:
-       return out.strip()
+        res = out.strip()
     else:
-       return 'Error: command %s failed with exit code %i: %s' % (
-           str(command), sp.returncode, out)
+        res = b'Error: command ' + str(command).encode() + b' failed with exit code ' \
+                + str(sp.returncode).encode() + b': ' + out
+
+    if decode_utf8:
+        res = res.decode('UTF-8', errors='replace')
+    return res
+
 
 def _root_command_prefix():
     if os.getuid() == 0:
@@ -338,28 +376,35 @@ def _root_command_prefix():
                     stderr=subprocess.PIPE) == 0 and \
             subprocess.call(['pgrep', '-x', '-u', str(os.getuid()), 'ksmserver'],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0:
-        prefix = ['kdesudo', '--desktop', '/usr/share/applications/apport-kde-mime.desktop', '--']
+        prefix = ['kdesudo', '--desktop', '/usr/share/applications/apport-kde-mime.desktop',
+                  '--', 'env', '-u', 'LANGUAGE', 'LC_MESSAGES=C']
     elif os.getenv('DISPLAY') and \
             subprocess.call(['which', 'gksu'], stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE) == 0 and \
             subprocess.call(['pgrep', '-x', '-u', str(os.getuid()), 'gnome-panel|gconfd-2'],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0:
-        prefix = ['gksu', '-D', 'Apport', '--']
+        prefix = ['gksu', '-D', 'Apport', '--', 'env', '-u', 'LANGUAGE', 'LC_MESSAGES=C']
     else:
-        prefix = ['sudo']
+        prefix = ['sudo', 'LC_MESSAGES=C', 'LANGUAGE=']
 
     return prefix
 
-def root_command_output(command, input = None, stderr = subprocess.STDOUT):
+
+def root_command_output(command, input=None, stderr=subprocess.STDOUT, decode_utf8=True):
     '''Try to execute given command (array) as root and return its stdout.
 
     This passes the command through gksu, kdesudo, or sudo, depending on the
     running desktop environment.
 
     In case of failure, a textual error gets returned.
+
+    If decode_utf8 is True (default), the output will be converted to a string,
+    otherwise left as bytes.
     '''
     assert type(command) == type([]), 'command must be a list'
-    return command_output(_root_command_prefix() + command, input, stderr)
+    return command_output(_root_command_prefix() + command, input, stderr,
+            keep_locale=True, decode_utf8=decode_utf8)
+
 
 def attach_root_command_outputs(report, command_map):
     '''Execute multiple commands as root and put their outputs into report.
@@ -388,11 +433,8 @@ def attach_root_command_outputs(report, command_map):
         script.close()
 
         # run script
-        env = os.environ.copy()
-        env['LC_MESSAGES'] = 'C'
-        env['LANGUAGE'] = ''
         sp = subprocess.Popen(_root_command_prefix() + ['/bin/sh', script_path],
-            close_fds=True, env=env)
+            close_fds=True)
         sp.wait()
 
         # now read back the individual outputs
@@ -405,6 +447,7 @@ def attach_root_command_outputs(report, command_map):
     finally:
         shutil.rmtree(workdir)
 
+
 def recent_syslog(pattern):
     '''Extract recent messages from syslog which match a regex.
 
@@ -412,20 +455,28 @@ def recent_syslog(pattern):
     '''
     return recent_logfile('/var/log/syslog', pattern)
 
-def recent_logfile(logfile, pattern):
+
+def recent_logfile(logfile, pattern, maxlines=10000):
     '''Extract recent messages from a logfile which match a regex.
 
-    pattern should be a "re" object.
+    pattern should be a "re" object. By default this catches at most the last
+    1000 lines, but this can be modified with a different maxlines argument.
     '''
     lines = ''
     try:
-        with open(logfile) as f:
-            for line in f:
+        tail = subprocess.Popen(['tail', '-n', str(maxlines), logfile],
+                stdout=subprocess.PIPE)
+        while tail.poll() is None:
+            for line in tail.stdout:
+                line = line.decode('UTF-8', errors='replace')
                 if pattern.search(line):
                     lines += line
+        tail.stdout.close()
+        tail.wait()
     except IOError:
         return ''
     return lines
+
 
 def xsession_errors(pattern=None):
     '''Extract messages from ~/.xsession-errors.
@@ -445,9 +496,11 @@ def xsession_errors(pattern=None):
         pattern = re.compile('^(\(.*:\d+\): \w+-(WARNING|CRITICAL|ERROR))|(Error: .*No Symbols named)|([^ ]+\[\d+\]: ([A-Z]+):)|([^ ]-[A-Z]+ \*\*:)|(received an X Window System error)|(^The error was \')|(^  \(Details: serial \d+ error_code)')
 
     lines = ''
-    for line in open(path):
-        if pattern.search(line):
-            lines += line
+    with open(path, 'rb') as f:
+        for line in f:
+            line = line.decode('UTF-8', errors='replace')
+            if pattern.search(line):
+                lines += line
     return lines
 
 PCI_MASS_STORAGE = 0x01
@@ -463,6 +516,7 @@ PCI_DOCKING_STATIONS = 0x0a
 PCI_PROCESSORS = 0x0b
 PCI_SERIAL_BUS = 0x0c
 
+
 def pci_devices(*pci_classes):
     '''Return a text dump of PCI devices attached to the system.'''
 
@@ -470,20 +524,20 @@ def pci_devices(*pci_classes):
         return command_output(['lspci', '-vvnn'])
 
     result = ''
-    output = command_output(['lspci','-vvmmnn'])
-    for paragraph in output.split(b'\n\n'):
+    output = command_output(['lspci', '-vvmmnn'])
+    for paragraph in output.split('\n\n'):
         pci_class = None
         slot = None
 
-        for line in paragraph.split(b'\n'):
+        for line in paragraph.split('\n'):
             try:
-                key, value = line.split(b':',1)
+                key, value = line.split(':', 1)
             except ValueError:
                 continue
             value = value.strip()
             key = key.strip()
             if key == 'Class':
-                n = int(value[-5:-1],16)
+                n = int(value[-5:-1], 16)
                 pci_class = (n & 0xff00) >> 8
             elif key == 'Slot':
                 slot = value
@@ -495,11 +549,13 @@ def pci_devices(*pci_classes):
 
     return result
 
+
 def usb_devices():
     '''Return a text dump of USB devices attached to the system.'''
 
     # TODO: would be nice to be able to filter by interface class
-    return command_output(['lsusb','-v'])
+    return command_output(['lsusb', '-v'])
+
 
 def files_in_package(package, globpat=None):
     '''Retrieve a list of files owned by package, optionally matching globpat'''
@@ -511,18 +567,20 @@ def files_in_package(package, globpat=None):
         result = files
     return result
 
+
 def attach_gconf(report, package):
     '''Obsolete'''
 
     # keeping a no-op function for some time to not break hooks
     pass
 
+
 def attach_gsettings_schema(report, schema):
     '''Attach user-modified gsttings keys of a schema.'''
 
     cur_value = report.get('GsettingsChanges', '')
 
-    defaults = {} # schema -> key ->  value
+    defaults = {}  # schema -> key ->  value
     env = os.environ.copy()
     env['XDG_CONFIG_HOME'] = '/nonexisting'
     gsettings = subprocess.Popen(['gsettings', 'list-recursively', schema],
@@ -532,7 +590,7 @@ def attach_gsettings_schema(report, schema):
             (schema, key, value) = l.split(None, 2)
             value = value.rstrip()
         except ValueError:
-            continue # invalid line
+            continue  # invalid line
         defaults.setdefault(schema, {})[key] = value
 
     gsettings = subprocess.Popen(['gsettings', 'list-recursively', schema],
@@ -542,12 +600,13 @@ def attach_gsettings_schema(report, schema):
             (schema, key, value) = l.split(None, 2)
             value = value.rstrip()
         except ValueError:
-            continue # invalid line
+            continue  # invalid line
 
         if value != defaults.get(schema, {}).get(key, ''):
             cur_value += '%s %s %s\n' % (schema, key, value)
 
     report['GsettingsChanges'] = cur_value
+
 
 def attach_gsettings_package(report, package):
     '''Attach user-modified gsettings keys of all schemas in a package.'''
@@ -557,17 +616,19 @@ def attach_gsettings_package(report, package):
         schema = os.path.basename(schema_file)[:-12]
         attach_gsettings_schema(report, schema)
 
+
 def attach_network(report):
     '''Attach generic network-related information to report.'''
 
-    report['IpRoute'] = command_output(['ip','route'])
-    report['IpAddr'] = command_output(['ip','addr'])
+    report['IpRoute'] = command_output(['ip', 'route'])
+    report['IpAddr'] = command_output(['ip', 'addr'])
     report['PciNetwork'] = pci_devices(PCI_NETWORK)
     attach_file_if_exists(report, '/etc/network/interfaces', key='IfupdownConfig')
 
     for var in ('http_proxy', 'ftp_proxy', 'no_proxy'):
         if var in os.environ:
             report[var] = os.environ[var]
+
 
 def attach_wifi(report):
     '''Attach wireless (WiFi) network information to report.'''
@@ -576,11 +637,12 @@ def attach_wifi(report):
     report['IwConfig'] = re.sub('ESSID:(.*)', 'ESSID:<hidden>',
         re.sub('Encryption key:(.*)', 'Encryption key: <hidden>',
         re.sub('Access Point: (.*)', 'Access Point: <hidden>',
-            command_output(['iwconfig']).decode('UTF-8', errors='ignore'))))
+            command_output(['iwconfig']))))
     report['RfKill'] = command_output(['rfkill', 'list'])
     report['CRDA'] = command_output(['iw', 'reg', 'get'])
 
     attach_file_if_exists(report, '/var/log/wpa_supplicant.log', key='WpaSupplicantLog')
+
 
 def attach_printing(report):
     '''Attach printing information to the report.
@@ -608,6 +670,7 @@ def attach_printing(report):
         'cupsys-driver-gutenprint', 'gimp-gutenprint', 'gutenprint-doc',
         'gutenprint-locales', 'system-config-printer-common', 'kdeprint')
 
+
 def attach_mac_events(report):
     '''Attach MAC information and events to the report.'''
 
@@ -633,12 +696,14 @@ def attach_mac_events(report):
             tags += ' '
         report['Tags'] = tags + 'apparmor'
 
+
 def attach_related_packages(report, packages):
     '''Attach version information for related packages
 
     In the future, this might also run their hooks.
     '''
     report['RelatedPackageVersions'] = package_versions(*packages)
+
 
 def package_versions(*packages):
     '''Return a text listing of package names and versions.
@@ -662,13 +727,14 @@ def package_versions(*packages):
                 version = 'N/A'
             if version is None:
                 version = 'N/A'
-            versions.append((package,version))
+            versions.append((package, version))
 
     package_width, version_width = \
         map(max, [map(len, t) for t in zip(*versions)])
 
     fmt = '%%-%ds %%s' % package_width
     return '\n'.join([fmt % v for v in versions])
+
 
 def shared_libraries(path):
     '''Returns a list of strings containing the sonames of shared libraries
@@ -687,6 +753,7 @@ def shared_libraries(path):
 
     return libs
 
+
 def links_with_shared_library(path, lib):
     '''Returns True if the binary at path links with the library named lib.
 
@@ -696,12 +763,15 @@ def links_with_shared_library(path, lib):
 
     libs = shared_libraries(path)
 
-    if lib in libs: return True
+    if lib in libs:
+        return True
 
     for linked_lib in libs:
-        if linked_lib.startswith(lib + '.so.'): return True
+        if linked_lib.startswith(lib + '.so.'):
+            return True
 
     return False
+
 
 def _get_module_license(module):
     '''Return the license for a given kernel module.'''
@@ -723,7 +793,8 @@ def _get_module_license(module):
 
     return None
 
-def nonfree_kernel_modules(module_list = '/proc/modules'):
+
+def nonfree_kernel_modules(module_list='/proc/modules'):
     '''Check loaded modules and return a list of those which are not free.'''
 
     try:
@@ -739,6 +810,7 @@ def nonfree_kernel_modules(module_list = '/proc/modules'):
             nonfree.append(m)
 
     return nonfree
+
 
 def __drm_con_info(con):
     info = ''
@@ -756,6 +828,7 @@ def __drm_con_info(con):
         info += '%s: %s\n' % (f, val)
     return info
 
+
 def attach_drm_info(report):
     '''Add information about DRM hardware.
 
@@ -769,6 +842,7 @@ def attach_drm_info(report):
         if os.path.exists(os.path.join(con, 'enabled')):
             # DRM can set an arbitrary string for its connector paths.
             report['DRM.' + path_to_key(f)] = __drm_con_info(con)
+
 
 def in_session_of_problem(report):
     '''Check if the problem happened in the currently running XDG session.
@@ -816,3 +890,18 @@ def in_session_of_problem(report):
         return None
 
     return session_start_time <= report_time
+
+
+def attach_default_grub(report, key=None):
+    '''attach /etc/default/grub after filtering out password lines'''
+
+    path = '/etc/default/grub'
+    if not key:
+        key = path_to_key(path)
+
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            filtered = [l if not l.startswith('password')
+                        else '### PASSWORD LINE REMOVED ###'
+                        for l in f.readlines()]
+            report[key] = ''.join(filtered)

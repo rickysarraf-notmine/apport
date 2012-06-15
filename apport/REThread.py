@@ -11,6 +11,7 @@
 
 import threading, sys
 
+
 class REThread(threading.Thread):
     '''Thread with return values and exception propagation.'''
 
@@ -57,6 +58,10 @@ class REThread(threading.Thread):
         Do nothing if no exception was caught.
         '''
         if self._exception:
-            raise self._exception[0], self._exception[1], self._exception[2]
+            # there is no syntax which both Python 2 and 3 parse, so we need a
+            # hack using exec() here
             # Python 3:
-            #raise self._exception[0](self._exception[1]).with_traceback(self._exception[2])
+            if sys.version > '3':
+                raise self._exception[0](self._exception[1]).with_traceback(self._exception[2])
+            else:
+                exec('raise self._exception[0], self._exception[1], self._exception[2]')

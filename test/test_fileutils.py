@@ -4,10 +4,8 @@ import problem_report
 import apport.fileutils
 import apport.packaging
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import BytesIO
+
 
 class T(unittest.TestCase):
     def setUp(self):
@@ -21,7 +19,7 @@ class T(unittest.TestCase):
         self.orig_report_dir = None
         apport.fileutils._config_file = self.orig_config_file
 
-    def _create_reports(self, create_inaccessible = False):
+    def _create_reports(self, create_inaccessible=False):
         '''Create some test reports'''
 
         r1 = os.path.join(apport.fileutils.report_dir, 'rep1.crash')
@@ -165,29 +163,31 @@ class T(unittest.TestCase):
         '''get_recent_crashes()'''
 
         # incomplete fields
-        r = StringIO('''ProblemType: Crash''')
+        r = BytesIO(b'''ProblemType: Crash''')
         self.assertEqual(apport.fileutils.get_recent_crashes(r), 0)
 
-        r = StringIO('''ProblemType: Crash
+        r = BytesIO(b'''ProblemType: Crash
 Date: Wed Aug 01 00:00:01 1990''')
         self.assertEqual(apport.fileutils.get_recent_crashes(r), 0)
 
         # ancient report
-        r = StringIO('''ProblemType: Crash
+        r = BytesIO(b'''ProblemType: Crash
 Date: Wed Aug 01 00:00:01 1990
 CrashCounter: 3''')
         self.assertEqual(apport.fileutils.get_recent_crashes(r), 0)
 
         # old report (one day + one hour ago)
-        r = StringIO('''ProblemType: Crash
-Date: %s
-CrashCounter: 3''' % time.ctime(time.mktime(time.localtime())-25*3600))
+        date = time.ctime(time.mktime(time.localtime()) - 25 * 3600)
+        r = BytesIO(b'''ProblemType: Crash
+Date: ''' + date.encode() + b'''
+CrashCounter: 3''')
         self.assertEqual(apport.fileutils.get_recent_crashes(r), 0)
 
         # current report (one hour ago)
-        r = StringIO('''ProblemType: Crash
-Date: %s
-CrashCounter: 3''' % time.ctime(time.mktime(time.localtime())-3600))
+        date = time.ctime(time.mktime(time.localtime()) - 3600)
+        r = BytesIO(b'''ProblemType: Crash
+Date: ''' + date.encode() + b'''
+CrashCounter: 3''')
         self.assertEqual(apport.fileutils.get_recent_crashes(r), 3)
 
     def test_make_report_path(self):
@@ -198,7 +198,7 @@ CrashCounter: 3''' % time.ctime(time.mktime(time.localtime())-3600))
 
         pr['Package'] = 'bash 1'
         self.assertTrue(apport.fileutils.make_report_path(pr).startswith('%s/bash' % apport.fileutils.report_dir))
-        pr['ExecutablePath'] = '/bin/bash';
+        pr['ExecutablePath'] = '/bin/bash'
         self.assertTrue(apport.fileutils.make_report_path(pr).startswith('%s/_bin_bash' % apport.fileutils.report_dir))
 
     def test_check_files_md5(self):
@@ -235,14 +235,14 @@ f6423dfbc4faf022e58b4d3f5ff71a70  %s
         apport.fileutils._config_file = '/nonexisting'
         self.assertEqual(apport.fileutils.get_config('main', 'foo'), None)
         self.assertEqual(apport.fileutils.get_config('main', 'foo', 'moo'), 'moo')
-        apport.fileutils.get_config.config = None # trash cache
+        apport.fileutils.get_config.config = None  # trash cache
 
         # empty
         f = tempfile.NamedTemporaryFile()
         apport.fileutils._config_file = f.name
         self.assertEqual(apport.fileutils.get_config('main', 'foo'), None)
         self.assertEqual(apport.fileutils.get_config('main', 'foo', 'moo'), 'moo')
-        apport.fileutils.get_config.config = None # trash cache
+        apport.fileutils.get_config.config = None  # trash cache
 
         # nonempty
         f.write(b'[main]\none=1\ntwo = TWO\nb1 = 1\nb2=False\n[spethial]\none= 99\n')
@@ -260,7 +260,7 @@ f6423dfbc4faf022e58b4d3f5ff71a70  %s
         self.assertEqual(apport.fileutils.get_config('spethial', 'two'), None)
         self.assertEqual(apport.fileutils.get_config('spethial', 'one', 'moo'), '99')
         self.assertEqual(apport.fileutils.get_config('spethial', 'nope', 'moo'), 'moo')
-        apport.fileutils.get_config.config = None # trash cache
+        apport.fileutils.get_config.config = None  # trash cache
 
         f.close()
 

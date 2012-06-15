@@ -9,18 +9,28 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import subprocess, tempfile, os.path, urllib, re, pwd, grp, os
-import fnmatch, glob, traceback, errno
+import subprocess, tempfile, os.path, re, pwd, grp, os
+import fnmatch, glob, traceback, errno, sys
 
 import xml.dom, xml.dom.minidom
 from xml.parsers.expat import ExpatError
+
+if sys.version > '3':
+    _python2 = False
+    from urllib.error import URLError
+    from urllib.request import urlopen
+    (urlopen, URLError)  # pyflakes
+else:
+    _python2 = True
+    from urllib import urlopen
+    URLError = IOError
 
 import problem_report
 import apport
 import apport.fileutils
 from apport.packaging_impl import impl as packaging
 
-_data_dir = os.environ.get('APPORT_DATA_DIR','/usr/share/apport')
+_data_dir = os.environ.get('APPORT_DATA_DIR', '/usr/share/apport')
 _hook_dir = '%s/package-hooks/' % (_data_dir)
 _common_hook_dir = '%s/general-hooks/' % (_data_dir)
 
@@ -39,6 +49,7 @@ interpreters = ['sh', 'bash', 'dash', 'csh', 'tcsh', 'python*',
 # helper functions
 #
 
+
 def _transitive_dependencies(package, depends_set):
     '''Recursively add dependencies of package to depends_set.'''
 
@@ -51,6 +62,7 @@ def _transitive_dependencies(package, depends_set):
             depends_set.add(d)
             _transitive_dependencies(d, depends_set)
 
+
 def _read_file(path):
     '''Read file content.
 
@@ -62,6 +74,7 @@ def _read_file(path):
     except (OSError, IOError) as e:
         return 'Error: ' + str(e)
 
+
 def _read_maps(pid):
     '''Read /proc/pid/maps.
 
@@ -72,11 +85,12 @@ def _read_maps(pid):
     try:
         with open('/proc/%d/maps' % pid) as fd:
             maps = fd.read().strip()
-    except (OSError,IOError) as e:
+    except (OSError, IOError) as e:
         return 'Error: ' + str(e)
     return maps
 
-def _command_output(command, input = None, stderr = subprocess.STDOUT):
+
+def _command_output(command, input=None, stderr=subprocess.STDOUT):
     '''Run command and capture its output.
 
     Try to execute given command (argv list) and return its stdout, or return
@@ -95,40 +109,50 @@ def _command_output(command, input = None, stderr = subprocess.STDOUT):
         raise OSError('Error: command %s failed with exit code %i: %s' % (
             str(command), sp.returncode, err))
 
+
 def _check_bug_pattern(report, pattern):
     '''Check if given report matches the given bug pattern XML DOM node.
 
     Return the bug URL on match, otherwise None.
     '''
-    if not pattern.attributes.has_key('url'):
-        return None
+    if _python2:
+        if not pattern.attributes.has_key('url'):
+            return None
+    else:
+        if 'url' not in pattern.attributes:
+            return None
 
     for c in pattern.childNodes:
         # regular expression condition
-        if c.nodeType == xml.dom.Node.ELEMENT_NODE and c.nodeName == 're' and \
-            c.attributes.has_key('key'):
-            key = c.attributes['key'].nodeValue
+        if c.nodeType == xml.dom.Node.ELEMENT_NODE and c.nodeName == 're':
+            try:
+                key = c.attributes['key'].nodeValue
+            except KeyError:
+                continue
             if key not in report:
                 return None
             c.normalize()
             if c.hasChildNodes() and \
                 c.childNodes[0].nodeType == xml.dom.Node.TEXT_NODE:
-                regexp = c.childNodes[0].nodeValue.encode('UTF-8')
+                regexp = c.childNodes[0].nodeValue
+                v = report[key]
+                if isinstance(v, problem_report.CompressedValue):
+                    v = v.get_value()
+                    regexp = regexp.encode('UTF-8')
                 try:
-                    v = report[key]
-                    if isinstance(v, problem_report.CompressedValue):
-                        v = v.get_value()
-                    if not re.search(regexp, v):
-                        return None
+                    re_c = re.compile(regexp)
                 except:
+                    continue
+                if not re_c.search(v):
                     return None
 
-    return pattern.attributes['url'].nodeValue.encode('UTF-8')
+    return pattern.attributes['url'].nodeValue
+
 
 def _check_bug_patterns(report, patterns):
     try:
         dom = xml.dom.minidom.parseString(patterns)
-    except ExpatError:
+    except (ExpatError, UnicodeEncodeError):
         return None
 
     for pattern in dom.getElementsByTagName('pattern'):
@@ -137,6 +161,7 @@ def _check_bug_patterns(report, patterns):
             return url
 
     return None
+
 
 def _dom_remove_space(node):
     '''Recursively remove whitespace from given XML DOM node.'''
@@ -151,6 +176,7 @@ def _dom_remove_space(node):
 #
 # Report class
 #
+
 
 class Report(problem_report.ProblemReport):
     '''A problem report specific to apport (crash or bug).
@@ -192,7 +218,7 @@ class Report(problem_report.ProblemReport):
 
         return suffix
 
-    def add_package_info(self, package = None):
+    def add_package_info(self, package=None):
         '''Add packaging information.
 
         If package is not given, the report must have ExecutablePath.
@@ -222,7 +248,8 @@ class Report(problem_report.ProblemReport):
             version = None
         self['Package'] = '%s %s%s' % (package, version or '(not installed)',
             self._customized_package_suffix(package))
-        self['SourcePackage'] = packaging.get_source(package)
+        if version or 'SourcePackage' not in self:
+            self['SourcePackage'] = packaging.get_source(package)
         if not version:
             return
 
@@ -291,7 +318,7 @@ class Report(problem_report.ProblemReport):
         # check if we consider ExecutablePath an interpreter; we have to do
         # this, otherwise 'gedit /tmp/foo.txt' would be detected as interpreted
         # script as well
-        if not filter(lambda i: fnmatch.fnmatch(exebasename, i), interpreters):
+        if not any(filter(lambda i: fnmatch.fnmatch(exebasename, i), interpreters)):
             return
 
         # first, determine process name
@@ -335,10 +362,13 @@ class Report(problem_report.ProblemReport):
 
         # catch directly executed scripts
         if 'InterpreterPath' not in self and name != exebasename:
-            argvexes = filter(lambda p: os.access(p, os.R_OK), [p+cmdargs[0] for p in bindirs])
-            if argvexes and os.path.basename(os.path.realpath(argvexes[0])) == name:
-                self['InterpreterPath'] = self['ExecutablePath']
-                self['ExecutablePath'] = argvexes[0]
+            for p in bindirs:
+                if os.access(p + cmdargs[0], os.R_OK):
+                    argvexe = p + cmdargs[0]
+                    if os.path.basename(os.path.realpath(argvexe)) == name:
+                        self['InterpreterPath'] = self['ExecutablePath']
+                        self['ExecutablePath'] = argvexe
+                    break
 
         # special case: crashes from twistd are usually the fault of the
         # launched program
@@ -360,14 +390,14 @@ class Report(problem_report.ProblemReport):
             arg = args[0].split('=', 1)
             if arg[0].startswith('--file') or arg[0].startswith('--python') or \
                arg[0].startswith('--source'):
-                   if len(arg) == 2:
-                       return arg[1]
-                   else:
-                       return args[1]
+                if len(arg) == 2:
+                    return arg[1]
+                else:
+                    return args[1]
             elif len(arg[0]) > 1 and arg[0][0] == '-' and arg[0][1] != '-':
                 opts = arg[0][1:]
                 if 'f' in opts or 'y' in opts or 's' in opts:
-                   return args[1]
+                    return args[1]
 
             args.pop(0)
 
@@ -478,7 +508,7 @@ class Report(problem_report.ProblemReport):
         pid = str(pid)
 
         self['ProcEnviron'] = ''
-        env = _read_file('/proc/'+ pid + '/environ').replace('\n', '\\n')
+        env = _read_file('/proc/' + pid + '/environ').replace('\n', '\\n')
         if env.startswith('Error:'):
             self['ProcEnviron'] = env
         else:
@@ -571,7 +601,8 @@ class Report(problem_report.ProblemReport):
                 (fd, core) = tempfile.mkstemp()
                 unlink_core = True
                 os.close(fd)
-                self['CoreDump'].write(open(core, 'w'))
+                with open(core, 'wb') as f:
+                    self['CoreDump'].write(f)
             else:
                 core = self['CoreDump'][0]
 
@@ -589,7 +620,7 @@ class Report(problem_report.ProblemReport):
                 command += ['--ex', 'set debug-file-directory %s/usr/lib/debug' % rootdir,
                             '--ex', 'set solib-absolute-prefix ' + rootdir]
                 executable = rootdir + '/' + executable
-            command += ['--ex', 'file ' + executable, '--ex', 'core-file ' + core]
+            command += ['--ex', 'file "%s"' % executable, '--ex', 'core-file ' + core]
             # limit maximum backtrace depth (to avoid looped stacks)
             command += ['--ex', 'set backtrace limit 2000']
             value_keys = []
@@ -809,8 +840,10 @@ class Report(problem_report.ProblemReport):
             return
 
         try:
-            patterns = urllib.urlopen(url).read()
-        except:
+            f = urlopen(url)
+            patterns = f.read().decode('UTF-8', errors='replace')
+            f.close()
+        except (IOError, URLError):
             # doesn't exist or failed to load
             return
 
@@ -920,7 +953,14 @@ class Report(problem_report.ProblemReport):
         assert 'ExecutablePath' in self
 
         dom = self._get_ignore_dom()
-        mtime = str(int(os.stat(self['ExecutablePath']).st_mtime))
+        try:
+            mtime = str(int(os.stat(self['ExecutablePath']).st_mtime))
+        except OSError as e:
+            # file went away underneath us, ignore
+            if e.errno == errno.ENOENT:
+                return
+            else:
+                raise
 
         # search for existing entry and update it
         for ignore in dom.getElementsByTagName('ignore'):
@@ -955,7 +995,7 @@ class Report(problem_report.ProblemReport):
         if len(unknown_fn) < 3:
             return unknown_fn.count(True) == 0
 
-        return unknown_fn.count(True) <= len(unknown_fn)/2.
+        return unknown_fn.count(True) <= len(unknown_fn) / 2.
 
     def stacktrace_top_function(self):
         '''Return topmost function in StacktraceTop'''
@@ -1032,7 +1072,7 @@ class Report(problem_report.ProblemReport):
                     trace[0])
 
             trace_re = re.compile('^\s*File\s*"(\S+)".* in (.+)$')
-            i = len(trace)-1
+            i = len(trace) - 1
             function = 'unknown'
             while i >= 0:
                 m = trace_re.match(trace[i])
@@ -1108,7 +1148,6 @@ class Report(problem_report.ProblemReport):
 
             return title
 
-
         return None
 
     def obsolete_packages(self):
@@ -1150,7 +1189,7 @@ class Report(problem_report.ProblemReport):
         # kernel crash
         if 'Stacktrace' in self and self['ProblemType'] == 'KernelCrash':
             sig = 'kernel'
-            regex = re.compile ('^\s*\#\d+\s\[\w+\]\s(\w+)')
+            regex = re.compile('^\s*\#\d+\s\[\w+\]\s(\w+)')
             for line in self['Stacktrace'].splitlines():
                 m = regex.match(line)
                 if m:
@@ -1161,7 +1200,7 @@ class Report(problem_report.ProblemReport):
         if self.get('Signal') == '6' and 'AssertionMessage' in self:
             sig = self['ExecutablePath'] + ':' + self['AssertionMessage']
             # filter out addresses, to help match duplicates more sanely
-            return re.sub(r'0x[0-9a-f]{6,}','ADDR', sig)
+            return re.sub(r'0x[0-9a-f]{6,}', 'ADDR', sig)
 
         # signal crashes
         if 'StacktraceTop' in self and 'Signal' in self:
@@ -1196,7 +1235,7 @@ class Report(problem_report.ProblemReport):
             elif len(trace) < 3:
                 return None
 
-            loc_re = re.compile ('^\s+File "([^"]+).*line (\d+).*\sin (.*)$')
+            loc_re = re.compile('^\s+File "([^"]+).*line (\d+).*\sin (.*)$')
             for l in trace:
                 m = loc_re.match(l)
                 if m:
@@ -1240,7 +1279,7 @@ class Report(problem_report.ProblemReport):
                 addr = line.split()[1]
                 if not addr.startswith('0x'):
                     continue
-                addr = int(addr, 16) # we do want to know about ValueErrors here, so don't catch
+                addr = int(addr, 16)  # we do want to know about ValueErrors here, so don't catch
                 offset = self._address_to_offset(addr)
                 if offset:
                     # avoid ':' in ELF paths, we use that as separator
@@ -1256,7 +1295,7 @@ class Report(problem_report.ProblemReport):
 
         # we only accept a small minority (< 20%) of failed resolutions, otherwise we
         # discard
-        if failed > 0 and len(stack)/failed < 4:
+        if failed > 0 and len(stack) / failed < 4:
             return None
 
         # we also discard if the trace is too short
@@ -1276,22 +1315,22 @@ class Report(problem_report.ProblemReport):
         from attributes which contain data read from the environment, and
         removes the ProcCwd attribute completely.
         '''
-        replacements = {}
+        replacements = []
         if (os.getuid() > 0):
             # do not replace "root"
             p = pwd.getpwuid(os.getuid())
             if len(p[0]) >= 2:
-                replacements[p[0]] = 'username'
-            replacements[p[5]] = '/home/username'
+                replacements.append((re.compile('\\b%s\\b' % p[0]), 'username'))
+            replacements.append((re.compile('\\b%s\\b' % p[5]), '/home/username'))
 
             for s in p[4].split(','):
                 s = s.strip()
                 if len(s) > 2:
-                    replacements[s] = 'User Name'
+                    replacements.append((re.compile('\\b%s\\b' % s), 'User Name'))
 
         hostname = os.uname()[1]
         if len(hostname) >= 2:
-            replacements[hostname] = 'hostname'
+            replacements.append((re.compile('\\b%s\\b' % hostname), 'hostname'))
 
         try:
             del self['ProcCwd']
@@ -1300,16 +1339,17 @@ class Report(problem_report.ProblemReport):
 
         for k in self:
             if (k.startswith('Proc') and \
-                not k in ['ProcCpuinfo','ProcMaps','ProcStatus', \
-                          'ProcInterrupts','ProcModules']) or \
+                not k in ['ProcCpuinfo', 'ProcMaps', 'ProcStatus', \
+                          'ProcInterrupts', 'ProcModules']) or \
                 'Stacktrace' in k or \
-                k in ['Traceback', 'PythonArgs']:
-                for old, new in replacements.items():
-                    if hasattr(self[k], 'isspace'):
-                        if type(self[k]) == type(b''):
-                            self[k] = self[k].replace(old, new)
-                        else:
-                            self[k] = self[k].encode('UTF-8').replace(old, new).decode('UTF-8')
+                k in ['Traceback', 'PythonArgs', 'Title']:
+                if not hasattr(self[k], 'isspace'):
+                    continue
+                for (pattern, repl) in replacements:
+                    if type(self[k]) == bytes:
+                        self[k] = pattern.sub(repl, self[k].decode('UTF-8', errors='replace')).encode('UTF-8')
+                    else:
+                        self[k] = pattern.sub(repl, self[k])
 
     def _address_to_offset(self, addr):
         '''Resolve a memory address to an ELF name and offset.
@@ -1329,7 +1369,7 @@ class Report(problem_report.ProblemReport):
 
         for (start, end, elf) in self._proc_maps_cache:
             if start <= addr and end >= addr:
-                return '%s+%x' % (elf, addr-start)
+                return '%s+%x' % (elf, addr - start)
 
         return None
 
