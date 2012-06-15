@@ -6,7 +6,7 @@ apport (2.2.3-1) experimental; urgency=low
   * [d0ee9a9] add initscript LSB Description Header
   * [84e90ae] add initscript LSB Command status
 
- -- Ritesh Raj Sarraf <rrs@researchut.com>  Sat, 16 Jun 2012 03:28:00 +0530
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sat, 16 Jun 2012 03:35:03 +0530
 
 apport (1.94.1-1) experimental; urgency=low
 
