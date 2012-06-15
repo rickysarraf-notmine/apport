@@ -1,3 +1,13 @@
+apport (2.2.3-1) experimental; urgency=low
+
+  * [fc4f37c] add Vcs headers
+  * [12c1b4a] Imported Upstream version 2.2.3 (Closes: #676379, #677563)
+  * [755ad3d] add build-dep: pep8, pyflakes
+  * [d0ee9a9] add initscript LSB Description Header
+  * [84e90ae] add initscript LSB Command status
+
+ -- Ritesh Raj Sarraf <rrs@researchut.com>  Sat, 16 Jun 2012 03:28:00 +0530
+
 apport (1.94.1-1) experimental; urgency=low
 
   * Initial release. (Closes: #383347)
