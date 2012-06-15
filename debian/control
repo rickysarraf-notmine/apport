@@ -11,6 +11,8 @@ Build-Depends: debhelper (>= 7.0.50~),
  python-all
 Build-Depends-Indep: python-distutils-extra (>= 2.24~),
  python-apt (>= 0.7.9),
+ pep8,
+ pyflakes,
  intltool,
  xvfb,
  python-mock,
