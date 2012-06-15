@@ -57,6 +57,8 @@ class GTKUserInterface(apport.ui.UserInterface):
 
         self.md = None
 
+        self.desktop_info = None
+
     #
     # ui_* implementation of abstract UserInterface classes
     #
@@ -83,14 +85,24 @@ class GTKUserInterface(apport.ui.UserInterface):
         spinner.hide()
         return spinner
 
-    def ui_update_view(self):
+    def ui_update_view(self, shown_keys=None):
+        # do nothing if the dialog is already destroyed when the data
+        # collection finishes
+        if not self.w('details_treeview').get_property('visible'):
+            return
+
+        if shown_keys:
+            keys = set(self.report.keys()) & set(shown_keys)
+        else:
+            keys = self.report.keys()
         # show the most interesting items on top
-        keys = sorted(self.report)
+        keys = sorted(keys)
         for k in ('Traceback', 'StackTrace', 'Title', 'ProblemType', 'Package', 'ExecutablePath'):
             if k in keys:
                 keys.remove(k)
                 keys.insert(0, k)
 
+        self.tree_model.clear()
         for key in keys:
             keyiter = self.tree_model.insert_before(None, None)
             self.tree_model.set_value(keyiter, 0, key)
@@ -99,9 +111,18 @@ class GTKUserInterface(apport.ui.UserInterface):
             if not hasattr(self.report[key], 'gzipvalue') and \
                 hasattr(self.report[key], 'isspace') and \
                 not self.report._is_binary(self.report[key]):
-                self.tree_model.set_value(valiter, 0, self.report[key])
+                v = self.report[key]
+                if len(v) > 4000:
+                    v = v[:4000]
+                    if type(v) == bytes:
+                        v += b'\n[...]'
+                    else:
+                        v += '\n[...]'
+                if type(v) == bytes:
+                    v = v.decode('UTF-8', errors='replace')
+                self.tree_model.set_value(valiter, 0, v)
                 # expand the row if the value has less than 5 lines
-                if len(filter(lambda c: c == '\n', self.report[key])) < 4:
+                if len(list(filter(lambda c: c == '\n', self.report[key]))) < 4:
                     self.w('details_treeview').expand_row(
                         self.tree_model.get_path(keyiter), False)
             else:
@@ -115,7 +136,8 @@ class GTKUserInterface(apport.ui.UserInterface):
         prominent placement. Otherwise, provide a simple explanation for
         more novice users.
         '''
-        from_console = 'TERM=' in self.report.get('ProcEnviron', '')
+        env = self.report.get('ProcEnviron', '')
+        from_console = 'TERM=' in env and 'SHELL=' in env
 
         if from_console:
             if 'ExecutablePath' in self.report:
@@ -132,7 +154,13 @@ class GTKUserInterface(apport.ui.UserInterface):
         return t
 
     def setup_bug_report(self):
-        # This is a bug generated through `apport-bug $package`.
+        # This is a bug generated through `apport-bug $package`, or
+        # `apport-collect $id`.
+
+        # avoid collecting information again, in this mode we already have it 
+        if 'Uname' in self.report:
+            self.collect_called = True
+            self.ui_update_view()
         self.w('title_label').set_label('<big><b>%s</b></big>' %
             _('Send problem report to the developers?'))
         self.w('title_label').show()
@@ -190,17 +218,22 @@ class GTKUserInterface(apport.ui.UserInterface):
                 _('Sorry, a problem occurred while installing software.'))
         else:
             # Regular crash.
-            desktop_file = self.get_desktop_entry()
-            if desktop_file:
-                icon = desktop_file.getIcon()
-                n = desktop_file.getName().encode('UTF-8')
-                n = GLib.markup_escape_text(n).decode('UTF-8')
+            self.desktop_info = self.get_desktop_entry()
+            if self.desktop_info:
+                icon = self.desktop_info.get('icon')
+                n = self.desktop_info['name']
+                n = GLib.markup_escape_text(n)
                 self.w('title_label').set_label('<big><b>%s</b></big>' %
                     _('The application %s has closed unexpectedly.') % n)
                 self.w('subtitle_label').hide()
-                self.w('closed_button').show()
-                self.w('closed_button').set_label(_('Leave Closed'))
-                self.w('continue_button').set_label(_('Relaunch'))
+
+                if 'ProcCmdline' in self.report:
+                    self.w('closed_button').show()
+                    self.w('closed_button').set_label(_('Leave Closed'))
+                    self.w('continue_button').set_label(_('Relaunch'))
+                else:
+                    self.w('closed_button').hide()
+                    self.w('continue_button').set_label(_('Continue'))
             else:
                 icon = 'distributor-logo'
                 title_text = self.get_system_application_title()
@@ -212,6 +245,7 @@ class GTKUserInterface(apport.ui.UserInterface):
                       'try restarting the computer.'))
                 self.w('closed_button').hide()
                 self.w('continue_button').set_label(_('Continue'))
+                self.w('ignore_future_problems').set_label(_('Ignore future problems of this type'))
             if self.report.get('CrashCounter'):
                 self.w('ignore_future_problems').show()
             else:
@@ -223,11 +257,17 @@ class GTKUserInterface(apport.ui.UserInterface):
             app_icon = self.w('application_icon')
             theme = Gtk.IconTheme.get_default()
             try:
-                pb = theme.load_icon(icon, 42, builtin)
+                pb = theme.load_icon(icon, 42, builtin).copy()
                 overlay = theme.load_icon('dialog-error', 16, builtin)
-                overlay.composite(pb, 26, 26, 16, 16, 26, 26, 1, 1,
-                                  GdkPixbuf.InterpType.BILINEAR, 255)
-                app_icon.set_from_pixbuf(pb)
+                overlay_w = overlay.get_width()
+                overlay_h = overlay.get_height()
+                off_x = pb.get_width() - overlay_w
+                off_y = pb.get_height() - overlay_h
+                overlay.composite(pb, off_x, off_y, overlay_w, overlay_h,
+                        off_x, off_y, 1, 1,
+                        GdkPixbuf.InterpType.BILINEAR, 255)
+                if app_icon.get_parent():  # work around LP#938090
+                    app_icon.set_from_pixbuf(pb)
             except GLib.GError:
                 self.w('application_icon').set_from_stock(
                     Gtk.STOCK_DIALOG_ERROR, Gtk.IconSize.DIALOG)
@@ -236,7 +276,9 @@ class GTKUserInterface(apport.ui.UserInterface):
                                                       Gtk.IconSize.DIALOG)
 
         d = self.w('dialog_crash_new')
-        d.set_resizable(False)
+        if 'DistroRelease' in self.report:
+            d.set_title(self.report['DistroRelease'].split()[0])
+        d.set_resizable(self.w('details_scrolledwindow').get_property('visible'))
         d.show()
         # don't steal focus when being called without arguments (i. e.
         # automatically launched)
@@ -259,7 +301,7 @@ class GTKUserInterface(apport.ui.UserInterface):
                 return_value['report'] = True
             if self.w('ignore_future_problems').get_active():
                 return_value['blacklist'] = True
-            if widget.get_label() == _('Relaunch'):
+            if widget == self.w('continue_button') and self.desktop_info:
                 return_value['restart'] = True
             Gtk.main_quit()
 
@@ -337,8 +379,8 @@ class GTKUserInterface(apport.ui.UserInterface):
         if self.w('dialog_crash_new').get_property('visible'):
             self.spinner.show()
             self.spinner.start()
-        else:
-            # show a progress dialog
+        elif self.crashdb.accepts(self.report):
+            # show a progress dialog if our DB accepts the crash
             self.w('progressbar_information_collection').set_fraction(0)
             self.w('window_information_collection').show()
 
@@ -470,6 +512,7 @@ class GTKUserInterface(apport.ui.UserInterface):
             widget.set_label(_('Hide Details'))
             if not self.collect_called:
                 self.collect_called = True
+                self.ui_update_view(['ExecutablePath'])
                 GLib.idle_add(lambda: self.collect_info(on_finished=self.ui_update_view))
         return True
 

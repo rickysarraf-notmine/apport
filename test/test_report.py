@@ -5,10 +5,6 @@ import apport.report
 import problem_report
 import apport.packaging
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 class T(unittest.TestCase):
     def test_add_package_info(self):
@@ -77,7 +73,7 @@ class T(unittest.TestCase):
         self.assertEqual(pr.pid, os.getpid())
         self.assertTrue(set(['ProcEnviron', 'ProcMaps', 'ProcCmdline',
             'ProcMaps']).issubset(set(pr.keys())), 'report has required fields')
-        self.assertTrue('LANG='+os.environ['LANG'] in pr['ProcEnviron'])
+        self.assertTrue('LANG=' + os.environ['LANG'] in pr['ProcEnviron'])
         self.assertTrue('USER' not in pr['ProcEnviron'])
         self.assertTrue('PWD' not in pr['ProcEnviron'])
         self.assertTrue('report.py' in pr['ExecutablePath'])
@@ -89,7 +85,7 @@ class T(unittest.TestCase):
         pr.add_proc_info(extraenv=['PWD'])
         self.assertTrue('USER' not in pr['ProcEnviron'])
         if 'PWD' in os.environ:
-            self.assertTrue('PWD='+os.environ['PWD'] in pr['ProcEnviron'])
+            self.assertTrue('PWD=' + os.environ['PWD'] in pr['ProcEnviron'])
 
         # check process from other user
         restore_root = False
@@ -98,7 +94,7 @@ class T(unittest.TestCase):
             os.setresuid(8, 8, -1)
             restore_root = True
         pr = apport.report.Report()
-        self.assertRaises(OSError, pr.add_proc_info, 1) # EPERM for init process
+        self.assertRaises(OSError, pr.add_proc_info, 1)  # EPERM for init process
         if restore_root:
             os.setresuid(0, 0, -1)
 
@@ -171,10 +167,10 @@ class T(unittest.TestCase):
 
         # check correct handling of interpreted executables: python
         (fd, testscript) = tempfile.mkstemp()
-        os.write(fd, '''#!/usr/bin/python
+        os.write(fd, ('''#!/usr/bin/%s
 import sys
 sys.stdin.readline()
-''')
+''' % os.getenv('PYTHON', 'python3')).encode('ascii'))
         os.close(fd)
         os.chmod(testscript, 0o755)
         p = subprocess.Popen([testscript], stdin=subprocess.PIPE,
@@ -474,7 +470,7 @@ int main() { return f(42); }
 
         return pr
 
-    def _validate_gdb_fields(self,pr):
+    def _validate_gdb_fields(self, pr):
         self.assertTrue('Stacktrace' in pr)
         self.assertTrue('ThreadStacktrace' in pr)
         self.assertTrue('StacktraceTop' in pr)
@@ -502,7 +498,7 @@ int main() { return f(42); }
         pr = self._generate_sigsegv_report()
         self._validate_gdb_fields(pr)
         self.assertEqual(pr['StacktraceTop'], 'f (x=42) at crash.c:3\nmain () at crash.c:6', pr['StacktraceTop'])
-        self.assertFalse ('AssertionMessage' in pr)
+        self.assertFalse('AssertionMessage' in pr)
 
         # crash where gdb generates output on stderr
         pr = self._generate_sigsegv_report(code='''
@@ -514,7 +510,7 @@ int main() {
 ''')
         self._validate_gdb_fields(pr)
         self.assertTrue('Cannot access memory at address 0x0' in pr['Disassembly'], pr['Disassembly'])
-        self.assertFalse ('AssertionMessage' in pr)
+        self.assertFalse('AssertionMessage' in pr)
 
     def test_add_gdb_info_load(self):
         '''add_gdb_info() with inline core dump.'''
@@ -524,7 +520,8 @@ int main() {
         rep.seek(0)
 
         pr = apport.report.Report()
-        pr.load(open(rep.name))
+        with open(rep.name, 'rb') as f:
+            pr.load(f)
         pr.add_gdb_info()
 
         self._validate_gdb_fields(pr)
@@ -536,13 +533,15 @@ int main() {
         rep.seek(0)
 
         pr = apport.report.Report()
-        pr.load(open(rep.name))
+        with open(rep.name, 'rb') as f:
+            pr.load(f)
         pr['Signal'] = '1'
         pr.add_hooks_info('fake_ui')
         self.assertTrue('SegvAnalysis' not in pr.keys())
 
         pr = apport.report.Report()
-        pr.load(open(rep.name))
+        with open(rep.name, 'rb') as f:
+            pr.load(f)
         pr.add_hooks_info('fake_ui')
         self.assertTrue('Skipped: missing required field "Architecture"' in pr['SegvAnalysis'],
                      pr['SegvAnalysis'])
@@ -577,6 +576,7 @@ kill -SEGV $$
 
             # call script and verify that it gives us a proper ELF core dump
             assert subprocess.call([script]) != 0
+            subprocess.check_call(['sync'])
             assert subprocess.call(['readelf', '-n', coredump],
                 stdout=subprocess.PIPE) == 0
 
@@ -618,6 +618,7 @@ $0.bin 2>/dev/null
 
             # call script and verify that it gives us a proper ELF core dump
             assert subprocess.call([script]) != 0
+            subprocess.check_call(['sync'])
             assert subprocess.call(['readelf', '-n', 'core'],
                 stdout=subprocess.PIPE) == 0
 
@@ -661,6 +662,7 @@ LIBC_FATAL_STDERR_=1 $0.bin aaaaaaaaaaaaaaaa 2>/dev/null
 
             # call script and verify that it gives us a proper ELF core dump
             assert subprocess.call([script]) != 0
+            subprocess.check_call(['sync'])
             assert subprocess.call(['readelf', '-n', 'core'],
                 stdout=subprocess.PIPE) == 0
 
@@ -700,6 +702,7 @@ $0.bin 2>/dev/null
 
             # call script and verify that it gives us a proper ELF core dump
             assert subprocess.call([script]) != 0
+            subprocess.check_call(['sync'])
             assert subprocess.call(['readelf', '-n', 'core'],
                 stdout=subprocess.PIPE) == 0
 
@@ -713,7 +716,7 @@ $0.bin 2>/dev/null
             os.unlink('core')
 
         self._validate_gdb_fields(pr)
-        self.assertFalse ('AssertionMessage' in pr, pr.get('AssertionMessage'))
+        self.assertFalse('AssertionMessage' in pr, pr.get('AssertionMessage'))
 
     def test_search_bug_patterns(self):
         '''search_bug_patterns().'''
@@ -736,7 +739,9 @@ $0.bin 2>/dev/null
     </pattern>
     <pattern url="http://bugtracker.net/bugs/4">
         <re key="Package">^coreutils </re>
+        <re></re>
         <re key="Bar">*</re> <!-- invalid RE -->
+        <re key="broken">+[1^</re>
     </pattern>
     <pattern url="http://bugtracker.net/bugs/5">
         <re key="SourcePackage">^bazaar$</re>
@@ -768,43 +773,50 @@ $0.bin 2>/dev/null
         r_invalid = apport.report.Report()
         r_invalid['Package'] = 'invalid 1'
 
+        pattern_url = 'file://' + patterns.name
+
         # positive match cases
-        self.assertEqual(r_bash.search_bug_patterns(patterns.name), 'http://bugtracker.net/bugs/1')
+        self.assertEqual(r_bash.search_bug_patterns(pattern_url),
+                'http://bugtracker.net/bugs/1')
         r_bash['Foo'] = 'write_goodbye'
-        self.assertEqual(r_bash.search_bug_patterns(patterns.name), 'http://bugtracker.net/bugs/2')
-        self.assertEqual(r_coreutils.search_bug_patterns(patterns.name), 'http://bugtracker.net/bugs/3')
-        self.assertEqual(r_bazaar.search_bug_patterns(patterns.name), 'http://bugtracker.net/bugs/5')
+        self.assertEqual(r_bash.search_bug_patterns(pattern_url),
+                'http://bugtracker.net/bugs/2')
+        self.assertEqual(r_coreutils.search_bug_patterns(pattern_url),
+                'http://bugtracker.net/bugs/3')
+        self.assertEqual(r_bazaar.search_bug_patterns(pattern_url),
+                'http://bugtracker.net/bugs/5')
 
         # also works for CompressedValues
         r_bash_compressed = r_bash.copy()
-        r_bash_compressed['Foo'] = problem_report.CompressedValue('bazaar')
-        self.assertEqual(r_bash_compressed.search_bug_patterns(patterns.name), 'http://bugtracker.net/bugs/1')
+        r_bash_compressed['Foo'] = problem_report.CompressedValue(b'bazaar')
+        self.assertEqual(r_bash_compressed.search_bug_patterns(pattern_url),
+                'http://bugtracker.net/bugs/1')
 
         # negative match cases
         r_bash['Package'] = 'bash-static 1-2'
-        self.assertEqual(r_bash.search_bug_patterns(patterns.name), None)
+        self.assertEqual(r_bash.search_bug_patterns(pattern_url), None)
         r_bash['Package'] = 'bash 1-21'
-        self.assertEqual(r_bash.search_bug_patterns(patterns.name), None,
+        self.assertEqual(r_bash.search_bug_patterns(pattern_url), None,
             'does not match on wrong bash version')
         r_bash['Foo'] = 'zz'
-        self.assertEqual(r_bash.search_bug_patterns(patterns.name), None,
+        self.assertEqual(r_bash.search_bug_patterns(pattern_url), None,
             'does not match on wrong Foo value')
         r_coreutils['Bar'] = '11'
-        self.assertEqual(r_coreutils.search_bug_patterns(patterns.name), None,
+        self.assertEqual(r_coreutils.search_bug_patterns(pattern_url), None,
             'does not match on wrong Bar value')
         r_bazaar['SourcePackage'] = 'launchpad'
-        self.assertEqual(r_bazaar.search_bug_patterns(patterns.name), None,
+        self.assertEqual(r_bazaar.search_bug_patterns(pattern_url), None,
             'does not match on wrong source package')
         r_bazaar['LogFile'] = ''
-        self.assertEqual(r_bazaar.search_bug_patterns(patterns.name), None,
+        self.assertEqual(r_bazaar.search_bug_patterns(pattern_url), None,
             'does not match on empty attribute')
 
         # various errors to check for robustness (no exceptions, just None
         # return value)
         del r_coreutils['Bar']
-        self.assertEqual(r_coreutils.search_bug_patterns(patterns.name), None,
+        self.assertEqual(r_coreutils.search_bug_patterns(pattern_url), None,
             'does not match on nonexisting key')
-        self.assertEqual(r_invalid.search_bug_patterns(invalid.name), None,
+        self.assertEqual(r_invalid.search_bug_patterns('file://' + invalid.name), None,
             'gracefully handles invalid XML')
         r_coreutils['Package'] = 'other 2'
         self.assertEqual(r_bash.search_bug_patterns('file:///nonexisting/directory/'), None,
@@ -987,6 +999,11 @@ def add_info(report, ui):
             self.assertEqual(bash_rep.check_ignored(), False)
             self.assertEqual(crap_rep.check_ignored(), False)
             self.assertEqual(cp_rep.check_ignored(), False)
+
+            # does not crash if the executable went away under our feet
+            crap_rep['ExecutablePath'] = '/non existing'
+            crap_rep.mark_ignore()
+            self.assertEqual(os.path.getsize(apport.report.apport.report._ignore_file), 0)
         finally:
             shutil.rmtree(workdir)
             apport.report.apport.report._ignore_file = orig_ignore_file
@@ -1269,7 +1286,7 @@ baz()
 
         report = apport.report.Report('KernelOops')
         report['OopsText'] = '------------[ cut here ]------------\nkernel BUG at /tmp/oops.c:5!\ninvalid opcode: 0000 [#1] SMP'
-        self.assertEqual(report.standard_title(),'kernel BUG at /tmp/oops.c:5!')
+        self.assertEqual(report.standard_title(), 'kernel BUG at /tmp/oops.c:5!')
 
     def test_obsolete_packages(self):
         '''obsolete_packages().'''
@@ -1540,7 +1557,6 @@ ZeroDivisionError: integer division or modulo by zero'''
         r['Traceback'] = 'FooBar'
         self.assertEqual(r.crash_signature(), None)
 
-
         # kernel
         r['ProblemType'] = 'KernelCrash'
         r['Stacktrace'] = '''
@@ -1645,49 +1661,26 @@ RUNQUEUES[0]: c6002320
         r['AssertionMessage'] = 'foo.c:42 main: i > 0'
         self.assertEqual(r.crash_signature(), '/bin/bash:foo.c:42 main: i > 0')
 
-    def test_binary_data(self):
-        '''methods get along with binary data.'''
-
-        pr = apport.report.Report()
-        pr['Signal'] = '11'
-        pr['ExecutablePath'] = '/bin/foo'
-        pr['Stacktrace'] = '''#0  0x10000488 in h (p="\0\0\0\1\2") at crash.c:25
-#1  0x10000550 in main () at crash.c:31
-'''
-        pr['ThreadStacktrace'] = pr['Stacktrace']
-        pr['ProcCmdline'] = 'python\0-OO\011\0/bin/bash'
-        pr._gen_stacktrace_top()
-
-        io = StringIO()
-        pr.write(io)
-        io.seek(0)
-        pr = apport.report.Report()
-        pr.load(io, binary='compressed')
-
-        assert hasattr(pr['StacktraceTop'], 'get_value')
-
-        self.assertEqual(pr.has_useful_stacktrace(), True)
-        self.assertEqual(pr.crash_signature(), '/bin/foo:11:h:main')
-        self.assertEqual(pr.standard_title(), 'foo crashed with SIGSEGV in h()')
-
     def test_nonascii_data(self):
         '''methods get along with non-ASCII data'''
 
         # fake os.uname() into reporting a non-ASCII name
         uname = os.uname()
-        uname = (uname[0], 't♪x', uname[2], uname[3], uname[4])
+        uname = (uname[0], b't\xe2\x99\xaax'.decode('UTF-8'), uname[2], uname[3], uname[4])
         orig_uname = os.uname
         os.uname = lambda: uname
 
         try:
             pr = apport.report.Report()
-            pr['ProcUnicodeValue'] = u'ä %s ♥ ' % uname[1].decode('UTF-8')
-            pr['ProcByteArrayValue'] = b'ä %s ♥ ' % uname[1]
+            utf8_val = b'\xc3\xa4 ' + uname[1].encode('UTF-8') + b' \xe2\x99\xa5 '
+            pr['ProcUnicodeValue'] = utf8_val.decode('UTF-8')
+            pr['ProcByteArrayValue'] = utf8_val
 
             pr.anonymize()
 
-            self.assertEqual(pr['ProcUnicodeValue'], u'ä hostname ♥ ')
-            self.assertEqual(pr['ProcByteArrayValue'], b'ä hostname ♥ ')
+            exp_utf8 = b'\xc3\xa4 hostname \xe2\x99\xa5 '
+            self.assertEqual(pr['ProcUnicodeValue'], exp_utf8.decode('UTF-8'))
+            self.assertEqual(pr['ProcByteArrayValue'], exp_utf8)
         finally:
             os.uname = orig_uname
 

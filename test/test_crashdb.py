@@ -4,12 +4,13 @@ import unittest, tempfile, shutil, os.path, copy
 import apport
 from apport.crashdb_impl.memory import CrashDatabase
 
+
 class T(unittest.TestCase):
     def setUp(self):
         self.workdir = tempfile.mkdtemp()
         self.dupdb_dir = os.path.join(self.workdir, 'dupdb')
         self.crashes = CrashDatabase(None, {'dummy_data': '1',
-            'dupdb_url': self.dupdb_dir})
+            'dupdb_url': 'file://' + self.dupdb_dir})
 
         self.assertEqual(self.crashes.get_comment_url(self.crashes.download(0),
             0), 'http://foo.bugs.example.com/0')
@@ -71,6 +72,36 @@ databases = {
         db = apport.crashdb.get_crashdb(None, 'on_thefly', crashdb_conf.name)
         self.assertFalse('dyn_opion' in db.options)
         self.assertEqual(db.options['whoami'], 'dynname')
+
+    def test_accepts_default(self):
+        '''accepts(): default configuration'''
+
+        # by default crash DBs accept any type
+        self.assertTrue(self.crashes.accepts(apport.Report('Crash')))
+        self.assertTrue(self.crashes.accepts(apport.Report('Bug')))
+        self.assertTrue(self.crashes.accepts(apport.Report('weirdtype')))
+
+    def test_accepts_problem_types(self):
+        '''accepts(): problem_types option in crashdb.conf'''
+
+        # create a crash DB with type limits
+        crashdb_conf = tempfile.NamedTemporaryFile()
+        crashdb_conf.write(b'''default = 'testsuite'
+
+databases = {
+    'testsuite': {
+        'impl': 'memory',
+        'problem_types': ['Bug', 'Kernel'],
+    },
+}
+''')
+        crashdb_conf.flush()
+
+        db = apport.crashdb.get_crashdb(None, None, crashdb_conf.name)
+
+        self.assertTrue(db.accepts(apport.Report('Bug')))
+        self.assertFalse(db.accepts(apport.Report('Crash')))
+        self.assertFalse(db.accepts(apport.Report('weirdtype')))
 
     #
     # Test memory.py implementation
@@ -276,7 +307,7 @@ databases = {
         self.crashes.reports[3]['fixed_version'] = '4.1'
 
         # ID#4 is dup of ID#3, but happend in version 5 -> regression
-        self.crashes.close_duplicate(self.crashes.download(4), 4, None) # reset
+        self.crashes.close_duplicate(self.crashes.download(4), 4, None)  # reset
         self.assertEqual(self.crashes.check_duplicate(4), None)
         self.assertEqual(self.crashes.duplicate_of(4), None)
         self.assertEqual(self.crashes.reports[4]['comment'], 'regression, already fixed in #3')
@@ -354,6 +385,8 @@ databases = {
         self.crashes.init_duplicate_db(':memory:')
         self.assertEqual(self.crashes.check_duplicate(5), None)
         self.assertEqual(self.crashes.check_duplicate(6), (5, None))
+
+        self.crashes.duplicate_db_publish(self.dupdb_dir)
 
     def test_check_duplicate_custom_signature(self):
         '''check_duplicate() with custom DuplicateSignature: field'''
@@ -440,7 +473,7 @@ databases = {
 
         # now throw the interesting b at it
         self.assertEqual(self.crashes.check_duplicate(7, b), (5, None))
-        
+
         # s and b should now be duplicates of a
         self.assertEqual(self.crashes.duplicate_of(5), None)
         self.assertEqual(self.crashes.duplicate_of(6), 5)
@@ -576,6 +609,28 @@ databases = {
 
         self.assertEqual(self.crashes._duplicate_db_dump(), {})
 
+    def test_duplicate_db_publish_long_sigs(self):
+        '''duplicate_db_publish() with very long signatures'''
+
+        self.crashes.init_duplicate_db(':memory:')
+
+        # give #0 a long symbolic sig which needs lots of quoting
+        symb = self.crashes.download(0)
+        symb.crash_signature = lambda: 's+' * 1000
+
+        # and #1 a long addr sig
+        addr = self.crashes.download(1)
+        addr.crash_signature_addresses = lambda: '0x1+/' * 1000
+
+        self.assertEqual(self.crashes.known(symb), None)
+        self.assertEqual(self.crashes.check_duplicate(0), None)
+        self.assertEqual(self.crashes.known(addr), None)
+        self.assertEqual(self.crashes.check_duplicate(1), None)
+
+        self.crashes.duplicate_db_publish(self.dupdb_dir)
+        self.assertEqual(self.crashes.known(symb), 'http://foo.bugs.example.com/0')
+        self.assertEqual(self.crashes.known(addr), 'http://foo.bugs.example.com/1')
+
     def test_change_master_id(self):
         '''duplicate_db_change_master_id()'''
 
@@ -626,7 +681,7 @@ databases = {
 
             # damage file
             f = open(db, 'r+')
-            f.truncate(os.path.getsize(db)*2/3)
+            f.truncate(os.path.getsize(db) * 2 / 3)
             f.close()
 
             self.crashes = CrashDatabase(None, {})

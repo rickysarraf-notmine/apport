@@ -1,6 +1,7 @@
-import unittest, time, traceback, sys
+import unittest
 
 import apport
+
 
 class T(unittest.TestCase):
     def test_get_uninstalled_package(self):
@@ -13,4 +14,3 @@ class T(unittest.TestCase):
         self.assertTrue(apport.packaging.is_distro_package(p))
 
 unittest.main()
-

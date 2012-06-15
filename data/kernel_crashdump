@@ -29,17 +29,17 @@ if os.path.exists(vmcore_path + '.log'):
 
 # write report
 try:
-    pr.write(open(apport.fileutils.make_report_path(pr), 'w'))
-except IOError, e:
+    with open(apport.fileutils.make_report_path(pr), 'wb') as f:
+        pr.write(f)
+except IOError as e:
     apport.fatal('Cannot create report: ' + str(e))
 
 # clean up the core files
 try:
     os.unlink(vmcore_path)
 except OSError:
-    pass # huh, already gone?
+    pass  # huh, already gone?
 try:
     os.unlink(vmcore_path + '.log')
 except OSError:
     pass
-

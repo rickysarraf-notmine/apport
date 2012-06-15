@@ -11,10 +11,11 @@ import tempfile, unittest, subprocess, sys, os, os.path, shutil
 
 import apport, apport.fileutils
 
+
 class T(unittest.TestCase):
     def setUp(self):
         mydir = os.path.dirname(os.path.realpath(sys.argv[0]))
-        datadir = os.environ.get('APPORT_DATA_DIR','/usr/share/apport')
+        datadir = os.environ.get('APPORT_DATA_DIR', '/usr/share/apport')
         self.srcdir = os.path.dirname(mydir)
         self.orig_report_dir = apport.fileutils.report_dir
         apport.fileutils.report_dir = tempfile.mkdtemp()
@@ -40,7 +41,8 @@ class T(unittest.TestCase):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = p.communicate()
         self.assertNotEqual(p.returncode, 0, 'crash must exit with nonzero code')
-        self.assertTrue("Can't catch this" in err, 'crash handler must print original exception:\n' + err)
+        self.assertTrue(b"Can't catch this" in err,
+                'crash handler must print original exception:\n' + err.decode())
 
         self._check_crash_report(os.path.dirname(self.crash_jar_path) + '/crash.class')
 
@@ -52,7 +54,8 @@ class T(unittest.TestCase):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = p.communicate()
         self.assertNotEqual(p.returncode, 0, 'crash must exit with nonzero code')
-        self.assertTrue("Can't catch this" in err, 'crash handler must print original exception:\n' + err)
+        self.assertTrue(b"Can't catch this" in err,
+                'crash handler must print original exception:\n' + err.decode())
 
         self._check_crash_report(self.crash_jar_path + '!/crash.class')
 
@@ -62,7 +65,8 @@ class T(unittest.TestCase):
         reports = apport.fileutils.get_new_reports()
         self.assertEqual(len(reports), 1, 'did not create a crash report')
         r = apport.Report()
-        r.load(open(reports[0]))
+        with open(reports[0], 'rb') as f:
+            r.load(f)
         self.assertEqual(r['ProblemType'], 'Crash')
         self.assertTrue(r['ProcCmdline'].startswith('java -classpath'))
         self.assertTrue(r['StackTrace'].startswith(

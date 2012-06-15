@@ -18,9 +18,18 @@ import hashlib
 import warnings
 warnings.filterwarnings('ignore', 'apt API not stable yet', FutureWarning)
 import apt
+try:
+    import cPickle as pickle
+    from urllib import urlopen
+    (pickle, urlopen)  # pyflakes
+except ImportError:
+    # python 3
+    from urllib.request import urlopen
+    import pickle
 
 import apport
 from apport.packaging import PackageInfo
+
 
 class __AptDpkgPackageInfo(PackageInfo):
     '''Concrete apport.PackageInfo class implementation for python-apt and
@@ -28,30 +37,72 @@ class __AptDpkgPackageInfo(PackageInfo):
 
     def __init__(self):
         self._apt_cache = None
+        self._sandbox_apt_cache = None
         self._contents_dir = None
         self._mirror = None
+        self._virtual_mapping_obj = None
 
         self.configuration = '/etc/default/apport'
 
     def __del__(self):
         try:
             if self._contents_dir:
-                import shutil
                 shutil.rmtree(self._contents_dir)
         except AttributeError:
             pass
 
+    def _virtual_mapping(self, configdir):
+        if self._virtual_mapping_obj is not None:
+            return self._virtual_mapping_obj
+
+        mapping_file = os.path.join(configdir, 'virtual_mapping.pickle')
+        if os.path.exists(mapping_file):
+            with open(mapping_file, 'rb') as fp:
+                self._virtual_mapping_obj = pickle.load(fp)
+        else:
+            self._virtual_mapping_obj = {}
+
+        return self._virtual_mapping_obj
+
+    def _save_virtual_mapping(self, configdir):
+        mapping_file = os.path.join(configdir, 'virtual_mapping.pickle')
+        if self._virtual_mapping_obj is not None:
+            with open(mapping_file, 'wb') as fp:
+                pickle.dump(self._virtual_mapping_obj, fp)
+
     def _cache(self):
         '''Return apt.Cache() (initialized lazily).'''
 
+        self._sandbox_apt_cache = None
         if not self._apt_cache:
             try:
                 # avoid spewage on stdout
-                self._apt_cache = apt.Cache(apt.progress.base.OpProgress())
+                progress = apt.progress.base.OpProgress()
+                self._apt_cache = apt.Cache(progress, rootdir='/')
             except AttributeError:
                 # older python-apt versions do not yet have above argument
-                self._apt_cache = apt.Cache()
+                self._apt_cache = apt.Cache(rootdir='/')
         return self._apt_cache
+
+    def _sandbox_cache(self, aptroot, apt_sources, fetchProgress):
+        '''Build apt sandbox and return apt.Cache(rootdir=) (initialized lazily).
+
+        Clear the package selection on subsequent calls.
+        '''
+        self._apt_cache = None
+        if not self._sandbox_apt_cache:
+            self._build_apt_sandbox(aptroot, apt_sources)
+            rootdir = os.path.abspath(aptroot)
+            self._sandbox_apt_cache = apt.Cache(rootdir=rootdir)
+            try:
+                # We don't need to update this multiple times.
+                self._sandbox_apt_cache.update(fetchProgress)
+            except apt.cache.FetchFailedException as e:
+                raise SystemError(str(e))
+            self._sandbox_apt_cache.open()
+        else:
+            self._sandbox_apt_cache.clear()
+        return self._sandbox_apt_cache
 
     def _apt_pkg(self, package):
         '''Return apt.Cache()[package] (initialized lazily).
@@ -138,10 +189,8 @@ class __AptDpkgPackageInfo(PackageInfo):
             except IOError:
                 pass
 
-        origins = None
-        origins = pkg.candidate.origins
-        if origins: # might be None
-            for o in origins:
+        if pkg.candidate and pkg.candidate.origins:  # might be None
+            for o in pkg.candidate.origins:
                 if o.origin in native_origins:
                     return True
         return False
@@ -183,7 +232,7 @@ class __AptDpkgPackageInfo(PackageInfo):
             return []
 
         # create a list of files with a newer timestamp for md5sum'ing
-        sums = ''
+        sums = b''
         sumfile = '/var/lib/dpkg/info/%s:%s.md5sums' % (package, self.get_system_architecture())
         if not os.path.exists(sumfile):
             sumfile = '/var/lib/dpkg/info/%s.md5sums' % package
@@ -191,18 +240,18 @@ class __AptDpkgPackageInfo(PackageInfo):
                 # some packages do not ship md5sums
                 return []
 
-        with open(sumfile) as fd:
+        with open(sumfile, 'rb') as fd:
             for line in fd:
                 try:
                     # ignore lines with NUL bytes (happens, LP#96050)
-                    if '\0' in line:
+                    if b'\0' in line:
                         apport.warning('%s contains NUL character, ignoring line', sumfile)
                         continue
-                    words  = line.split()
+                    words = line.split()
                     if not words:
                         apport.warning('%s contains empty line, ignoring line', sumfile)
                         continue
-                    s = os.stat('/' + words[-1])
+                    s = os.stat('/' + words[-1].decode('UTF-8'))
                     if max(s.st_mtime, s.st_ctime) <= max_time:
                         continue
                 except OSError:
@@ -223,12 +272,12 @@ class __AptDpkgPackageInfo(PackageInfo):
         official user-facing API for this, which will ask for confirmation and
         allows filtering.
         '''
-        dpkg = subprocess.Popen(['dpkg-query','-W','--showformat=${Conffiles}',
+        dpkg = subprocess.Popen(['dpkg-query', '-W', '--showformat=${Conffiles}',
             package], stdout=subprocess.PIPE, close_fds=True)
 
         out = dpkg.communicate()[0].decode()
         if dpkg.returncode != 0:
-           return {}
+            return {}
 
         modified = {}
         for line in out.splitlines():
@@ -262,7 +311,7 @@ class __AptDpkgPackageInfo(PackageInfo):
 
         while not match and i < len(file_list):
             p = subprocess.Popen(['fgrep', '-lxm', '1', '--', pattern] +
-                file_list[i:i+slice_size], stdin=subprocess.PIPE,
+                file_list[i:(i + slice_size)], stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
             out = p.communicate()[0].decode('UTF-8')
             if p.returncode == 0:
@@ -408,7 +457,6 @@ class __AptDpkgPackageInfo(PackageInfo):
         special in various ways currently so we can not use the apt
         method.
         '''
-        import urllib, apt_pkg
         installed = []
         outdated = []
         kver = report['Uname'].split()[1]
@@ -419,17 +467,17 @@ class __AptDpkgPackageInfo(PackageInfo):
         if debug_pkgname in c and c[debug_pkgname].isInstalled:
             #print('kernel ddeb already installed')
             return (installed, outdated)
-        target_dir = apt_pkg.Config.FindDir('Dir::Cache::archives')+'/partial'
+        target_dir = apt.apt_pkg.config.find_dir('Dir::Cache::archives') + '/partial'
         deb = '%s_%s_%s.ddeb' % (debug_pkgname, ver, arch)
         # FIXME: this package is currently not in Packages.gz
         url = 'http://ddebs.ubuntu.com/pool/main/l/linux/%s' % deb
         out = open(os.path.join(target_dir, deb), 'w')
         # urlretrieve does not return 404 in the headers so we use urlopen
-        u = urllib.urlopen(url)
+        u = urlopen(url)
         if u.getcode() > 400:
             return ('', 'linux')
         while True:
-            block = u.read(8*1024)
+            block = u.read(8 * 1024)
             if not block:
                 break
             out.write(block)
@@ -440,7 +488,7 @@ class __AptDpkgPackageInfo(PackageInfo):
         return (installed, outdated)
 
     def install_packages(self, rootdir, configdir, release, packages,
-            verbose=False, cache_dir=None):
+            verbose=False, cache_dir=None, permanent_rootdir=False):
         '''Install packages into a sandbox (for apport-retrace).
 
         In order to work without any special permissions and without touching
@@ -461,6 +509,9 @@ class __AptDpkgPackageInfo(PackageInfo):
 
         If cache_dir is given, then the downloaded packages will be stored
         there, to speed up subsequent retraces.
+
+        If permanent_rootdir is True, then the sandbox created from the
+        downloaded packages will be reused, to speed up subsequent retraces.
 
         Return a string with outdated packages, or None if all packages were
         installed.
@@ -483,26 +534,26 @@ class __AptDpkgPackageInfo(PackageInfo):
                 aptroot = os.path.join(cache_dir, release, 'apt')
             else:
                 aptroot = os.path.join(cache_dir, 'system', 'apt')
-            try:
+            if not os.path.isdir(aptroot):
                 os.makedirs(aptroot)
-            except OSError:
-                pass
         else:
             tmp_aptroot = True
             aptroot = tempfile.mkdtemp()
-
-        self._build_apt_sandbox(aptroot, apt_sources)
 
         if verbose:
             fetchProgress = apt.progress.text.AcquireProgress()
         else:
             fetchProgress = apt.progress.base.AcquireProgress()
-        c = apt.Cache(rootdir=os.path.abspath(aptroot))
-        try:
-            c.update(fetchProgress)
-        except apt.cache.FetchFailedException as e:
-            raise SystemError(str(e))
-        c.open()
+        if not tmp_aptroot:
+            c = self._sandbox_cache(aptroot, apt_sources, fetchProgress)
+        else:
+            self._build_apt_sandbox(aptroot, apt_sources)
+            c = apt.Cache(rootdir=os.path.abspath(aptroot))
+            try:
+                c.update(fetchProgress)
+            except apt.cache.FetchFailedException as e:
+                raise SystemError(str(e))
+            c.open()
 
         obsolete = ''
 
@@ -524,6 +575,51 @@ class __AptDpkgPackageInfo(PackageInfo):
                 obsolete += w + '\n'
             real_pkgs.add(pkg)
 
+            if permanent_rootdir:
+                mapping_path = os.path.join(cache_dir, release)
+                virtual_mapping = self._virtual_mapping(mapping_path)
+                # Remember all the virtual packages that this package provides,
+                # so that if we encounter that virtual package as a
+                # Conflicts/Replaces later, we know to remove this package from
+                # the cache.
+                for p in candidate.provides:
+                    virtual_mapping.setdefault(p, set()).add(pkg)
+                conflicts = []
+                if 'Conflicts' in candidate.record:
+                    conflicts += apt.apt_pkg.parse_depends(candidate.record['Conflicts'])
+                if 'Replaces' in candidate.record:
+                    conflicts += apt.apt_pkg.parse_depends(candidate.record['Replaces'])
+                archives = apt.apt_pkg.config.find_dir('Dir::Cache::archives')
+                for conflict in conflicts:
+                    # apt_pkg.parse_depends needs to handle the or operator,
+                    # but as policy states it is invalid to use that in
+                    # Replaces/Depends, we can safely choose the first value
+                    # here.
+                    conflict = conflict[0]
+                    if c.is_virtual_package(conflict[0]):
+                        try:
+                            providers = virtual_mapping[conflict[0]]
+                        except KeyError:
+                            # We may not have seen the virtual package that
+                            # this conflicts with, so we can assume it's not
+                            # unpacked into the sandbox.
+                            continue
+                        for p in providers:
+                            debs = os.path.join(archives, '%s_*.deb' % p)
+                            for path in glob.glob(debs):
+                                ver = self._deb_version(path)
+                                if apt.apt_pkg.check_dep(ver, conflict[2],
+                                                              conflict[1]):
+                                    os.unlink(path)
+                        del providers
+                    else:
+                        debs = os.path.join(archives, '%s_*.deb' % conflict[0])
+                        for path in glob.glob(debs):
+                            ver = self._deb_version(path)
+                            if apt.apt_pkg.check_dep(ver, conflict[2],
+                                                          conflict[1]):
+                                os.unlink(path)
+
             if candidate.architecture != 'all':
                 if pkg + '-dbg' in c:
                     real_pkgs.add(pkg + '-dbg')
@@ -536,19 +632,21 @@ class __AptDpkgPackageInfo(PackageInfo):
         for p in real_pkgs:
             c[p].mark_install(False, False)
 
+        last_written = time.time()
         # fetch packages
         fetcher = apt.apt_pkg.Acquire(fetchProgress)
         try:
             c.fetch_archives(fetcher=fetcher)
         except apt.cache.FetchFailedException as e:
             apport.error('Package download error, try again later: %s', str(e))
-            sys.exit(99) # transient error
+            sys.exit(99)  # transient error
 
         # unpack packages
         if verbose:
             print('Extracting downloaded debs...')
         for i in fetcher.items:
-            subprocess.check_call(['dpkg', '-x', i.destfile, rootdir])
+            if not permanent_rootdir or os.path.getctime(i.destfile) > last_written:
+                subprocess.check_call(['dpkg', '-x', i.destfile, rootdir])
             real_pkgs.remove(os.path.basename(i.destfile).split('_', 1)[0])
 
         if tmp_aptroot:
@@ -558,12 +656,8 @@ class __AptDpkgPackageInfo(PackageInfo):
         assert not real_pkgs, 'apt fetcher did not fetch these packages: ' \
             + ' '.join(real_pkgs)
 
-        # work around python-apt bug that causes parts of the Cache(rootdir=)
-        # argument configuration to be persistent; this resets the apt
-        # configuration to system defaults again
-        apt.Cache(rootdir='/')
-        self._apt_cache = None
-
+        if permanent_rootdir:
+            self._save_virtual_mapping(mapping_path)
         return obsolete
 
     def package_name_glob(self, nameglob):
@@ -575,7 +669,8 @@ class __AptDpkgPackageInfo(PackageInfo):
     # Internal helper methods
     #
 
-    def _call_dpkg(self, args):
+    @classmethod
+    def _call_dpkg(klass, args):
         '''Call dpkg with given arguments and return output, or return None on
         error.'''
 
@@ -591,18 +686,19 @@ class __AptDpkgPackageInfo(PackageInfo):
         '''Internal function for calling md5sum.
 
         This is separate from get_modified_files so that it is automatically
-        testable.'''
-
+        testable.
+        '''
         if os.path.exists(sumfile):
             m = subprocess.Popen(['/usr/bin/md5sum', '-c', sumfile],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True,
                 cwd='/', env={})
-            out = m.communicate()[0].decode(errors='replace')
+            out = m.communicate()[0].decode('UTF-8', errors='replace')
         else:
+            assert type(sumfile) == bytes, 'md5sum list value must be a byte array'
             m = subprocess.Popen(['/usr/bin/md5sum', '-c'],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE, close_fds=True, cwd='/', env={})
-            out = m.communicate(sumfile.encode())[0].decode(errors='replace')
+            out = m.communicate(sumfile)[0].decode('UTF-8', errors='replace')
 
         # if md5sum succeeded, don't bother parsing the output
         if m.returncode == 0:
@@ -661,10 +757,6 @@ class __AptDpkgPackageInfo(PackageInfo):
             assert lsb_release.returncode == 0
 
             url = '%s/dists/%s/Contents-%s.gz' % (self._get_mirror(), release_name, arch)
-            try:
-                from urllib.request import urlopen
-            except ImportError:
-                from urllib import urlopen
 
             src = urlopen(url)
             with open(map, 'wb') as f:
@@ -730,6 +822,16 @@ class __AptDpkgPackageInfo(PackageInfo):
             shutil.copytree('/etc/apt/trusted.gpg.d', trusted_d)
         else:
             os.makedirs(trusted_d)
+
+    @classmethod
+    def _deb_version(klass, pkg):
+        '''Return the version of a .deb file'''
+
+        dpkg = subprocess.Popen(['dpkg-deb', '-f', pkg, 'Version'], stdout=subprocess.PIPE)
+        out = dpkg.communicate(input)[0].decode('UTF-8')
+        assert dpkg.returncode == 0
+        assert out
+        return out
 
     def compare_versions(self, ver1, ver2):
         '''Compare two package versions.

@@ -1,4 +1,3 @@
-#!/usr/bin/python
 '''Test the various package hooks.'''
 
 # Copyright (C) 2007 - 2009 Canonical Ltd.
@@ -11,17 +10,14 @@
 # the full text of the license.
 
 import unittest, subprocess, tempfile, os, shutil, os.path, sys, optparse
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 import apport, apport.fileutils
 
 # parse command line options
 optparser = optparse.OptionParser('%prog [options]')
 
-datadir = os.environ.get('APPORT_DATA_DIR','/usr/share/apport')
+datadir = os.environ.get('APPORT_DATA_DIR', '/usr/share/apport')
+
 
 class T(unittest.TestCase):
     def setUp(self):
@@ -42,14 +38,15 @@ class T(unittest.TestCase):
 
         ph = subprocess.Popen(['%s/package_hook' % datadir, '-p', 'bash'],
             stdin=subprocess.PIPE)
-        ph.communicate('something is wrong')
+        ph.communicate(b'something is wrong')
         self.assertEqual(ph.returncode, 0, 'package_hook finished successfully')
 
         reps = apport.fileutils.get_new_reports()
         self.assertEqual(len(reps), 1, 'package_hook created a report')
 
         r = apport.Report()
-        r.load(open(reps[0]))
+        with open(reps[0], 'rb') as f:
+            r.load(f)
 
         self.assertEqual(r['ProblemType'], 'Package')
         self.assertEqual(r['Package'], 'bash')
@@ -62,14 +59,15 @@ class T(unittest.TestCase):
         pkg = apport.packaging.get_uninstalled_package()
         ph = subprocess.Popen(['%s/package_hook' % datadir, '-p', pkg],
             stdin=subprocess.PIPE)
-        ph.communicate('something is wrong')
+        ph.communicate(b'something is wrong')
         self.assertEqual(ph.returncode, 0, 'package_hook finished successfully')
 
         reps = apport.fileutils.get_new_reports()
         self.assertEqual(len(reps), 1, 'package_hook created a report')
 
         r = apport.Report()
-        r.load(open(reps[0]))
+        with open(reps[0], 'rb') as f:
+            r.load(f)
 
         self.assertEqual(r['ProblemType'], 'Package')
         self.assertEqual(r['Package'], pkg)
@@ -79,22 +77,26 @@ class T(unittest.TestCase):
     def test_package_hook_logs(self):
         '''package_hook with a log dir and a log file.'''
 
-        open(os.path.join(self.workdir, 'log_1.log'), 'w').write('Log 1\nbla')
-        open(os.path.join(self.workdir, 'log2'), 'w').write('Yet\nanother\nlog')
+        with open(os.path.join(self.workdir, 'log_1.log'), 'w') as f:
+            f.write('Log 1\nbla')
+        with open(os.path.join(self.workdir, 'log2'), 'w') as f:
+            f.write('Yet\nanother\nlog')
         os.mkdir(os.path.join(self.workdir, 'logsub'))
-        open(os.path.join(self.workdir, 'logsub', 'notme.log'), 'w').write('not me!')
+        with open(os.path.join(self.workdir, 'logsub', 'notme.log'), 'w') as f:
+            f.write('not me!')
 
         ph = subprocess.Popen(['%s/package_hook' % datadir, '-p', 'bash', '-l',
             os.path.realpath(sys.argv[0]), '-l', self.workdir],
             stdin=subprocess.PIPE)
-        ph.communicate('something is wrong')
+        ph.communicate(b'something is wrong')
         self.assertEqual(ph.returncode, 0, 'package_hook finished successfully')
 
         reps = apport.fileutils.get_new_reports()
         self.assertEqual(len(reps), 1, 'package_hook created a report')
 
         r = apport.Report()
-        r.load(open(reps[0]))
+        with open(reps[0], 'rb') as f:
+            r.load(f)
 
         filekey = None
         log1key = None
@@ -117,11 +119,28 @@ class T(unittest.TestCase):
         self.assertEqual(r[log1key], 'Log 1\nbla')
         self.assertEqual(r[log2key], 'Yet\nanother\nlog')
 
+    def test_package_hook_tags(self):
+        '''package_hook with extra tags argument.'''
+
+        ph = subprocess.Popen(['%s/package_hook' % datadir, '-p', 'bash',
+            '-t', 'dist-upgrade, verybad'], stdin=subprocess.PIPE)
+        ph.communicate(b'something is wrong')
+        self.assertEqual(ph.returncode, 0, 'package_hook finished successfully')
+
+        reps = apport.fileutils.get_new_reports()
+        self.assertEqual(len(reps), 1, 'package_hook created a report')
+
+        r = apport.Report()
+        with open(reps[0], 'rb') as f:
+            r.load(f)
+
+        self.assertEqual(r['Tags'], 'dist-upgrade verybad')
+
     def test_kernel_crashdump(self):
         '''kernel_crashdump.'''
 
-        f = open(os.path.join(apport.fileutils.report_dir, 'vmcore'), 'w')
-        f.write('\x01' * 100)
+        f = open(os.path.join(apport.fileutils.report_dir, 'vmcore'), 'wb')
+        f.write(b'\x01' * 100)
         f.close()
         f = open(os.path.join(apport.fileutils.report_dir, 'vmcore.log'), 'w')
         f.write('vmcore successfully dumped')
@@ -134,19 +153,20 @@ class T(unittest.TestCase):
         self.assertEqual(len(reps), 1, 'kernel_crashdump created a report')
 
         r = apport.Report()
-        r.load(open(reps[0]))
+        with open(reps[0], 'rb') as f:
+            r.load(f)
 
         self.assertEqual(set(r.keys()), set(['Date', 'Package', 'ProblemType',
             'VmCore', 'VmCoreLog', 'Uname', 'Architecture', 'DistroRelease']))
         self.assertEqual(r['ProblemType'], 'KernelCrash')
         self.assertEqual(r['VmCoreLog'], 'vmcore successfully dumped')
-        self.assertEqual(r['VmCore'], '\x01' * 100)
+        self.assertEqual(r['VmCore'], b'\x01' * 100)
         self.assertTrue('linux' in r['Package'])
 
         self.assertTrue(os.uname()[2].split('-')[0] in r['Package'])
 
         r.add_package_info(r['Package'])
-        self.assertTrue(' ' in r['Package']) # appended version number
+        self.assertTrue(' ' in r['Package'])  # appended version number
 
     @classmethod
     def _gcc_version_path(klass):
@@ -154,7 +174,7 @@ class T(unittest.TestCase):
         as a tuple.'''
 
         gcc = subprocess.Popen(['gcc', '--version'], stdout=subprocess.PIPE)
-        out = gcc.communicate()[0]
+        out = gcc.communicate()[0].decode()
         assert gcc.returncode == 0, '"gcc --version" must work for this test suite'
 
         gcc_ver = '.'.join(out.splitlines()[0].split()[2].split('.')[:2])
@@ -171,7 +191,7 @@ class T(unittest.TestCase):
         (gcc_version, gcc_path) = self._gcc_version_path()
 
         test_source = tempfile.NamedTemporaryFile()
-        test_source.write('int f(int x);')
+        test_source.write(b'int f(int x);')
         test_source.flush()
         test_source.seek(0)
 
@@ -182,11 +202,11 @@ class T(unittest.TestCase):
         self.assertEqual(len(reps), 1, 'gcc_ice_hook created a report')
 
         r = apport.Report()
-        r.load(open(reps[0]))
-
+        with open(reps[0], 'rb') as f:
+            r.load(f)
         self.assertEqual(r['ProblemType'], 'Crash')
         self.assertEqual(r['ExecutablePath'], gcc_path)
-        self.assertEqual(r['PreprocessedSource'], test_source.read())
+        self.assertEqual(r['PreprocessedSource'], test_source.read().decode())
 
         r.add_package_info()
 
@@ -202,14 +222,15 @@ class T(unittest.TestCase):
 
         hook = subprocess.Popen(['%s/gcc_ice_hook' % datadir, gcc_path, '-'],
             stdin=subprocess.PIPE)
-        hook.communicate(test_source)
+        hook.communicate(test_source.encode())
         self.assertEqual(hook.returncode, 0, 'gcc_ice_hook finished successfully')
 
         reps = apport.fileutils.get_new_reports()
         self.assertEqual(len(reps), 1, 'gcc_ice_hook created a report')
 
         r = apport.Report()
-        r.load(open(reps[0]))
+        with open(reps[0], 'rb') as f:
+            r.load(f)
 
         self.assertEqual(r['ProblemType'], 'Crash')
         self.assertEqual(r['ExecutablePath'], gcc_path)
@@ -228,14 +249,15 @@ Modules linked in: oops cpufreq_stats ext2 i915 drm nf_conntrack_ipv4 ipt_REJECT
 '''
         hook = subprocess.Popen(['%s/kernel_oops' % datadir],
             stdin=subprocess.PIPE)
-        hook.communicate(test_source)
+        hook.communicate(test_source.encode())
         self.assertEqual(hook.returncode, 0, 'kernel_oops finished successfully')
 
         reps = apport.fileutils.get_new_reports()
         self.assertEqual(len(reps), 1, 'kernel_oops created a report')
 
         r = apport.Report()
-        r.load(open(reps[0]))
+        with open(reps[0], 'rb') as f:
+            r.load(f)
 
         self.assertEqual(r['ProblemType'], 'KernelOops')
         self.assertEqual(r['OopsText'], test_source)

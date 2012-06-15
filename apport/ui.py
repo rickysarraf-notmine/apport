@@ -13,7 +13,7 @@ implementation (like GTK, Qt, or CLI).
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-__version__ = '1.94.1'
+__version__ = '2.2.3'
 
 import glob, sys, os.path, optparse, traceback, locale, gettext
 import errno, zlib
@@ -24,14 +24,24 @@ import apport, apport.fileutils, apport.REThread
 from apport.crashdb import get_crashdb, NeedsCredentials
 from apport import unicode_gettext as _
 
-symptom_script_dir = os.environ.get('APPORT_SYMPTOMS_DIR',
-                                    '/usr/share/apport/symptoms')
-PF_KTHREAD = 0x200000
+if sys.version_info.major == 2:
+    from ConfigParser import ConfigParser
+    ConfigParser  # pyflakes
+else:
+    from configparser import ConfigParser
+
 
 def excstr(exception):
     '''Return exception message as unicode.'''
 
-    return str(exception).decode(locale.getpreferredencoding(), 'replace')
+    if sys.version_info.major == 2:
+        return str(exception).decode(locale.getpreferredencoding(), 'replace')
+    return str(exception)
+
+symptom_script_dir = os.environ.get('APPORT_SYMPTOMS_DIR',
+                                    '/usr/share/apport/symptoms')
+PF_KTHREAD = 0x200000
+
 
 def thread_collect_info(report, reportfile, package, ui, symptom_script=None,
         ignore_uninstalled=False):
@@ -52,7 +62,8 @@ def thread_collect_info(report, reportfile, package, ui, symptom_script=None,
     if symptom_script:
         symb = {}
         try:
-            exec(compile(open(symptom_script).read(), symptom_script, 'exec'), symb)
+            with open(symptom_script) as f:
+                exec(compile(f.read(), symptom_script, 'exec'), symb)
             package = symb['run'](report, ui)
             if not package:
                 apport.error('symptom script %s did not determine the affected package', symptom_script)
@@ -101,8 +112,6 @@ package. Please remove any third party package and try again.') % \
         if not ignore_uninstalled:
             raise
 
-    report.anonymize()
-
     # add title
     if 'Title' not in report:
         title = report.standard_title()
@@ -123,12 +132,12 @@ problem still occurs:\n\n%s') % ', '.join(old_pkgs)
     #    report['UnreportableReason'] = _('The program crashed on an assertion failure, but the message could not be retrieved. Apport does not support reporting these crashes.')
 
     if reportfile:
-        f = open(reportfile, 'a')
-        os.chmod (reportfile, 0)
-        report.write(f, only_new=True)
-        f.close()
+        with open(reportfile, 'ab') as f:
+            os.chmod(reportfile, 0)
+            report.write(f, only_new=True)
         apport.fileutils.mark_report_seen(reportfile)
-        os.chmod (reportfile, 0o600)
+        os.chmod(reportfile, 0o640)
+
 
 class UserInterface:
     '''Apport user interface API.
@@ -233,7 +242,7 @@ class UserInterface:
                             repr(e)))
                     self.ui_shutdown()
                     return
-                except ValueError: # package does not exist
+                except ValueError:  # package does not exist
                     self.ui_error_message(_('Invalid problem report'),
                         _('The report belongs to a package that is not installed.'))
                     self.ui_shutdown()
@@ -264,11 +273,17 @@ class UserInterface:
             # We check for duplicates and unreportable crashes here, rather
             # than before we show the dialog, as we want to submit these to the
             # crash database, but not Launchpad.
-            if self.handle_duplicate():
-                return
-            if self.check_unreportable():
-                return
-            self.file_report()
+            if self.crashdb.accepts(self.report):
+                # FIXME: This behaviour is not really correct, but necessary as
+                # long as we only support a single crashdb and have whoopsie
+                # hardcoded. Once we have multiple crash dbs, we need to check
+                # accepts() earlier, and not even present the data if none of
+                # the DBs wants the report. See LP#957177 for details.
+                if self.handle_duplicate():
+                    return
+                if self.check_unreportable():
+                    return
+                self.file_report()
         except IOError as e:
             # fail gracefully if file is not readable for us
             if e.errno in (errno.EPERM, errno.EACCES):
@@ -313,7 +328,8 @@ class UserInterface:
         # if PID is given, add info
         if self.options.pid:
             try:
-                stat = open('/proc/%s/stat' % self.options.pid).read().split()
+                with open('/proc/%s/stat' % self.options.pid) as f:
+                    stat = f.read().split()
                 flags = int(stat[8])
                 if flags & PF_KTHREAD:
                     # this PID is a kernel thread
@@ -376,9 +392,8 @@ class UserInterface:
 
         if self.options.save:
             try:
-                f = open(os.path.expanduser(self.options.save), 'w')
-                self.report.write(f)
-                f.close()
+                with open(os.path.expanduser(self.options.save), 'wb') as f:
+                    self.report.write(f)
             except (IOError, OSError) as e:
                 self.ui_error_message(_('Cannot create report'), excstr(e))
         else:
@@ -427,7 +442,7 @@ class UserInterface:
             #print('Collecting apport information for source package %s...' % p)
             self.cur_package = p
             self.report['SourcePackage'] = p
-            self.report['Package'] = p # no way to find this out
+            self.report['Package'] = p  # no way to find this out
 
             # we either must have the package installed or a source package hook
             # available to collect sensible information
@@ -488,7 +503,8 @@ class UserInterface:
                 continue
             symb = {}
             try:
-                exec(compile(open(script).read(), script, 'exec'), symb)
+                with open(script) as f:
+                    exec(compile(f.read(), script, 'exec'), symb)
             except:
                 apport.error('symptom script %s is invalid', script)
                 traceback.print_exc()
@@ -700,7 +716,7 @@ class UserInterface:
         '''Format the given integer as humanly readable and i18n'ed file size.'''
 
         if size < 1000000:
-            return locale.format('%.1f', size/1000.) + ' KB'
+            return locale.format('%.1f', size / 1000.) + ' KB'
         if size < 1000000000:
             return locale.format('%.1f', size / 1000000.) + ' MB'
         return locale.format('%.1f', size / float(1000000000)) + ' GB'
@@ -828,7 +844,7 @@ class UserInterface:
         else:
             # check if we already ran, skip if so
             if (self.report.get('ProblemType') == 'Crash' and 'Stacktrace' in self.report) or \
-               (self.report.get('ProblemType') != 'Crash' and 'DistroRelease' in self.report):
+               (self.report.get('ProblemType') != 'Crash' and 'Dependencies' in self.report):
                 if on_finished:
                     on_finished()
                 return
@@ -901,6 +917,18 @@ class UserInterface:
                     else:
                         self.report['KnownReport'] = val
 
+            # anonymize; needs to happen after duplicate checking, otherwise we
+            # might damage the stack trace
+            anonymize_thread = apport.REThread.REThread(target=self.report.anonymize)
+            anonymize_thread.start()
+            while anonymize_thread.isAlive():
+                self.ui_pulse_info_collection_progress()
+                try:
+                    anonymize_thread.join(0.1)
+                except KeyboardInterrupt:
+                    sys.exit(1)
+            anonymize_thread.exc_raise()
+
             self.ui_stop_info_collection_progress()
 
             # check that we were able to determine package names
@@ -945,7 +973,7 @@ class UserInterface:
         # browser with it to get the user's web browser settings.
         try:
             uid = int(os.getenv('SUDO_UID'))
-            sudo_prefix = ['sudo', '-H', '-u', '#'+str(uid)]
+            sudo_prefix = ['sudo', '-H', '-u', '#' + str(uid)]
         except TypeError:
             sudo_prefix = []
 
@@ -962,7 +990,13 @@ class UserInterface:
 
     def file_report(self):
         '''Upload the current report and guide the user to the reporting web page.'''
-
+        # FIXME: This behaviour is not really correct, but necessary as
+        # long as we only support a single crashdb and have whoopsie
+        # hardcoded. Once we have multiple crash dbs, we need to check
+        # accepts() earlier, and not even present the data if none of
+        # the DBs wants the report. See LP#957177 for details.
+        if not self.crashdb.accepts(self.report):
+            return
         # drop PackageArchitecture if equal to Architecture
         if self.report.get('PackageArchitecture') == self.report.get('Architecture'):
             try:
@@ -982,7 +1016,7 @@ class UserInterface:
 
         def progress_callback(sent, total):
             global __upload_progress
-            __upload_progress = float(sent)/total
+            __upload_progress = float(sent) / total
 
         self.ui_start_upload_progress()
         upthread = apport.REThread.REThread(target=self.crashdb.upload,
@@ -1030,7 +1064,8 @@ class UserInterface:
         '''
         try:
             self.report = apport.Report()
-            self.report.load(open(path), binary='compressed')
+            with open(path, 'rb') as f:
+                self.report.load(f, binary='compressed')
             if 'ProblemType' not in self.report:
                 raise ValueError('Report does not contain "ProblemType" field')
         except MemoryError:
@@ -1080,8 +1115,10 @@ class UserInterface:
 
         If so, display an info message and return True.
         '''
+        if not self.crashdb.accepts(self.report):
+            return False
         if 'UnreportableReason' in self.report:
-            if isinstance(self.report['UnreportableReason'], str):
+            if type(self.report['UnreportableReason']) == bytes:
                 self.report['UnreportableReason'] = self.report['UnreportableReason'].decode('UTF-8')
             if 'Package' in self.report:
                 title = _('Problem in %s') % self.report['Package'].split()[0]
@@ -1093,7 +1130,7 @@ class UserInterface:
         return False
 
     def get_desktop_entry(self):
-        '''Return a matching xdg.DesktopEntry for the current report.
+        '''Return a .desktop info dictionary for the current report.
 
         Return None if report cannot be associated to a .desktop file.
         '''
@@ -1103,14 +1140,19 @@ class UserInterface:
             try:
                 desktop_file = apport.fileutils.find_package_desktopfile(self.cur_package)
             except ValueError:
-                desktop_file = None
-
-        if desktop_file:
-            try:
-                import xdg.DesktopEntry
-                return xdg.DesktopEntry.DesktopEntry(desktop_file)
-            except:
                 return None
+
+        if not desktop_file:
+            return None
+
+        cp = ConfigParser()
+        cp.read(desktop_file)
+        if not cp.has_section('Desktop Entry'):
+            return None
+        result = dict(cp.items('Desktop Entry'))
+        if 'name' not in result:
+            return None
+        return result
 
     def handle_duplicate(self):
         '''Check if current report matches a bug pattern.
@@ -1118,6 +1160,8 @@ class UserInterface:
         If so, tell the user about it, open the existing bug in a browser, and
         return True.
         '''
+        if not self.crashdb.accepts(self.report):
+            return False
         if 'KnownReport' not in self.report:
             return False
 
@@ -1272,6 +1316,7 @@ might be helpful for the developers.'))
         Return a tuple (username, password), or None if cancelled.
         '''
         raise NotImplementedError('this function must be overridden by subclasses')
+
 
 class HookUI:
     '''Interactive functions which can be used in package hooks.
