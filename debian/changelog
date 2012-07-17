@@ -1,3 +1,11 @@
+apport (2.2.3-2) experimental; urgency=low
+
+  * [cd3d4e5] Switch package source format to 3.0 (quilt)
+  * [accce3a] Add Debian bug reporting support in Apport (Closes: #677629)
+  * [906855a] Add some READMEs documenting apport's purpose
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Tue, 17 Jul 2012 18:00:14 +0530
+
 apport (2.2.3-1) experimental; urgency=low
 
   * [fc4f37c] add Vcs headers
