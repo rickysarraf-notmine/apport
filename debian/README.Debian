@@ -1,0 +1,15 @@
+Configuration
+-----------------
+
+To use apport to send bug reports, please set your email address
+and a smtp server in your /etc/default/apport configuration file.
+
+If you do not know a smtp server, leave it to the default.
+
+
+
+Usage
+---------
+
+Please be conscious when filing bug reports with apport. Ensure that
+it is a bug and not a faulty user error behavior
