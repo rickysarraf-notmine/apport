@@ -1,7 +1,7 @@
 Index: apport/apport/ui.py
 ===================================================================
---- apport.orig/apport/ui.py	2012-07-17 16:22:21.500139336 +0530
-+++ apport/apport/ui.py	2012-07-17 16:22:26.876165997 +0530
+--- apport.orig/apport/ui.py	2012-07-17 16:22:43.144246656 +0530
++++ apport/apport/ui.py	2012-07-18 12:57:46.638360312 +0530
 @@ -19,6 +19,9 @@
  import errno, zlib
  import subprocess, threading, webbrowser
@@ -12,7 +12,7 @@ Index: apport/apport/ui.py
  import apport, apport.fileutils, apport.REThread
  
  from apport.crashdb import get_crashdb, NeedsCredentials
-@@ -988,7 +991,90 @@
+@@ -988,7 +991,92 @@
              os.write(w, str(e))
              sys.exit(1)
  
@@ -32,6 +32,8 @@ Index: apport/apport/ui.py
 +    def email_report(self,sender=None, smtphost=None):
 +	'''In Debian, we use BTS, which is heavily email oriented
 +	   This is an adaption of file_report() into the very basic email interface'''
++
++	bts_recipient = 'submit@bugs.debian.org'
 +
 +	# At this time, we are not ready to take CrashDumps
 +        try:
@@ -62,11 +64,11 @@ Index: apport/apport/ui.py
 +	msg = MIMEText(temp.file.read())
 +	msg['Subject'] = self.report['Title']
 +	msg['From'] = sender
-+	msg['To'] = 'rrs@researchut.com'
++	msg['To'] = bts_recipient
 +
 +	sys.stdout.write(smtphost)
 +	s = smtplib.SMTP(smtphost)
-+	s.sendmail(sender, 'submit@bugs.debian.org', msg.as_string() )
++	s.sendmail(sender, bts_recipient, msg.as_string() )
 +	s.quit()
 +
 +
