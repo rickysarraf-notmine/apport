@@ -1,7 +1,7 @@
 Index: apport/apport/ui.py
 ===================================================================
---- apport.orig/apport/ui.py	2012-07-18 12:57:55.086402202 +0530
-+++ apport/apport/ui.py	2012-07-19 00:53:36.742699521 +0530
+--- apport.orig/apport/ui.py	2012-07-19 01:11:23.563989586 +0530
++++ apport/apport/ui.py	2012-07-19 01:11:50.040120886 +0530
 @@ -19,6 +19,9 @@
  import errno, zlib
  import subprocess, threading, webbrowser
@@ -12,19 +12,24 @@ Index: apport/apport/ui.py
  import apport, apport.fileutils, apport.REThread
  
  from apport.crashdb import get_crashdb, NeedsCredentials
-@@ -988,7 +991,93 @@
+@@ -988,7 +991,98 @@
              os.write(w, str(e))
              sys.exit(1)
  
 +    def check_maintainer_pref(self, package_name):
 +	'''Checks for the tag Apport: No in the control fields'''
++
++	control_fields = tempfile.NamedTemporaryFile()
++
 +	try:
-+	    control_fields = os.popen("%s %s" % ("apt-cache show ", package_name) )
++	    x =  subprocess.Popen(["/usr/bin/apt-cache", "show", package_name],stdout=control_fields)
 +	except:
 +	    # Something's screwed. Just bail for now
 +	    return False
 +	
-+	for each_record in control_fields:
++	control_fields.file.flush()
++	control_fields.file.seek(0)
++	for each_record in control_fields.file.readlines():
 +	    if each_record.startswith("Apport: No"):
 +		return False
 +	return True
