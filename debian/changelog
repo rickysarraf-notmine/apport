@@ -1,3 +1,10 @@
+apport (2.2.3-4) UNRELEASED; urgency=low
+
+  * [7d9a488] Check harder for distribution string
+  * [b284128] Use subprocess instead of os.popen()
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Thu, 19 Jul 2012 01:13:43 +0530
+
 apport (2.2.3-3) experimental; urgency=low
 
   * [e6ebc33] fix bts email address
