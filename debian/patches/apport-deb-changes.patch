@@ -1,7 +1,7 @@
 Index: apport/apport/ui.py
 ===================================================================
---- apport.orig/apport/ui.py	2012-07-17 16:22:43.144246656 +0530
-+++ apport/apport/ui.py	2012-07-18 12:57:46.638360312 +0530
+--- apport.orig/apport/ui.py	2012-07-18 12:57:55.086402202 +0530
++++ apport/apport/ui.py	2012-07-19 00:53:36.742699521 +0530
 @@ -19,6 +19,9 @@
  import errno, zlib
  import subprocess, threading, webbrowser
@@ -12,7 +12,7 @@ Index: apport/apport/ui.py
  import apport, apport.fileutils, apport.REThread
  
  from apport.crashdb import get_crashdb, NeedsCredentials
-@@ -988,7 +991,92 @@
+@@ -988,7 +991,93 @@
              os.write(w, str(e))
              sys.exit(1)
  
@@ -41,19 +41,20 @@ Index: apport/apport/ui.py
 +        except KeyError:
 +            pass
 +
-+	temp = tempfile.NamedTemporaryFile()
-+
 +	# Frame the report in the format the BTS understands
 +	(buggyPackage, buggyVersion) = self.report['Package'].split(' ')
-+	temp.file.write("Package: " + buggyPackage + "\n")
-+	temp.file.write("Version: " + buggyVersion + "\n\n\n")
-+	temp.file.write("=============================\n\n")
-+	temp.file.flush()
 +
 +	# First we check for the Maintainer's preference
 +	if not self.check_maintainer_pref(buggyPackage):
 +	    self.ui_error_message("Error", "The developer of package %s has chosen not to receive apport reports. If you think this bug is valid, please send an email directly to the developer" % (buggyPackage) )
 +	    sys.exit(0)
++
++	temp = tempfile.NamedTemporaryFile()
++
++	temp.file.write("Package: " + buggyPackage + "\n")
++	temp.file.write("Version: " + buggyVersion + "\n\n\n")
++	temp.file.write("=============================\n\n")
++	temp.file.flush()
 +
 +	# Now write the apport bug report
 +	self.report.write(temp)
@@ -75,12 +76,12 @@ Index: apport/apport/ui.py
      def file_report(self):
 +	'''changed file_report() to ubuntu_file_report()'''
 +
-+	if platform.dist()[0] == 'Debian':
++	if platform.dist()[0] in 'Debian' or platform.dist()[0] in 'debian':
 +	    try:
 +		deb_file = open("/etc/default/apport", 'r')
 +	    except:
-+		# No default settngs. Quitting
-+		pass
++		self.ui_error_message("Error", "Please configure apport settings in /etc/default/apport")
++		sys.exit(1)
 +		
 +	    sender = None
 +	    smtphost = None
