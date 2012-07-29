@@ -1,7 +1,8 @@
-apport (2.2.3-4) UNRELEASED; urgency=low
+apport (2.2.3-4) experimental; urgency=low
 
   * [7d9a488] Check harder for distribution string
   * [b284128] Use subprocess instead of os.popen()
+  * [3ce6341] Drop non-existent Recommends of apport-symptoms package
 
  -- Ritesh Raj Sarraf <rrs@debian.org>  Thu, 19 Jul 2012 01:13:43 +0530
 
