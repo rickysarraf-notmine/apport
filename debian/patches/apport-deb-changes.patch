@@ -1,7 +1,7 @@
 Index: apport/apport/ui.py
 ===================================================================
---- apport.orig/apport/ui.py	2012-07-19 01:11:23.563989586 +0530
-+++ apport/apport/ui.py	2012-07-19 01:11:50.040120886 +0530
+--- apport.orig/apport/ui.py	2012-07-19 01:12:14.848243893 +0530
++++ apport/apport/ui.py	2012-07-31 00:18:17.374409508 +0530
 @@ -19,6 +19,9 @@
  import errno, zlib
  import subprocess, threading, webbrowser
@@ -12,7 +12,7 @@ Index: apport/apport/ui.py
  import apport, apport.fileutils, apport.REThread
  
  from apport.crashdb import get_crashdb, NeedsCredentials
-@@ -988,7 +991,98 @@
+@@ -988,7 +991,101 @@
              os.write(w, str(e))
              sys.exit(1)
  
@@ -71,6 +71,9 @@ Index: apport/apport/ui.py
 +	msg['Subject'] = self.report['Title']
 +	msg['From'] = sender
 +	msg['To'] = bts_recipient
++
++	# Subscribe the submitted to the bug report
++	msg.add_header('X-Debbugs-CC', sender)
 +
 +	sys.stdout.write(smtphost)
 +	s = smtplib.SMTP(smtphost)
