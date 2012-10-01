@@ -74,7 +74,7 @@ Architecture: all
 Depends: ${python3:Depends},
  ${misc:Depends}
 Description: Python 3 library to handle problem reports
- This Python library provides an interface for creating, modifying,
+ This Python 3 library provides an interface for creating, modifying,
  and accessing standardized problem reports for program and kernel
  crashes and packaging bugs.
  .
@@ -109,7 +109,7 @@ Depends: ${python3:Depends},
  ${misc:Depends}
 Recommends: apport
 Description: Python 3 library for Apport crash report handling
- This Python package provides high-level functions for creating and
+ This Python 3 package provides high-level functions for creating and
  handling apport crash reports:
  .
   * Query available and new reports.
