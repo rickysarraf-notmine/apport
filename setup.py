@@ -32,10 +32,11 @@ class build_java_subdir(distutils.core.Command):
         oldwd = os.getcwd()
         os.chdir('java')
 
-        subprocess.check_call(['javac'] + glob('com/ubuntu/apport/*.java'))
+        subprocess.check_call(['javac', '-source', '1.5', '-target', '1.5'] +
+                              glob('com/ubuntu/apport/*.java'))
         subprocess.check_call(['jar', 'cvf', 'apport.jar'] +
-                            glob('com/ubuntu/apport/*.class'))
-        subprocess.check_call(['javac', 'crash.java'])
+                              glob('com/ubuntu/apport/*.class'))
+        subprocess.check_call(['javac', '-source', '1.5', '-target', '1.5', 'crash.java'])
         subprocess.check_call(['jar', 'cvf', 'crash.jar', 'crash.class'])
 
         os.chdir(oldwd)
@@ -108,20 +109,21 @@ except (OSError, subprocess.CalledProcessError):
 
 from apport.ui import __version__
 
-DistUtilsExtra.auto.setup(name='apport',
-      author='Martin Pitt',
-      author_email='martin.pitt@ubuntu.com',
-      url='https://launchpad.net/apport',
-      license='gpl',
-      description='intercept, process, and report crashes and bug reports',
-      version=__version__,
+DistUtilsExtra.auto.setup(
+    name='apport',
+    author='Martin Pitt',
+    author_email='martin.pitt@ubuntu.com',
+    url='https://launchpad.net/apport',
+    license='gpl',
+    description='intercept, process, and report crashes and bug reports',
+    version=__version__,
 
-      data_files=[('share/mime/packages', glob('xdg-mime/*')),
-                  # these are not supposed to be called directly, use apport-bug instead
-                  ('share/apport', ['gtk/apport-gtk', 'kde/apport-kde']),
-                  ('share/apport/testsuite/', glob('test/*')),
-                  ('share/doc/apport/', glob('doc/*.txt')),
-                  ('lib/pm-utils/sleep.d/', glob('pm-utils/sleep.d/*')),
-                  ] + optional_data_files,
-      cmdclass=cmdclass
+    data_files=[('share/mime/packages', glob('xdg-mime/*')),
+                # these are not supposed to be called directly, use apport-bug instead
+                ('share/apport', ['gtk/apport-gtk', 'kde/apport-kde']),
+                ('share/apport/testsuite/', glob('test/*')),
+                ('share/doc/apport/', glob('doc/*.txt')),
+                ('lib/pm-utils/sleep.d/', glob('pm-utils/sleep.d/*')),
+                ] + optional_data_files,
+    cmdclass=cmdclass
 )

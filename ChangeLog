@@ -1,3 +1,1581 @@
+=== 2.6.1 ===
+2012-10-01  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2506] release 2.6.1
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/apport.pot,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2505] merge po
+
+	* NEWS,
+	* setup.py: [2504] * setup.py: Specify "-source 1.5" javac option as
+	well, to avoid build failure with OpenJDK 7.
+
+=== 2.6 ===
+2012-10-01  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2503] release 2.6
+
+	* NEWS,
+	* test/test_python_crashes.py: [2502] * test_python_crashes.py:
+	Robustify "$PYTHONPATH in ProcEnviron" check.
+
+2012-10-01  Martin Pitt <martin.pitt@canonical.com>
+
+	* apport/crashdb_impl/debian.py: Added.
+
+	* NEWS,
+	* etc/apport/crashdb.conf: Modified.
+
+	[2501] * Add apport/crashdb_impl/debian.py: Initial crash database
+	implementation for the Debian BTS. Add configuration for it to
+	etc/apport/crashdb.conf. Thanks Ritesh Raj Sarraf!
+
+2012-10-01  Launchpad Translations on behalf of apport-hackers
+
+	* po/el.po: [2500] Launchpad automatic translations update.
+
+2012-09-28  Evan Dandrea <evan.dandrea@canonical.com>
+
+	* backends/packaging-apt-dpkg.py: [2499] Corrupt reports can have
+	packages with '%' in the name, which breaks apport.warning.
+
+2012-09-28  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/report.py: [2498] * report.py, add_proc_info(): Show if
+	$XDG_RUNTIME_DIR is set.
+
+	* NEWS,
+	* setup.py: [2497] * setup.py: Build java module with "-target 1.5"
+	option, so that you can run it with OpenJDK 6 even if you build with
+	OpenJDK 7.
+
+=== 2.5.3 ===
+2012-09-28  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2496] release 2.5.3
+
+	* NEWS,
+	* apport_python_hook.py,
+	* test/test_python_crashes.py: [2495] * apport_python_hook.py: Capture
+	$PYTHONPATH and $PYTHONHOME environment variables for Python crashes.
+	Thanks Brian Murray.
+
+2012-09-26  Launchpad Translations on behalf of apport-hackers
+
+	* po/hr.po: [2494] Launchpad automatic translations update.
+
+2012-09-24  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2493] * report.py, search_bug_patterns(): Fix
+	bug patterns containing non-ASCII characters. Thanks Brian Murray.
+
+2012-09-23  Launchpad Translations on behalf of apport-hackers
+
+	* po/fr.po: [2492] Launchpad automatic translations update.
+
+2012-09-20  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/hookutils.py: [2491] * hookutils.py,
+	attach_root_command_outputs(): Ignore IOError crash about nonexisting
+	files, which can happen if the user dismisses authorization. (LP:
+	#1051222)
+
+	* apport/crashdb_impl/launchpad.py: [2490] launchpad.py: Fix tag
+	filtering (r2487) for Python 3. (LP: #1052754)
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2489] * launchpad.py: Temporarily
+	disable filing private bugs in the test suite, to work around the
+	SSLHandshakeError error when downloading private attachments from
+	staging.
+
+2012-09-19  Martin Pitt <martin.pitt@canonical.com>
+
+	* apport/ui.py: [2488] apport/ui.py: update expected exception after
+	r2486
+
+2012-09-18  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2487] * launchpad.py: Replace
+	characters from tags which are not allowed by Launchpad with '.' (LP:
+	#1029479)
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py: [2486] * packaging-apt-dpkg.py: When
+	throwing ValueErrors, show the non-existing package name. This makes
+	it easier to debug such crashes.
+
+	* NEWS,
+	* data/apportcheckresume: [2485] * data/apportcheckresume: Open report
+	file in binary mode. (LP: #1040353)
+
+=== 2.5.2 ===
+2012-09-17  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2484] release 2.5.2
+
+2012-09-13  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2483] Launchpad automatic translations update.
+
+2012-09-10  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2482] * report.py, _check_bug_pattern(): Fix
+	bug pattern matching against binary values. Thanks Brian Murray for
+	the original patch. (LP: #1016380)
+
+2012-09-05  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2481] * launchpad.py: Add missing
+	"Pre-release Freeze" status. Thanks Brian Murray!
+
+2012-09-05  Launchpad Translations on behalf of apport-hackers
+
+	* po/my.po: Added.
+
+	[2480] Launchpad automatic translations update.
+
+2012-09-05  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* kde/apport-kde: [2479] * apport-kde: Fix crash with undefined
+	QString under Python 3. Thanks Jonathan Riddell! (LP: #1028984)
+
+2012-09-02  Launchpad Translations on behalf of apport-hackers
+
+	* po/cs.po: [2478] Launchpad automatic translations update.
+
+2012-08-31  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2477] * report.py: Fix crash on determination
+	of Python module path when examining a crash of "python -m ...".
+
+	* NEWS,
+	* gtk/apport-gtk,
+	* test/test_ui_gtk.py: [2476] * apport-gtk: For console program
+	crashes, say "stopped" instead of "closed". Add a subtitle label with
+	a hint about hanging programs. Thanks Matt Price and Matthew Paul
+	Thomas!
+
+2012-08-28  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2475] Launchpad automatic translations update.
+
+2012-08-24  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py,
+	* test/test_ui.py: [2474] * Fix crash on broken .desktop files. (LP:
+	#1039889)
+
+	* NEWS,
+	* test/test_hookutils.py: [2473] * test_hookutils.py,
+	test_in_session_of_problem(): Use year 2038 for a future date instead
+	of 2211, as current Python 3.2 now crashes with an OverflowError on 32
+	bit machines with later years.
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py: [2472] * packaging-apt-dpkg.py: Add
+	recommended packages to "Dependencies:" field. (LP: #1014428)
+
+	* NEWS,
+	* test/run: [2471] * test/run: Ignore root_info_wrapper with pyflakes.
+
+=== 2.5.1 ===
+2012-08-22  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2470] release 2.5.1
+
+	* NEWS: [2469] * data/root_info_wrapper: Turn into a real file, a
+	symlink can cause some packaging problems.
+
+=== 2.5 ===
+2012-08-22  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2468] release 2.5
+
+	* apport/report.py: [2467] report.py: Fix r2465 for Python 2
+
+	* NEWS,
+	* apport/fileutils.py,
+	* apport/report.py,
+	* apport/ui.py,
+	* test/test_report.py: [2466] * report.py, add_hooks_info(): If
+	reporting against a package/program in /opt, also search for package
+	hooks in the corresponding /opt directory. This allows such hooks to
+	define a custom crash database and thus report bugs against their own
+	project instead of against the distribution. (LP: #1020503)
+
+	* apport/report.py: [2465] report.py, add_hooks_info(): Factorize
+	common code
+
+	* NEWS,
+	* apport/crashdb.py,
+	* apport/ui.py,
+	* doc/crashdb-conf.txt,
+	* doc/package-hooks.txt,
+	* test/test_ui.py: [2464] * Package hooks which want to send the
+	report to a different crash database than "default" can now also give
+	the database specification itself in the "CrashDB" field, not just the
+	DB name. With this, packages do not need to ship a separate
+	/etc/apport/crashdb.conf.d/ file. Please see doc/package-hooks.txt for
+	details. (LP: #551330)
+
+	* apport/hookutils.py: [2463] hookutils.py: Clean up old code line
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/apport.pot,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2462] merge i18n, update German translations
+
+2012-08-22  Martin Pitt <martin.pitt@canonical.com>
+
+	* apport/com.ubuntu.apport.policy.in,
+	* data/root_info_wrapper: Added.
+
+	* NEWS,
+	* apport/hookutils.py,
+	* po/apport.pot: Modified.
+
+	[2461] * hookutils.py, attach_root_command_outputs() and
+	root_command_output(): Drop usage of sudo, kdesudo, and gksu, and
+	replace with pkexec. For attach_root_command_outputs(), use a wrapper
+	and proper .policy file which explains the action and works under
+	every environment; thus attach_root_command_outputs() is preferred
+	over root_command_output() now, as it provides a better user
+	experience.
+
+2012-08-22  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2460] revert r2455, incomplete fix
+
+2012-08-18  Launchpad Translations on behalf of apport-hackers
+
+	* po/se.po: Added.
+
+	[2459] Launchpad automatic translations update.
+
+2012-08-17  Launchpad Translations on behalf of apport-hackers
+
+	* po/de.po: [2458] Launchpad automatic translations update.
+
+2012-08-16  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/hookutils.py,
+	* test/test_hookutils.py: [2457] * hookutils.py: Allow specifying a
+	list of profile names when using attach_mac_events(). Thanks Marc
+	Deslauriers.
+
+	* apport/__init__.py: [2456] Fix whitespace
+
+	* NEWS,
+	* apport/ui.py: [2455] * ui.py: Only create the .upload file after
+	collect_info() has completed, to avoid uploading broken reports
+	through whoopsie. Thanks Brian Murray. (LP: #1020994)
+
+2012-08-15  Launchpad Translations on behalf of apport-hackers
+
+	* po/eo.po: [2454] Launchpad automatic translations update.
+
+2012-08-06  Launchpad Translations on behalf of apport-hackers
+
+	* po/en_AU.po,
+	* po/en_GB.po: [2453] Launchpad automatic translations update.
+
+2012-08-05  Launchpad Translations on behalf of apport-hackers
+
+	* po/es.po: [2452] Launchpad automatic translations update.
+
+2012-08-03  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* bin/apport-retrace: [2451] * apport-retrace: Keep compressed
+	CoreDump from .crash files instead of uncompressing them into memory.
+	This dramatically reduces memory usage. (LP: #981155)
+
+	* NEWS,
+	* apport/__init__.py,
+	* bin/apport-retrace: [2450] * Add an apport.memdbg() function which
+	prints out current memory usage if APPORT_MEMDEBUG is set. Annotate
+	apport-retrace with it.
+
+	* NEWS: [2449] NEWS: Fix typo
+
+2012-07-31  Launchpad Translations on behalf of apport-hackers
+
+	* po/hi.po: [2448] Launchpad automatic translations update.
+
+2012-07-27  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/REThread.py,
+	* test/test_rethread.py: [2447] * REThread.py: Fix re-raising of
+	exceptions in Python 3. Thanks Martin * Packman! (LP: #1024836)
+
+2012-07-26  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2446] Launchpad automatic translations update.
+
+2012-07-24  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py: [2445] * packaging-apt-dpkg.py: Fix
+	crash on writing virtual_mapping.db when running with --sandbox-dir
+	and -S system or giving no --cache.
+
+2012-07-23  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/test_recoverable_problem.py: [2444] *
+	test_recoverable_problem.py: Fix test for calling test runner with
+	absolute path.
+
+=== 2.4 ===
+2012-07-18  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2443] release 2.4
+
+2012-07-18  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2442] Launchpad automatic translations update.
+
+2012-07-13  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* bin/apport-retrace: [2441] * apport-retrace: Fix UnicodeDecodeError
+	when encountering a non-ASCII source code file and running under a
+	non-UTF-8 locale.
+
+2012-07-13  Martin Pitt <martin.pitt@canonical.com>
+
+	* data/recoverable_problem,
+	* test/test_recoverable_problem.py: Added.
+
+	* NEWS,
+	* gtk/apport-gtk,
+	* kde/apport-kde,
+	* test/test_ui_gtk.py,
+	* test/test_ui_kde.py: Modified.
+
+	[2440] * Add new "RecoverableProblem" report type for problems which
+	the application can handle, but still wishes to notify the user and
+	send a problem report about. As an example, the application may wish
+	to notify the user because handling the error resulted in degraded
+	functionality. The user interface may fail to load items, or the
+	action just performed may not return any data. Applications call
+	/usr/share/apport/recoverable_problem with a string of arbitrary NUL-
+	separated key/value pairs that are added to the report. Thanks Evan
+	Dandrea!
+
+2012-07-13  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb.py: [2439] * crashdb.py, check_duplicate(): Do not
+	try to mark a bug as duplicate of itself. This can happen when re-
+	processing a previously retraced bug.
+
+	* NEWS,
+	* bin/apport-retrace: [2438] * apport-retrace: Fix StacktraceSource
+	generation for relative --cache paths.
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2437] * launchpad.py: Fix setting
+	of 'Medium' importance on duplicate checking.
+
+2012-07-10  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/test_python_crashes.py: [2436] * test_python_crashes.py: Fix
+	race condition in timeout test.
+
+	* NEWS,
+	* test/test_hooks.py,
+	* test/test_report.py,
+	* test/test_signal_crashes.py: [2435] * testsuite: Fix
+	ResourceWarnings when running with Python 3.
+
+	* test/run: [2434] test/run: Run python_crashes against a local d-bus,
+	not the actual session one
+
+	* NEWS,
+	* test/test_ui.py: [2433] * ui tests, test_wait_for_pid(): Fix eternal
+	hang when running as root.
+
+	* NEWS,
+	* apport/hookutils.py: [2432] * hookutils.py, attach_alsa(): Use alsa-
+	info.sh when available. Thanks David Henningson.
+
+2012-07-10  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2431] Launchpad automatic translations update.
+
+2012-07-09  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport_python_hook.py,
+	* test/test_python_crashes.py: [2430] * apport_python_hook.py: For
+	org.freedesktop.DBus.Error.ServiceUnknown exceptions, add a
+	'DbusErrorAnalysis' field to the report which points out whether any
+	.service file provides the service it tried to talk to, and whether
+	the processes for those are running. This helps to determine the root
+	cause for such errors (missing dependencies, broken .service files,
+	talking to the wrong bus, etc.) (LP: #1020572)
+
+=== 2.3 ===
+2012-07-09  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2429] release 2.3
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/apport.pot,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2428] merge po
+
+	* NEWS,
+	* test/test_ui_kde.py: [2427] * test_ui_kde.py: Fix occasional test
+	failure in test_1_crash_details if the application ends before the "is
+	progress bar visible" check is done.
+
+	* NEWS,
+	* apport_python_hook.py,
+	* test/test_python_crashes.py: [2426] * apport_python_hook: Fix
+	UnicodeEncodeError crash with Python 2 for exceptions with non-ASCII
+	characters. (LP: #972436)
+
+2012-07-07  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2425] Launchpad automatic translations update.
+
+2012-07-04  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS: [2424] bump to 2.3, new features
+
+2012-07-04  Evan Dandrea <evan.dandrea@canonical.com>
+
+	* NEWS,
+	* apport/fileutils.py,
+	* apport/ui.py,
+	* bin/apport-retrace,
+	* data/apport,
+	* gtk/apport-gtk,
+	* test/test_fileutils.py,
+	* test/test_ui.py,
+	* test/test_ui_gtk.py: [2423] * apport-gtk: Add --hanging option to
+	specify the process ID of a hanging application. If the user chooses
+	to report this error, apport will terminate the pid with SIGABRT,
+	otherwise it will send SIGKILL. The normal core pipe handler will be
+	used to process the resulting report file, with a .hanging file in
+	/var/crash to separate these from regular crashes.
+
+2012-07-03  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2422] * launchpad.py: Ensure that
+	upload chunk size does not underrun. (LP: #1013334)
+
+2012-06-29  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* bin/apport-retrace: [2421] * apport-retrace: Turn StacktraceSource
+	generation back on, now that it works with the current sandboxing.
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py,
+	* test/test_backend_apt_dpkg.py: [2420] * packaging-apt-dpkg.py: Fix
+	get_source_tree() to work with apt sandboxes.
+
+2012-06-29  Evan Dandrea <evan.dandrea@canonical.com>
+
+	* bin/crash-digger: [2419] Typo
+
+2012-06-29  Martin Pitt <martin.pitt@canonical.com>
+
+	* bin/crash-digger: [2418] crash-digger: Unbreak -D option again,
+	regression from r2407
+
+	* NEWS,
+	* bin/crash-digger,
+	* test/test_crash_digger.py: [2417] * crash-digger: Add --crash-db
+	option to specify a non-default crash databae name. (LP: #1003506)
+
+	* apport/crashdb_impl/launchpad.py: [2416] launchpad.py: PEP8 fixes
+
+	* apport/crashdb_impl/launchpad.py: [2415] launchpad.py tests: lazily
+	create uncommon description bug for speed up
+
+	* apport/crashdb_impl/launchpad.py: [2414] launchpad.py: Robustify
+	test_get_fixed_version() against staging not having current release
+	series
+
+	* apport/crashdb_impl/launchpad.py: [2413] launchpad.py: Fix
+	test_update_description()
+
+2012-06-29  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2412] Launchpad automatic translations update.
+
+2012-06-28  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2411] * launchpad.py: Rework test
+	suite to not use Launchpad's +storeblob facility at all any more. It
+	almost never works on staging and is horribly slow. Fake the bug
+	creation from a blob by manually creating the comment and attachments
+	ourselves, and just assume that storeblob works on production. Also
+	change the structure to allow running every test individually.
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2410] * launchpad.py: Recongize
+	Launchpad projects for bug query and marking operations. (LP:
+	#1003506)
+
+	* apport/crashdb_impl/launchpad.py: [2409] launchpad.py: Ensure that
+	core file in test is properly written
+
+	* NEWS,
+	* apport/ui.py: [2408] * ui.py: Do not ignore certain exceptions
+	during upload which are not likely to be a network error.
+
+	* NEWS,
+	* apport/REThread.py,
+	* apport/crashdb.py,
+	* apport/crashdb_impl/launchpad.py,
+	* apport/crashdb_impl/memory.py,
+	* apport/fileutils.py,
+	* apport/hookutils.py,
+	* apport/packaging.py,
+	* apport/report.py,
+	* apport/ui.py,
+	* apport_python_hook.py,
+	* backends/packaging-apt-dpkg.py,
+	* backends/packaging_rpm.py,
+	* bin/apport-cli,
+	* bin/apport-retrace,
+	* bin/crash-digger,
+	* bin/dupdb-admin,
+	* data/apport,
+	* data/apport-checkreports,
+	* data/apportcheckresume,
+	* data/general-hooks/generic.py,
+	* data/general-hooks/parse_segv.py,
+	* data/package_hook,
+	* data/unkillable_shutdown,
+	* problem_report.py,
+	* setup.py,
+	* test/test_apport_unpack.py,
+	* test/test_backend_apt_dpkg.py,
+	* test/test_backend_rpm.py,
+	* test/test_crash_digger.py,
+	* test/test_crashdb.py,
+	* test/test_fileutils.py,
+	* test/test_hooks.py,
+	* test/test_java_crashes.py,
+	* test/test_problem_report.py,
+	* test/test_python_crashes.py,
+	* test/test_report.py,
+	* test/test_rethread.py,
+	* test/test_signal_crashes.py,
+	* test/test_ui.py,
+	* test/test_ui_gtk.py,
+	* test/test_ui_kde.py: [2407] * Fix PEP-8 violations picked up by
+	latest pep8 checker.
+
+	* NEWS,
+	* data/apport: [2406] * apport: Also treat a binary as modified if the
+	/proc/pid/exe symlink does not point to an existing file any more.
+	(LP: #984944)
+
+=== 2.2.5 ===
+2012-06-21  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2405] release 2.2.5
+
+	* NEWS,
+	* test/test_ui_gtk.py,
+	* test/test_ui_kde.py: [2404] * GTK and KDE UI tests: Avoid eternal
+	hangs due to "this is not a distro package" error messages.
+
+	* apport/ui.py,
+	* backends/packaging-apt-dpkg.py,
+	* gtk/apport-gtk,
+	* test/test_ui.py: [2403] fix some fd leaks from subprocess.call()
+	with PIPE
+
+	* apport/crashdb_impl/launchpad.py: [2402] launchpad.py: Fix
+	whitespace
+
+	* NEWS,
+	* apport/ui.py: [2401] * apport/ui.py: Fix rare crash if a report is
+	already being updated in the background when the UI tries to update a
+	previous version. (LP: #949196)
+
+	* NEWS,
+	* apport/ui.py,
+	* test/test_ui.py: [2400] * apport/ui.py, get_desktop_entry(): Disable
+	interpolation, to correctly read desktop files with % signs. (LP:
+	#1014341)
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2399] * launchpad.py: Fix str vs.
+	bytes crash for already known bugs, take 2. (LP: #1015788)
+
+=== 2.2.4 ===
+2012-06-21  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2398] release 2.2.4
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py: [2397] * launchpad.py: Fix str vs.
+	bytes crash for already known bugs. (LP: #1015788)
+
+	* NEWS,
+	* bin/apport-cli: [2396] * apport-cli: Unbreak "keep" option. (LP:
+	#1007826)
+
+2012-06-21  Launchpad Translations on behalf of apport-hackers
+
+	* po/hi.po,
+	* po/ru.po: [2395] Launchpad automatic translations update.
+
+2012-06-20  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/run: [2394] * test/run: Wait for a previous xvfb server to
+	finish before trying to start one. This fixes a race condition in the
+	KDE UI tests which often failed to start up xvfb.
+
+2012-06-19  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/test_crash_digger.py: [2393] * test_crash_digger.py: Do not
+	write crash reports of crash-digger into system /var/crash, use a
+	temporary directory.
+
+2012-06-18  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/test_signal_crashes.py: [2392] * test_signal_crashes.py: Show
+	crash reports in /var/crash/.
+
+2012-06-16  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2391] Launchpad automatic translations update.
+
+2012-06-15  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* data/java_uncaught_exception,
+	* test/test_java_crashes.py: [2390] * data/java_uncaught_exception:
+	Fix for Python 3.
+
+	* NEWS,
+	* test/test_apport_unpack.py: [2389] * test_apport_unpack.py: Fix
+	test_unpack_python() test when running the system-installed tests.
+
 === 2.2.3 ===
 2012-06-15  Martin Pitt <martin.pitt@canonical.com>
 

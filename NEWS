@@ -1,6 +1,188 @@
 This file summarizes the major and interesting changes for each release. For a
 detailled list of changes, please see ChangeLog.
 
+2.6.1 (2012-10-01):
+-------------------
+ * setup.py: Specify "-source 1.5" javac option as well, to avoid build failure
+   with OpenJDK 7.
+
+2.6 (2012-10-01):
+-----------------
+ * setup.py: Build java module with "-target 1.5" option, so that you can run
+   it with OpenJDK 6 even if you build with OpenJDK 7.
+ * report.py, add_proc_info(): Show if $XDG_RUNTIME_DIR is set.
+ * Add apport/crashdb_impl/debian.py: Initial crash database implementation for
+   the Debian BTS. Add configuration for it to etc/apport/crashdb.conf. Thanks
+   Ritesh Raj Sarraf!
+ * test_python_crashes.py: Robustify "$PYTHONPATH in ProcEnviron" check.
+
+2.5.3 (2012-09-28):
+-------------------
+ * data/apportcheckresume: Open report file in binary mode. (LP: #1040353)
+ * packaging-apt-dpkg.py: When throwing ValueErrors, show the non-existing
+   package name. This makes it easier to debug such crashes.
+ * launchpad.py: Replace characters from tags which are not allowed by
+   Launchpad with '.' (LP: #1029479)
+ * launchpad.py: Temporarily disable filing private bugs in the test suite, to
+   work around the SSLHandshakeError error when downloading private attachments
+   from staging.
+ * hookutils.py, attach_root_command_outputs(): Ignore IOError crash about
+   nonexisting files, which can happen if the user dismisses authorization.
+   (LP: #1051222)
+ * report.py, search_bug_patterns(): Fix bug patterns containing non-ASCII
+   characters. Thanks Brian Murray.
+ * apport_python_hook.py: Capture $PYTHONPATH and $PYTHONHOME environment
+   variables for Python crashes. Thanks Brian Murray.
+
+2.5.2 (2012-09-17):
+-------------------
+ * test/run: Ignore root_info_wrapper with pyflakes.
+ * packaging-apt-dpkg.py: Add recommended packages to "Dependencies:" field.
+   (LP: #1014428)
+ * test_hookutils.py, test_in_session_of_problem(): Use year 2038 for a future
+   date instead of 2211, as current Python 3.2 now crashes with an
+   OverflowError on 32 bit machines with later years.
+ * Fix crash on broken .desktop files. (LP: #1039889)
+ * apport-gtk: For console program crashes, say "stopped" instead of "closed".
+   Add a subtitle label with a hint about hanging programs. Thanks Matt Price
+   and Matthew Paul Thomas!
+ * report.py: Fix crash on determination of Python module path when examining a
+   crash of "python -m ...".
+ * apport-kde: Fix crash with undefined QString under Python 3. Thanks Jonathan
+   Riddell! (LP: #1028984)
+ * launchpad.py: Add missing "Pre-release Freeze" status. Thanks Brian Murray!
+ * report.py, _check_bug_pattern(): Fix bug pattern matching against binary
+   values. Thanks Brian Murray for the original patch. (LP: #1016380)
+
+2.5.1 (2012-08-22):
+-------------------
+ * data/root_info_wrapper: Turn into a real file, a symlink can cause some
+   packaging problems.
+
+2.5 (2012-08-22):
+-------------------
+Bug fixes:
+ * test_recoverable_problem.py: Fix test for calling test runner with absolute
+   path.
+ * packaging-apt-dpkg.py: Fix crash on writing virtual_mapping.db when running
+   with --sandbox-dir and -S system or giving no --cache.
+ * REThread.py: Fix re-raising of exceptions in Python 3. Thanks Martin
+   Packman! (LP: #1024836)
+ * apport-retrace: Keep compressed CoreDump from .crash files instead of
+   uncompressing them into memory. This dramatically reduces memory usage.
+   (LP: #981155)
+
+Improvements:
+ * Add an apport.memdbg() function which prints out current memory usage if
+   APPORT_MEMDEBUG is set. Annotate apport-retrace with it.
+ * hookutils.py: Allow specifying a list of profile names when using
+   attach_mac_events(). Thanks Marc Deslauriers.
+ * hookutils.py, attach_root_command_outputs() and root_command_output(): Drop
+   usage of sudo, kdesudo, and gksu, and replace with pkexec. For
+   attach_root_command_outputs(), use a wrapper and proper .policy file which
+   explains the action and works under every environment; thus
+   attach_root_command_outputs() is preferred over root_command_output() now,
+   as it provides a better user experience.
+ * Package hooks which want to send the report to a different crash database
+   than "default" can now also give the database specification itself in the
+   "CrashDB" field, not just the DB name. With this, packages do not need to
+   ship a separate /etc/apport/crashdb.conf.d/ file. Please see
+   doc/package-hooks.txt for details. (LP: #551330)
+ * report.py, add_hooks_info(): If reporting against a package/program in /opt,
+   also search for package hooks in the corresponding /opt directory. This
+   allows such hooks to define a custom crash database and thus report bugs
+   against their own project instead of against the distribution.
+   (LP: #1020503)
+
+2.4 (2012-07-18):
+-----------------
+Improvements:
+ * apport_python_hook.py: For org.freedesktop.DBus.Error.ServiceUnknown
+   exceptions, add a 'DbusErrorAnalysis' field to the report which points out
+   whether any .service file provides the service it tried to talk to, and
+   whether the processes for those are running. This helps to determine the
+   root cause for such errors (missing dependencies, broken .service files,
+   talking to the wrong bus, etc.) (LP: #1020572)
+ * hookutils.py, attach_alsa(): Use alsa-info.sh when available. Thanks David
+   Henningson.
+ * Add new "RecoverableProblem" report type for problems which the application
+   can handle, but still wishes to notify the user and send a problem report
+   about. As an example, the application may wish to notify the user because
+   handling the error resulted in degraded functionality. The user interface
+   may fail to load items, or the action just performed may not return any
+   data. Applications call /usr/share/apport/recoverable_problem with a
+   string of arbitrary NUL-separated key/value pairs that are added to the
+   report. Thanks Evan Dandrea!
+
+Bug fixes:
+ * ui tests, test_wait_for_pid(): Fix eternal hang when running as root.
+ * testsuite: Fix ResourceWarnings when running with Python 3.
+ * test_python_crashes.py: Fix race condition in timeout test.
+ * launchpad.py: Fix setting of 'Medium' importance on duplicate checking.
+ * apport-retrace: Fix StacktraceSource generation for relative --cache paths.
+ * crashdb.py, check_duplicate(): Do not try to mark a bug as duplicate of
+   itself. This can happen when re-processing a previously retraced bug.
+ * apport-retrace: Fix UnicodeDecodeError when encountering a non-ASCII source
+   code file and running under a non-UTF-8 locale.
+
+2.3 (2012-07-09):
+-----------------
+Improvements:
+ * launchpad.py: Rework test suite to not use Launchpad's +storeblob facility
+   at all any more. It almost never works on staging and is horribly slow. Fake
+   the bug creation from a blob by manually creating the comment and
+   attachments ourselves, and just assume that storeblob works on production.
+   Also change the structure to allow running every test individually.
+ * crash-digger: Add --crash-db option to specify a non-default crash databae
+   name. (LP: #1003506)
+ * apport-gtk: Add --hanging option to specify the process ID of a hanging
+   application. If the user chooses to report this error, apport will terminate
+   the pid with SIGABRT, otherwise it will send SIGKILL. The normal core pipe
+   handler will be used to process the resulting report file, with a .hanging
+   file in /var/crash to separate these from regular crashes.
+
+Bug fixes:
+ * apport: Also treat a binary as modified if the /proc/pid/exe symlink does
+   not point to an existing file any more. (LP: #984944)
+ * Fix PEP-8 violations picked up by latest pep8 checker.
+ * ui.py: Do not ignore certain exceptions during upload which are not likely
+   to be a network error.
+ * launchpad.py: Recongize Launchpad projects for bug query and marking
+   operations. (LP: #1003506)
+ * packaging-apt-dpkg.py: Fix get_source_tree() to work with apt sandboxes.
+ * apport-retrace: Turn StacktraceSource generation back on, now that it works
+   with the current sandboxing.
+ * launchpad.py: Ensure that upload chunk size does not underrun. (LP: #1013334)
+ * apport_python_hook: Fix UnicodeEncodeError crash with Python 2 for
+   exceptions with non-ASCII characters. (LP: #972436)
+ * test_ui_kde.py: Fix occasional test failure in test_1_crash_details if the
+   application ends before the "is progress bar visible" check is done.
+
+2.2.5 (2012-06-21):
+-------------------
+ * launchpad.py: Fix str vs. bytes crash for already known bugs, take 2. (LP: #1015788)
+ * apport/ui.py, get_desktop_entry(): Disable interpolation, to correctly read
+   desktop files with % signs. (LP: #1014341)
+ * apport/ui.py: Fix rare crash if a report is already being updated in the
+   background when the UI tries to update a previous version. (LP: #949196)
+ * GTK and KDE UI tests: Avoid eternal hangs due to "this is not a distro
+   package" error messages.
+
+2.2.4 (2012-06-21):
+--------------------
+Bug fixes:
+ * test_apport_unpack.py: Fix test_unpack_python() test when running the
+   system-installed tests.
+ * data/java_uncaught_exception: Fix for Python 3.
+ * test_signal_crashes.py: Show crash reports in /var/crash/.
+ * test_crash_digger.py: Do not write crash reports of crash-digger into system
+   /var/crash, use a temporary directory.
+ * test/run: Wait for a previous xvfb server to finish before trying to start
+   one. This fixes a race condition in the KDE UI tests which often failed to
+   start up xvfb.
+ * apport-cli: Unbreak "keep" option. (LP: #1007826)
+ * launchpad.py: Fix str vs. bytes crash for already known bugs. (LP: #1015788)
+
 2.2.3 (2012-06-15):
 -------------------
 Bug fixes:

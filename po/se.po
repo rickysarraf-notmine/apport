@@ -1,26 +1,26 @@
-# Lithuanian translation for apport
-# Copyright (c) 2006 Rosetta Contributors and Canonical Ltd 2006
+# Northern Sami translation for apport
+# Copyright (c) 2012 Rosetta Contributors and Canonical Ltd 2012
 # This file is distributed under the same license as the apport package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2012.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: apport\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2012-10-01 11:58+0200\n"
-"PO-Revision-Date: 2011-11-11 06:39+0000\n"
-"Last-Translator: Algimantas Margevičius <Margevicius.Algimantas@gmail.com>\n"
-"Language-Team: Lithuanian <lt@li.org>\n"
-"Language: lt\n"
+"PO-Revision-Date: 2012-08-17 12:37+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Northern Sami <se@li.org>\n"
+"Language: se\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2012-09-13 04:32+0000\n"
+"X-Launchpad-Export-Date: 2012-09-13 04:33+0000\n"
 "X-Generator: Launchpad (build 15944)\n"
 
 #: ../apport/ui.py:105
 msgid "This package does not seem to be installed correctly"
-msgstr "Atrodo šis paketas įdiegtas neteisingai"
+msgstr ""
 
 #: ../apport/ui.py:109
 #, python-format
@@ -28,8 +28,6 @@ msgid ""
 "This is not an official %s package. Please remove any third party package "
 "and try again."
 msgstr ""
-"Paketas „%s“ nėra oficialus paketus. Pašalinkite betkokius trečiosios šalies "
-"paketus ir bandykite dar kartą."
 
 #: ../apport/ui.py:126
 #, python-format
@@ -39,32 +37,26 @@ msgid ""
 "\n"
 "%s"
 msgstr ""
-"Jūs turite keletą pasenusių paketo versijų. Prašome atnaujinti šiuos paketus "
-"ir patikrinti ar problema vis dar pasireiškia:\n"
-"\n"
-"%s"
 
 #: ../apport/ui.py:232
 msgid "unknown program"
-msgstr "nežinoma programa"
+msgstr ""
 
 #: ../apport/ui.py:233
 #, python-format
 msgid "Sorry, the program \"%s\" closed unexpectedly"
-msgstr "Atsiprašome, programa „%s“ netikėtai užsidarė"
+msgstr ""
 
 #: ../apport/ui.py:235 ../apport/ui.py:1230
 #, python-format
 msgid "Problem in %s"
-msgstr "%s problema"
+msgstr ""
 
 #: ../apport/ui.py:236
 msgid ""
 "Your computer does not have enough free memory to automatically analyze the "
 "problem and send a report to the developers."
 msgstr ""
-"Kompiuteris neturi pakankamai laisvos atminties, kad automatiškai "
-"išanalizuotų problemą ir išsiųstų ataskaitą kūrėjams."
 
 #. package does not exist
 #: ../apport/ui.py:251 ../apport/ui.py:257 ../apport/ui.py:263
@@ -73,79 +65,76 @@ msgstr ""
 #: ../apport/ui.py:1184 ../apport/ui.py:1188 ../apport/ui.py:1207
 #: ../apport/ui.py:1213
 msgid "Invalid problem report"
-msgstr "Neteisingas ataskaita apie klaidą"
+msgstr ""
 
 #: ../apport/ui.py:252 ../apport/ui.py:1190
 msgid "This problem report is damaged and cannot be processed."
-msgstr "Ši ataskaita apie klaidą yra pažeista ir negali būti apdorota."
+msgstr ""
 
 #: ../apport/ui.py:258
 msgid "The report belongs to a package that is not installed."
-msgstr "Ataskaita priklauso neįdiegtam paketui"
+msgstr ""
 
 #: ../apport/ui.py:264
 msgid "An error occurred while attempting to process this problem report:"
-msgstr "Įvyko klaida mėginant apdoroti šį pranešimą apie klaidą:"
+msgstr ""
 
 #: ../apport/ui.py:302
 msgid "You are not allowed to access this problem report."
-msgstr "Jums neleidžiama prieiti prie ataskaitos apie problemą."
+msgstr ""
 
 #: ../apport/ui.py:305
 msgid "Error"
-msgstr "Klaida"
+msgstr "Meattáhus"
 
 #: ../apport/ui.py:306
 msgid "There is not enough disk space available to process this report."
-msgstr "Nepakanka vietos diske šios ataskaitos apdorojimui."
+msgstr ""
 
 #: ../apport/ui.py:390
 msgid "No package specified"
-msgstr "Nenurodytas paketas"
+msgstr ""
 
 #: ../apport/ui.py:391
 msgid ""
 "You need to specify a package or a PID. See --help for more information."
 msgstr ""
-"Jums reikia nurodyti paketą arba PID. Daugiau informacijos gausite su --help."
 
 #: ../apport/ui.py:408
 msgid "Invalid PID"
-msgstr "Neteisingas PID"
+msgstr ""
 
 #: ../apport/ui.py:409
 msgid "The specified process ID does not belong to a program."
-msgstr "Nurodytas proceso ID nepriklauso programai."
+msgstr ""
 
 #: ../apport/ui.py:417
 msgid "Permission denied"
-msgstr "Neturite teisės"
+msgstr "Ii beasa deikke"
 
 #: ../apport/ui.py:418
 msgid ""
 "The specified process does not belong to you. Please run this program as the "
 "process owner or as root."
 msgstr ""
-"Nurodytas procesas jums nepriklauso. Paleiskite programą kaip proceso "
-"valdytojas ar pagrindinis naudotojas."
 
 #: ../apport/ui.py:439
 #, python-format
 msgid "Symptom script %s did not determine an affected package"
-msgstr "Simptomų scenarijus %s nenustatė paveikto paketo"
+msgstr ""
 
 #: ../apport/ui.py:442
 #, python-format
 msgid "Package %s does not exist"
-msgstr "Paketas %s neegzistuoja"
+msgstr ""
 
 #: ../apport/ui.py:466 ../apport/ui.py:654 ../apport/ui.py:659
 msgid "Cannot create report"
-msgstr "Ataskaitos sukurti nepavyko"
+msgstr ""
 
 #: ../apport/ui.py:481 ../apport/ui.py:527 ../apport/ui.py:544
 msgid "Updating problem report"
-msgstr "Atnaujinama problemos ataskaita"
+msgstr ""
 
 #: ../apport/ui.py:482
 msgid ""
@@ -154,10 +143,6 @@ msgid ""
 "\n"
 "Please create a new report using \"apport-bug\"."
 msgstr ""
-"Jūs nesate šio pranešimo apie klaidą pranešėjas ar pasekėjas, arba "
-"pranešimas yra dublikatas ar jau užvertas.\n"
-"\n"
-"Prašome sukurti naują pranešimą naudojant „apport-bug“."
 
 #: ../apport/ui.py:491
 msgid ""
@@ -170,62 +155,49 @@ msgid ""
 "\n"
 "Do you really want to proceed?"
 msgstr ""
-"Jūs nesate šio pranešimo apie klaidą autorius. Yra daug lengviau pažymėti "
-"pranešimą apie klaidą kaip kito dublikatą, nei perkelti jūsų komentarus ir "
-"priedus į naują pranešimą apie klaidą.\n"
-"\n"
-"Todėl mes rekomenduojame, kad jūs praneštumėte apie klaidą naudodami „apport-"
-"bug“ ir pakomentuotumėte šiame pranešime apie klaidą apie jūsų pranešimą.\n"
-"\n"
-"Ar tikrai norite tęsti?"
 
 #: ../apport/ui.py:528 ../apport/ui.py:545
 msgid "No additional information collected."
-msgstr "Jokios papildomos informacijos nesurinkta."
+msgstr ""
 
 #: ../apport/ui.py:596
 msgid "What kind of problem do you want to report?"
-msgstr "Apie kokią problemų rūšį norite pranešti?"
+msgstr ""
 
 #: ../apport/ui.py:613
 msgid "Unknown symptom"
-msgstr "Nežinomas simptomas"
+msgstr ""
 
 #: ../apport/ui.py:614
 #, python-format
 msgid "The symptom \"%s\" is not known."
-msgstr "Simptomas „%s“ yra nežinomas."
+msgstr ""
 
 #: ../apport/ui.py:645
 msgid ""
 "After closing this message please click on an application window to report a "
 "problem about it."
 msgstr ""
-"Kai uždarysite šį pranešimą, paspauskite ant programos lango, kad "
-"praneštumėte apie tai."
 
 #: ../apport/ui.py:655 ../apport/ui.py:660
 msgid "xprop failed to determine process ID of the window"
-msgstr "xprop nepavyko nustatyti lango proceso ID"
+msgstr ""
 
 #: ../apport/ui.py:674
 msgid "%prog <report number>"
-msgstr "%prog <pranešimo numeris>"
+msgstr ""
 
 #: ../apport/ui.py:676
 msgid "Specify package name."
-msgstr "Nurodykite paketo pavadinimą."
+msgstr ""
 
 #: ../apport/ui.py:678 ../apport/ui.py:729
 msgid "Add an extra tag to the report. Can be specified multiple times."
 msgstr ""
-"Prie ataskaitos pridėti papildomą žymę. Gali būti nurodyta kelis kartus."
 
 #: ../apport/ui.py:708
 msgid "%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
 msgstr ""
-"%prog [parametrai] [simptomas|pid|paketas|programos kelias|.apport/.crash "
-"failas]"
 
 #: ../apport/ui.py:711
 msgid ""
@@ -233,33 +205,26 @@ msgid ""
 "a --pid. If neither is given, display a list of known symptoms. (Implied if "
 "a single argument is given.)"
 msgstr ""
-"Paleisti pranešimo apie klaidą režime. Reikia --package ir nebūtino --pid, "
-"arba tik --pid. Jei nė vienas neduotas, parodyti žinomų simptomų sąrašą. "
-"(Turima omeny, jei duotas tik vienas argumentas.)"
 
 #: ../apport/ui.py:713
 msgid "Click a window as a target for filing a problem report."
-msgstr "Pranešti apie problemą, paspauskite ant lango."
+msgstr ""
 
 #: ../apport/ui.py:715
 msgid "Start in bug updating mode. Can take an optional --package."
-msgstr "Pradėti klaidos atnaujinimo režime. Gali prireikti nebūtino --package."
+msgstr ""
 
 #: ../apport/ui.py:717
 msgid ""
 "File a bug report about a symptom. (Implied if symptom name is given as only "
 "argument.)"
 msgstr ""
-"Registruoti pranešimą apie simptomą. (Turima omeny, jei simptomo vardas "
-"duotas kaip vienintelis argumentas.)"
 
 #: ../apport/ui.py:719
 msgid ""
 "Specify package name in --file-bug mode. This is optional if a --pid is "
 "specified. (Implied if package name is given as only argument.)"
 msgstr ""
-"Nurodyti paketo vardą --file-bug režime. Tai neprivaloma, jei nurodytas --"
-"pid. (Turima omeny, jei paketo vardas duotas kaip vienintelis argumentas.)"
 
 #: ../apport/ui.py:721
 msgid ""
@@ -267,13 +232,10 @@ msgid ""
 "report will contain more information.  (Implied if pid is given as only "
 "argument.)"
 msgstr ""
-"nurodyti vykdomą programą --file-bug veiksenoje. Jei tai nurodyta, "
-"pranešimas apie klaidą turės daugiau informacijos. (Numanoma, jei pateiktas "
-"„pid“ kaip vienintelis argumentas.)"
 
 #: ../apport/ui.py:723
 msgid "The provided pid is a hanging application."
-msgstr "Pateiktas pid yra užstrigusi programa."
+msgstr ""
 
 #: ../apport/ui.py:725
 #, python-format
@@ -281,8 +243,6 @@ msgid ""
 "Report the crash from given .apport or .crash file instead of the pending "
 "ones in %s. (Implied if file is given as only argument.)"
 msgstr ""
-"Pranešti apie strigtį iš duoto apport ar .crash failo, o ne iš laukiančių "
-"%s. (Turima omeny, jei failas duotas kaip vienintelis argumentas.)"
 
 #: ../apport/ui.py:727
 msgid ""
@@ -290,82 +250,76 @@ msgid ""
 "reporting it. This file can then be reported later on from a different "
 "machine."
 msgstr ""
-"Pranešimo apie klaidą veiksenoje išsaugoti surinktą informaciją į failą "
-"vietoje perdavimo. Šis failas gali būti perduotas vėliau iš kito kompiuterio."
 
 #: ../apport/ui.py:731
 msgid "Print the Apport version number."
-msgstr "Atspausdinti Apport versijos numerį."
+msgstr ""
 
 #: ../apport/ui.py:865
 msgid ""
 "This will launch apport-retrace in a terminal window to examine the crash."
 msgstr ""
-"Tai terminalo lange paleis „apport-retrace“ ir bus galima išanalizuoti lūžį."
 
 #: ../apport/ui.py:866
 msgid "Run gdb session"
-msgstr "Vykdyti gdb sesiją"
+msgstr ""
 
 #: ../apport/ui.py:867
 msgid "Run gdb session without downloading debug symbols"
-msgstr "Vykdyti gdb sesiją, neparsiunčiant derinimo simbolių"
+msgstr ""
 
 #. TRANSLATORS: %s contains the crash report file name
 #: ../apport/ui.py:869
 #, python-format
 msgid "Update %s with fully symbolic stack trace"
-msgstr "Atnaujinti %s su visiškai simboliniu dėklo pėdsaku"
+msgstr ""
 
 #: ../apport/ui.py:940
 #, python-format
 msgid ""
 "The problem happened with the program %s which changed since the crash "
 "occurred."
-msgstr "Problema įvyko su programa %s, kuri pasikeitė nuo strigties įvykio."
+msgstr ""
 
 #: ../apport/ui.py:1044
 msgid "Could not determine the package or source package name."
-msgstr "Nepavyko nustatyti paketo ar pirminio paketo vardo."
+msgstr ""
 
 #: ../apport/ui.py:1062
 msgid "Unable to start web browser"
-msgstr "Nepavyko paleisti žiniatinklio naršyklės"
+msgstr ""
 
 #: ../apport/ui.py:1063
 #, python-format
 msgid "Unable to start web browser to open %s."
-msgstr "Nepavyko paleisti žiniatinklio naršyklės %s atverti."
+msgstr ""
 
 #: ../apport/ui.py:1138
 #, python-format
 msgid "Please enter your account information for the %s bug tracking system"
-msgstr "Prašome įvesti savo paskyros informaciją %s klaidų sekimo sistemoje"
+msgstr ""
 
 #: ../apport/ui.py:1150
 msgid "Network problem"
-msgstr "Tinklo problema"
+msgstr ""
 
 #: ../apport/ui.py:1152
 msgid ""
 "Cannot connect to crash database, please check your Internet connection."
 msgstr ""
-"Nepavyko prisijungti prie strigčių duomenų bazės, patikrinkite interneto "
-"ryšį."
 
 #: ../apport/ui.py:1179
 msgid "Memory exhaustion"
-msgstr "Atminties išnaudojimas"
+msgstr ""
 
 #: ../apport/ui.py:1180
 msgid "Your system does not have enough memory to process this crash report."
 msgstr ""
-"Jūsų sistema neturi pakankamai atminties ataskaitai apie strigtį apdoroti."
 
 #: ../apport/ui.py:1203 ../apport/ui.py:1212
 msgid ""
 "This problem report applies to a program which is not installed any more."
-msgstr "Ši ataskaita apie problemą yra programos, kuri jau nėra įdiegta."
+msgstr ""
 
 #: ../apport/ui.py:1233
 #, python-format
@@ -374,13 +328,10 @@ msgid ""
 "\n"
 "%s"
 msgstr ""
-"Apie problemą negali būti pranešta:\n"
-"\n"
-"%s"
 
 #: ../apport/ui.py:1284 ../apport/ui.py:1291
 msgid "Problem already known"
-msgstr "Problema jau žinoma"
+msgstr ""
 
 #: ../apport/ui.py:1285
 msgid ""
@@ -388,226 +339,205 @@ msgid ""
 "browser. Please check if you can add any further information that might be "
 "helpful for the developers."
 msgstr ""
-"Jau buvo pranešta apie šią problemą pranešimo apie klaidą ataskaitoje "
-"rodomoje žiniatinklio naršyklėje. Patikrinkite ar galite pridėti daugiau "
-"informacijos, kuri galėtų būti naudinga kūrėjams."
 
 #: ../apport/ui.py:1292
 msgid "This problem was already reported to developers. Thank you!"
-msgstr "Apie šią problemą jau buvo pranešta kūrėjams. Ačiū!"
+msgstr ""
 
 #: ../bin/apport-cli.py:73
 msgid "Press any key to continue..."
-msgstr "Spauskite bet kurį klavišą tęsimui..."
+msgstr ""
 
 #: ../bin/apport-cli.py:80
 msgid "What would you like to do? Your options are:"
-msgstr "Ką norite atlikti? Jūsų parinktys yra:"
+msgstr ""
 
 #: ../bin/apport-cli.py:84
 #, python-format
 msgid "Please choose (%s):"
-msgstr "Prašome pasirinkti (%s):"
+msgstr ""
 
 #: ../bin/apport-cli.py:144
 #, python-format
 msgid "(%i bytes)"
-msgstr "(%i baitų)"
+msgstr "(%i stávvala)"
 
 #: ../bin/apport-cli.py:146 ../gtk/apport-gtk.py:138 ../kde/apport-kde.py:335
 msgid "(binary data)"
-msgstr "(dvejetainiai duomenys)"
+msgstr "(binára dáhtaid)"
 
 #: ../bin/apport-cli.py:174 ../gtk/apport-gtk.py:173 ../kde/apport-kde.py:162
 msgid "Send problem report to the developers?"
-msgstr "Siųsti ataskaitą apie problemą kūrėjams?"
+msgstr ""
 
 #: ../bin/apport-cli.py:175
 msgid ""
 "After the problem report has been sent, please fill out the form in the\n"
 "automatically opened web browser."
 msgstr ""
-"Kai ataskaita apie problemą bus nusiųsta, prašome užpildyti formą\n"
-"automatiškai atvertoje žiniatinklio naršyklėje."
 
 #: ../bin/apport-cli.py:178
 #, python-format
 msgid "&Send report (%s)"
-msgstr "&Siųsti ataskaitą (%s)"
+msgstr ""
 
 #: ../bin/apport-cli.py:182
 msgid "&Examine locally"
-msgstr "&Ištirti vietoje"
+msgstr ""
 
 #: ../bin/apport-cli.py:186
 msgid "&View report"
-msgstr "&Peržiūrėti ataskaitą"
+msgstr ""
 
 #: ../bin/apport-cli.py:187
 msgid "&Keep report file for sending later or copying to somewhere else"
 msgstr ""
-"Lai&kyti ataskaitos failą vėlesniam siuntimui ar kopijavimui kur nors kitur"
 
 #: ../bin/apport-cli.py:188
 msgid "Cancel and &ignore future crashes of this program version"
-msgstr "Atsisakyti ir &ignoruoti šios programos strigtis ateityje"
+msgstr ""
 
 #: ../bin/apport-cli.py:190 ../bin/apport-cli.py:267 ../bin/apport-cli.py:299
 #: ../bin/apport-cli.py:320
 msgid "&Cancel"
-msgstr "&Atsisakyti"
+msgstr "G&askkalduhtte"
 
 #: ../bin/apport-cli.py:218
 msgid "Problem report file:"
-msgstr "Ataskaitos apie problemą failas:"
+msgstr ""
 
 #: ../bin/apport-cli.py:224 ../bin/apport-cli.py:229
 msgid "&Confirm"
-msgstr "Pa&tvirtinti"
+msgstr "&Nanne"
 
 #: ../bin/apport-cli.py:228
 #, python-format
 msgid "Error: %s"
-msgstr "Klaida: %s"
+msgstr "Meattáhus: %s"
 
 #: ../bin/apport-cli.py:234 ../kde/apport-kde.py:380
 msgid "Collecting problem information"
-msgstr "Renkama informacija apie problemą"
+msgstr ""
 
 #: ../bin/apport-cli.py:235
 msgid ""
 "The collected information can be sent to the developers to improve the\n"
 "application. This might take a few minutes."
 msgstr ""
-"Surinkta informacija gali būti nusiųsta kūrėjams, kad jie patobulintų\n"
-"programą. Tai gali užtrukti kelias minutes."
 
 #: ../bin/apport-cli.py:247 ../kde/apport-kde.py:408 ../gtk/apport-gtk.ui.h:13
 msgid "Uploading problem information"
-msgstr "Išsiunčiama informacija apie problemą"
+msgstr ""
 
 #: ../bin/apport-cli.py:248
 msgid ""
 "The collected information is being sent to the bug tracking system.\n"
 "This might take a few minutes."
 msgstr ""
-"Surinkta informacija yra siunčiama į klaidų sekimo sistemą.\n"
-"Tai gali užtrukti kelias minutes."
 
 #: ../bin/apport-cli.py:298
 msgid "&Done"
-msgstr "&Baigta"
+msgstr "&Geargan"
 
 #: ../bin/apport-cli.py:304
 msgid "none"
-msgstr "nėra"
+msgstr "ii mihkkige"
 
 #: ../bin/apport-cli.py:305
 #, python-format
 msgid "Selected: %s. Multiple choices:"
-msgstr "Pasirinkta: %s. Daugybinis pasirinkimas:"
+msgstr ""
 
 #: ../bin/apport-cli.py:321
 msgid "Choices:"
-msgstr "Pasirinkimai:"
+msgstr ""
 
 #: ../bin/apport-cli.py:335
 msgid "Path to file (Enter to cancel):"
-msgstr "Kelias iki failo (Enter - atsisakyti):"
+msgstr ""
 
 #: ../bin/apport-cli.py:341
 msgid "File does not exist."
-msgstr "Failas neegzistuoja."
+msgstr ""
 
 #: ../bin/apport-cli.py:343
 msgid "This is a directory."
-msgstr "Tai katalogas."
+msgstr ""
 
 #: ../bin/apport-cli.py:349
 msgid "To continue, you must visit the following URL:"
-msgstr "Norėdami tęsti privalote aplankyti šį URL:"
+msgstr ""
 
 #: ../bin/apport-cli.py:351
 msgid ""
 "You can launch a browser now, or copy this URL into a browser on another "
 "computer."
 msgstr ""
-"Galite paleisti naršyklę dabar arba nukopijuoti šį URL į naršyklę kitame "
-"kompiuteryje."
 
 #: ../bin/apport-cli.py:353
 msgid "Launch a browser now"
-msgstr "Paleisti naršyklę dabar"
+msgstr ""
 
 #: ../bin/apport-cli.py:367
 msgid "No pending crash reports. Try --help for more information."
 msgstr ""
-"Nėra laukiančiųjų strigčių ataskaitų. Mėginkite --help daugiau informacijos "
-"gauti."
 
 #: ../data/apportcheckresume.py:67
 msgid ""
 "This occured during a previous suspend and prevented it from resuming "
 "properly."
-msgstr "Tai įvyko ankstesnio pristabdymo metu ir sutrukdė tinkamai tęsti."
+msgstr ""
 
 #: ../data/apportcheckresume.py:69
 msgid ""
 "This occured during a previous hibernate and prevented it from resuming "
 "properly."
-msgstr "Tai įvyko ankstesnio užmigdymo metu ir sutrukdė tinkamai tęsti."
+msgstr ""
 
 #: ../data/apportcheckresume.py:74
 msgid ""
 "The resume processing hung very near the end and will have appeared to have "
 "completed normally."
 msgstr ""
-"Tęsimo apdorojimas užstrigo prie pat pabaigos ir atrodė, kad buvo atliktas "
-"normaliai."
 
 #: ../bin/apport-retrace.py:40
 msgid "%prog [options] <apport problem report | crash ID>"
-msgstr "%prog [parametrai] <apport problemos ataskaita | strigties ID>"
+msgstr ""
 
 #: ../bin/apport-retrace.py:42
 msgid "Do not put the new traces into the report, but write them to stdout."
 msgstr ""
-"Nedėti naujų pėdsakų į ataskaitą, bet išvesti juos į standartinę išvestį."
 
 #: ../bin/apport-retrace.py:44
 msgid ""
 "Start an interactive gdb session with the report's core dump (-o ignored; "
 "does not rewrite report)"
 msgstr ""
-"Pradėti interaktyvų gdb seansą su ataskaitos „core dump“ (-o ignoruojamas; "
-"neperrašo ataskaitos)"
 
 #: ../bin/apport-retrace.py:46
 msgid ""
 "Write modified report to given file instead of changing the original report"
 msgstr ""
-"Įrašyti modifikuotą ataskaitą į nurodytą failą, vietoje originalios "
-"ataskaitos keitimo"
 
 #: ../bin/apport-retrace.py:48
 msgid "Remove the core dump from the report after stack trace regeneration"
-msgstr "Pašalinti „core dump“ iš ataskaitos po dėklo pėdsakų atkūrimo."
+msgstr ""
 
 #: ../bin/apport-retrace.py:50
 msgid "Override report's CoreFile"
-msgstr "Nustelbti ataskaitos CoreFile"
+msgstr ""
 
 #: ../bin/apport-retrace.py:52
 msgid "Override report's ExecutablePath"
-msgstr "Nustelbti ataskaitos ExecutablePath"
+msgstr ""
 
 #: ../bin/apport-retrace.py:54
 msgid "Override report's ProcMaps"
-msgstr "Nustelbti ataskaitos ProcMaps"
+msgstr ""
 
 #: ../bin/apport-retrace.py:56
 msgid "Rebuild report's Package information"
-msgstr "Perdaryti ataskaitos paketų informaciją"
+msgstr ""
 
 #: ../bin/apport-retrace.py:58
 msgid ""
@@ -618,39 +548,29 @@ msgid ""
 "\"system\", it will use the system configuration files, but will then only "
 "be able to retrace crashes that happened on the currently running release."
 msgstr ""
-"Sukurti laikiną smėlio dėžę ir atsiųsti/įdiegti ten reikalingus paketus ir "
-"derinimo simbolius; be šios parinkties yra manoma, kad reikalingi paketai ir "
-"derinimo simboliai jau yra įdiegti sistemoje. Argumentas rodo į paketų "
-"sistemos konfigūracijos bazinį katalogą; jei nurodysite „system“, bus "
-"naudojami sistemos konfigūravimo failai, bet tada galėsite tik atsekti "
-"strigtis, kurios įvyko dabar vykdomoje laidoje."
 
 #: ../bin/apport-retrace.py:60
 msgid "Report download/install progress when installing packages into sandbox"
 msgstr ""
-"Raportuoti atsiuntimo/įdiegimo eigą kai įdiegiami paketai į smėlio dėžę"
 
 #: ../bin/apport-retrace.py:62
 msgid "Prepend timestamps to log messages, for batch operation"
-msgstr "Prie žurnalo pranešimų pridėti laiko žymes"
+msgstr ""
 
 #: ../bin/apport-retrace.py:64
 msgid "Cache directory for packages downloaded in the sandbox"
-msgstr "Podėlio katalogas paketams atsiųstiems smėlio dėžėje"
+msgstr ""
 
 #: ../bin/apport-retrace.py:66
 msgid ""
 "Directory for unpacked packages. Future runs will assume that any already "
 "downloaded package is also extracted to this sandbox."
 msgstr ""
-"Katalogas išpakuotiems paketams. Vėlesni paleidimai tars, kad bet kuris jau "
-"atsiųstas paketas yra išpakuotas šioje smėlio dėžėje."
 
 #: ../bin/apport-retrace.py:68
 msgid ""
 "Install an extra package into the sandbox (can be specified multiple times)"
 msgstr ""
-"Įdiegti papildomą paketą smėlio dėžėje (gali būti nurodyta daugelį kartų)"
 
 #: ../bin/apport-retrace.py:70
 msgid ""
@@ -658,83 +578,74 @@ msgid ""
 "used when specifying a crash ID to upload the retraced stack traces (only if "
 "neither -g, -o, nor -s are specified)"
 msgstr ""
-"Kelias iki failo su strigčių duomenų bazės atpažinimo informacija. Tai "
-"naudojama, kai nurodomas strigties ID atsektiems dėklo pėdsakams išsiųsti "
-"(tik, jei nenurodyti -g, -o, ar -s)"
 
 #: ../bin/apport-retrace.py:72
 msgid ""
 "Display retraced stack traces and ask for confirmation before sending them "
 "to the crash database."
 msgstr ""
-"Rodyti atsektus dėklo pėdsakus ir klausti patvirtinimo prieš siunčiant juos "
-"į strigčių duomenų bazę."
 
 #: ../bin/apport-retrace.py:74
 msgid "Path to the duplicate sqlite database (default: no duplicate checking)"
 msgstr ""
-"Kelias į dublikatų sqlite duomenų bazę (numatyta r.: netikrinti dublikatų)"
 
 #: ../bin/apport-retrace.py:79
 msgid "incorrect number of arguments; use --help for a short help"
-msgstr "neteisingas argumentų skaičius; naudokite --help trumpai pagalbai"
+msgstr ""
 
 #: ../bin/apport-retrace.py:83
 msgid ""
 "you either need to do a local operation (-s, -g, -o) or supply an "
 "authentication file (--auth); see --help for a short help"
 msgstr ""
-"jums arba reikia naudoti vietinę operaciją (-s, -g, -o) arba pateikti "
-"atpažinimo failą (--auth); žiūrėkite --help trumpai pagalbai"
 
 #. translators: don't translate y/n, apport currently only checks for "y"
 #: ../bin/apport-retrace.py:117
 msgid "OK to send these as attachments? [y/n]"
-msgstr "Ar siųsti šiuos priedus? [y/n]"
+msgstr ""
 
 #: ../gtk/apport-gtk-mime.desktop.in.h:1 ../kde/apport-kde.desktop.in.h:1
 #: ../kde/apport-kde-mime.desktop.in.h:1 ../gtk/apport-gtk.desktop.in.h:1
 msgid "Report a problem..."
-msgstr "Pranešti apie problemą..."
+msgstr ""
 
 #: ../gtk/apport-gtk-mime.desktop.in.h:2 ../kde/apport-kde.desktop.in.h:2
 #: ../kde/apport-kde-mime.desktop.in.h:2 ../gtk/apport-gtk.desktop.in.h:2
 msgid "Report a malfunction to the developers"
-msgstr "Pranešti apie triktį kūrėjams"
+msgstr ""
 
 #: ../data/kernel_oops.py:28
 msgid "Your system might become unstable now and might need to be restarted."
 msgstr ""
-"Jūsų sistema dabar gali tapti nestabili ir gali reikėti įkrauti OS iš naujo."
 
 #: ../gtk/apport-gtk.py:153
-#, fuzzy, python-format
+#, python-format
 msgid "Sorry, the application %s has stopped unexpectedly."
-msgstr "Atsiprašome, programa %s netikėtai užsivėrė."
+msgstr ""
 
 #: ../gtk/apport-gtk.py:156
 #, python-format
 msgid "Sorry, %s has closed unexpectedly."
-msgstr "Atsiprašome, %s netikėtai užsivėrė."
+msgstr ""
 
 #: ../gtk/apport-gtk.py:161 ../kde/apport-kde.py:176 ../kde/apport-kde.py:214
 #, python-format
 msgid "Sorry, %s has experienced an internal error."
-msgstr "Atsiprašome, %s patyrė vidinę klaidą."
+msgstr ""
 
 #: ../gtk/apport-gtk.py:182 ../kde/apport-kde.py:170
 msgid "Send"
-msgstr "Siųsti"
+msgstr "Sádde"
 
 #: ../gtk/apport-gtk.py:200 ../gtk/apport-gtk.py:567 ../kde/apport-kde.py:268
 #: ../gtk/apport-gtk.ui.h:7
 msgid "Show Details"
-msgstr "Rodyti išsamiau"
+msgstr "Čájet bienaid"
 
 #: ../gtk/apport-gtk.py:212 ../gtk/apport-gtk.py:282 ../gtk/apport-gtk.py:297
 #: ../kde/apport-kde.py:211 ../kde/apport-kde.py:220 ../gtk/apport-gtk.ui.h:10
 msgid "Continue"
-msgstr "Tęsti"
+msgstr "Joatkke"
 
 #: ../gtk/apport-gtk.py:224
 msgid "Force Closed"
@@ -743,85 +654,80 @@ msgstr ""
 #: ../gtk/apport-gtk.py:225 ../gtk/apport-gtk.py:279 ../kde/apport-kde.py:208
 #: ../kde/apport-kde.py:354
 msgid "Relaunch"
-msgstr "Paleisti iš naujo"
+msgstr ""
 
 #: ../gtk/apport-gtk.py:234
 #, python-format
 msgid "The application %s has stopped responding."
-msgstr "Programa „%s“ nustojo reaguoti."
+msgstr ""
 
 #: ../gtk/apport-gtk.py:238
 #, python-format
 msgid "The program \"%s\" has stopped responding."
-msgstr "Programa „%s“ nustojo reaguoti."
+msgstr ""
 
 #: ../gtk/apport-gtk.py:253 ../kde/apport-kde.py:184
 #, python-format
 msgid "Package: %s"
-msgstr "Paketas: %s"
+msgstr "Páhkka: %s"
 
 #: ../gtk/apport-gtk.py:260 ../kde/apport-kde.py:190
 msgid "Sorry, a problem occurred while installing software."
-msgstr "Atsiprašome, įvyko problema įdiegiant programinę įrangą."
+msgstr ""
 
 #: ../gtk/apport-gtk.py:269 ../gtk/apport-gtk.py:286 ../kde/apport-kde.py:197
 #, python-format
 msgid "The application %s has experienced an internal error."
-msgstr "Programa „%s“ patyrė vidinę klaidą."
+msgstr ""
 
 #: ../gtk/apport-gtk.py:272 ../kde/apport-kde.py:201
 #, python-format
 msgid "The application %s has closed unexpectedly."
-msgstr "Programa %s netikėtai užsivėrė."
+msgstr ""
 
 #: ../gtk/apport-gtk.py:278 ../kde/apport-kde.py:207 ../gtk/apport-gtk.ui.h:9
 msgid "Leave Closed"
-msgstr "Palikti užvertą"
+msgstr ""
 
 #: ../gtk/apport-gtk.py:294 ../kde/apport-kde.py:217 ../gtk/apport-gtk.ui.h:4
 msgid "If you notice further problems, try restarting the computer."
 msgstr ""
-"Jei pastebite tolesnių problemų, mėginkite paleisti kompiuterį iš naujo."
 
 #: ../gtk/apport-gtk.py:298 ../kde/apport-kde.py:221
 msgid "Ignore future problems of this type"
-msgstr "Ignoruoti šio tipo problemas ateityje"
+msgstr ""
 
 #: ../gtk/apport-gtk.py:571 ../kde/apport-kde.py:265
 msgid "Hide Details"
-msgstr "Slėpti detales"
+msgstr "Čiega &bienaid"
 
 #: ../kde/apport-kde.py:291
 msgid "Username:"
-msgstr "Naudotojo vardas:"
+msgstr "Geavaheaddjinamma:"
 
 #: ../kde/apport-kde.py:292
 msgid "Password:"
-msgstr "Slaptažodis:"
+msgstr "Beassansátni:"
 
 #: ../kde/apport-kde.py:379
 msgid "Collecting Problem Information"
-msgstr "Renkama informacija apie problemą"
+msgstr ""
 
 #: ../kde/apport-kde.py:381
 msgid ""
 "The collected information can be sent to the developers to improve the "
 "application. This might take a few minutes."
 msgstr ""
-"Surinkta informacija gali būti nusiųsta kūrėjams programai patobulinti. Tai "
-"gali užtrukti kelias minutes."
 
 #: ../kde/apport-kde.py:407
 msgid "Uploading Problem Information"
-msgstr "Išsiunčiama informacija apie klaidą"
+msgstr ""
 
 #: ../kde/apport-kde.py:409 ../gtk/apport-gtk.ui.h:15
 msgid ""
 "The collected information is being sent to the bug tracking system. This "
 "might take a few minutes."
 msgstr ""
-"Surinkta informacija siunčiama į klaidų sekimo sistemą. Tai gali užtrukti "
-"keletą minučių."
 
 #: ../kde/apport-kde.py:443 ../kde/apport-kde.py:479 ../gtk/apport-gtk.ui.h:1
 msgid "Apport"
@@ -829,202 +735,57 @@ msgstr "Apport"
 
 #: ../apport/com.ubuntu.apport.policy.in.h:1
 msgid "Collect system information"
-msgstr "Surinkti sistemos informaciją"
+msgstr ""
 
 #: ../apport/com.ubuntu.apport.policy.in.h:2
 msgid ""
 "Authentication is required to collect system information for this problem "
 "report"
 msgstr ""
-"Reikalingas tapatumo nustatymas sistemos informacijai surinkti šiam "
-"pranešimui apie klaidą"
 
 #: ../gtk/apport-gtk.ui.h:2
 msgid "Crash report"
-msgstr "Strigties pranešimas"
+msgstr ""
 
 #: ../gtk/apport-gtk.ui.h:3
 msgid "<big><b>Sorry, an internal error happened.</b></big>"
-msgstr "<big><b>Atsiprašome, įvyko vidinė klaida.</b></big>"
+msgstr ""
 
 #: ../gtk/apport-gtk.ui.h:5
 msgid "Send an error report to help fix this problem"
-msgstr "Siųsti pranešimą apie klaidą, kad padėtų ištaisyti šią problemą"
+msgstr ""
 
 #: ../gtk/apport-gtk.ui.h:6
 msgid "Ignore future problems of this program version"
-msgstr "Ignoruoti šios programos versijos problemas ateityje"
+msgstr ""
 
 #: ../gtk/apport-gtk.ui.h:8
 msgid "_Examine locally"
-msgstr "_Ištirti vietoje"
+msgstr ""
 
 #: ../gtk/apport-gtk.ui.h:11
 msgid "<big><b>Collecting problem information</b></big>"
-msgstr "<big><b>Renkama informacija apie problemą</b></big>"
+msgstr ""
 
 #: ../gtk/apport-gtk.ui.h:12
 msgid ""
 "Information is being collected that may help the developers fix the problem "
 "you report."
 msgstr ""
-"Renkama informacija, kuri gali padėti kūrėjams pataisyti problemą apie kurią "
-"pranešėte."
 
 #: ../gtk/apport-gtk.ui.h:14
 msgid "<big><b>Uploading problem information</b></big>"
-msgstr "<big><b>Siunčiama informacija apie problemą</b></big>"
+msgstr ""
 
 #: ../kde/apport-kde-mimelnk.desktop.in.h:1
 msgid "Apport crash file"
-msgstr "Apport strigties failas"
+msgstr ""
 
 #: ../bin/apport-unpack.py:22
 #, python-format
 msgid "Usage: %s <report> <target directory>"
-msgstr "Naudojimas: %s <ataskaita> <paskirties katalogas>"
+msgstr ""
 
 #: ../bin/apport-unpack.py:46
 msgid "Destination directory exists and is not empty."
-msgstr "Paskirties katalogas egzistuoja ir yra netuščias."
-
-#~ msgid "This is not a genuine %s package"
-#~ msgstr "Tai ne autentiškas %s paketas"
-
-#~ msgid "&Report Problem..."
-#~ msgstr "&Pranešti apie problemą..."
-
-#~ msgid "Your system encountered a serious kernel problem."
-#~ msgstr "Sistema susidūrė su rimta branduolio problema."
-
-#~ msgid "&Send complete report (recommended; %s)"
-#~ msgstr "&Siųsti visą ataskaitą (rekomenduojama; %s)"
-
-#~ msgid "Send &reduced report (slow Internet connection; %s)"
-#~ msgstr "Siųsti su&mažintą ataskaitą (lėtas interneto ryšys; %s)"
-
-#~ msgid ""
-#~ "<span weight=\"bold\" size=\"larger\">Sorry, the package \"%s\" failed to "
-#~ "install or upgrade.</span>"
-#~ msgstr ""
-#~ "<span weight=\"bold\" size=\"larger\">Deja, paketas „%s“ nebuvo įrašytas "
-#~ "ar atnaujintas.</span>"
-
-#~ msgid "Content of the report"
-#~ msgstr "Ataskaitos turinys"
-
-#~ msgid "Complete report (recommended; %s)"
-#~ msgstr "Visa ataskaita (rekomenduojama; %s)"
-
-#~ msgid "Application problem"
-#~ msgstr "Programos problema"
-
-#~ msgid "Reduced report (slow Internet connection; %s)"
-#~ msgstr "Sumažinta ataskaita (lėtas interneto ryšys; %s)"
-
-#~ msgid "Restart _Program"
-#~ msgstr "Paleisti _programą iš naujo"
-
-#~ msgid "_Ignore future crashes of this program version"
-#~ msgstr "_Ignoruoti šios programos versijos strigtis ateityje"
-
-#~ msgid "_Report Problem..."
-#~ msgstr "P_ranešti apie problemą..."
-
-#~ msgid "Package problem"
-#~ msgstr "Paketo problema"
-
-#~ msgid "Kernel problem"
-#~ msgstr "Branduolio problema"
-
-#~ msgid "_Send Report"
-#~ msgstr "_Siųsti ataskaitą"
-
-#~ msgid ""
-#~ "If you were not doing anything confidential (entering passwords or other\n"
-#~ "private information), you can help to improve the application by "
-#~ "reporting\n"
-#~ "the problem."
-#~ msgstr ""
-#~ "Jei nedarėte nieko konfidencialaus (slaptažodžių įvedimas ar kita\n"
-#~ "asmeninė informacija), galite padėti pagerinti programą pranešdami\n"
-#~ "apie problemą."
-
-#~ msgid "%s closed unexpectedly on %s at %s."
-#~ msgstr "%s netikėtai užsidarė %s %s."
-
-#~ msgid "The package \"%s\" failed to install or upgrade."
-#~ msgstr "Nepavyko įdiegti ar atnaujinti paketo „%s“."
-
-#~ msgid ""
-#~ "You can help the developers to fix the package by reporting the problem."
-#~ msgstr ""
-#~ "Jūs galite padėti kūrėjams pataisyti paketą pranešdami apie problemą."
-
-#~ msgid "You can help the developers to fix the problem by reporting it."
-#~ msgstr "Jūs galite padėti kūrėjams pataisyti problemą apie ją pranešdami."
-
-#~ msgid ""
-#~ "If you were not doing anything confidential (entering passwords or other "
-#~ "private information), you can help to improve the application by "
-#~ "reporting the problem."
-#~ msgstr ""
-#~ "Jei nedarėte nieko konfidencialaus (slaptažodžių įvedimas ar asmeninė "
-#~ "informacija), galite padėti patobulinti programą pranešdami apie problemą."
-
-#~ msgid ""
-#~ "<big><b>Send problem report to the developers?</b></big>\n"
-#~ "\n"
-#~ "After the problem report has been sent, please fill out the form in the "
-#~ "automatically opened web browser."
-#~ msgstr ""
-#~ "<big><b>Ar išsiųsti pranešimą apie problemą kūrėjams?</b></big>\n"
-#~ "\n"
-#~ "Kai pranešimas apie problemą bus išsiųstas, užpildykite formą "
-#~ "automatiškai atvertoje žiniatinklio naršyklėje."
-
-#~ msgid ""
-#~ "This will remove some large items from the report. These are very useful "
-#~ "for developers to debug the problem, but might be too big for you to "
-#~ "upload if you have a slow internet connection."
-#~ msgstr ""
-#~ "Tai pašalins kelias dideles dalis iš ataskaitos. Jos yra labai naudingos "
-#~ "kūrėjams problemos derinimui, bet gali būti per didelės išsiuntimui, jei "
-#~ "turite lėtą interneto ryšį."
-
-#~ msgid "Send this data to the developers?"
-#~ msgstr "Siųsti šiuos duomenis kūrėjams?"
-
-#~ msgid "Sorry, the package \"%s\" failed to install or upgrade."
-#~ msgstr "Atsiprašome, nepavyko įdiegti ar atnaujinti paketo „%s“"
-
-#~ msgid "Sorry, %s closed unexpectedly"
-#~ msgstr "Atsiprašome, %s netikėtai užvertas"
-
-#~ msgid "Generic error"
-#~ msgstr "Bendroji klaida"
-
-#~ msgid "Restart &Program"
-#~ msgstr "Paleisti &programą iš naujo"
-
-#~ msgid "Sorry, %s closed unexpectedly."
-#~ msgstr "Atsiprašome, %s netikėtai užvertas."
-
-#~ msgid "&Send"
-#~ msgstr "&Siųsti"
-
-#~ msgid "Sorry, the program \"%s\" closed unexpectedly."
-#~ msgstr "Atsiprašome, programa „%s“ netikėtai užsivėrė."
-
-#~ msgid "&Ignore future crashes of this program version"
-#~ msgstr "Šios programos versijos, lūžius ateityje &ignoruoti"
-
-#~ msgid "&Details..."
-#~ msgstr "&Detalės..."
-
-#~ msgid ""
-#~ "After the problem report has been sent, please fill out the form in the "
-#~ "automatically opened web browser."
-#~ msgstr ""
-#~ "Kai pranešimas apie klaidą bus išsiųstas, prašome užpildyti formą "
-#~ "automatiškai atvertoje žiniatinklio naršyklėje."
+msgstr ""
