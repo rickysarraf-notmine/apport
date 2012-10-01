@@ -8,6 +8,10 @@ ifeq (, $(findstring nocheck, $(DEB_BUILD_OPTIONS)))
 	-env -u LD_PRELOAD sh test/run
 endif
 
+override_dh_auto_build:
+	dh_auto_build
+	python3 setup.py build
+
 override_dh_installinit:
 	dh_installinit --error-handler=true
 
