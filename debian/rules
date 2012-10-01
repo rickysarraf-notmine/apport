@@ -5,7 +5,7 @@
 
 override_dh_auto_test:
 ifeq (, $(findstring nocheck, $(DEB_BUILD_OPTIONS)))
-	-env -u LD_PRELOAD sh test/run
+        -env -u LD_PRELOAD -u TMPDIR APPORT_TEST_NOXVFB=1 sh test/run
 endif
 
 override_dh_auto_build:
@@ -15,6 +15,19 @@ override_dh_auto_build:
 override_dh_installinit:
 	dh_installinit --error-handler=true
 
+override_dh_auto_install:
+	dh_auto_install
+	set -ex; for python in $(shell py3versions -r); do \
+            $$python setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb; \
+        done
+
 override_dh_install:
-	dh_install
+	dh_install -X.pyc -X.egg-info --list-missing
 	pod2man -c Debhelper -r "$(DEB_VERSION)" debian/debhelper/dh_apport debian/debhelper/dh_apport.1
+
+        # apport-retrace needs python-launchpadlib, which is not yet available
+        #         # for Python 3; so switch back to Python 2
+        sed -i '1 s/python3.*$$/python/' debian/apport-retrace/usr/bin/apport-retrace
+
+override_dh_python3:
+	dh_python3 --skip-private

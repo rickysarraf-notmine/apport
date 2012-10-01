@@ -11,18 +11,26 @@ usr/share/apport/gcc_ice_hook
 usr/share/apport/apportcheckresume
 usr/share/apport/unkillable_shutdown
 usr/share/apport/dump_acpi_tables.py
+usr/share/apport/is-enabled
 usr/share/apport/java_uncaught_exception
+usr/share/apport/recoverable_problem
+usr/share/apport/root_info_wrapper
 usr/share/apport/testsuite/
 usr/share/doc/apport
 usr/share/locale
 usr/share/icons
 usr/share/mime
+usr/share/polkit-1
 usr/share/apport/package-hooks
 usr/share/apport/general-hooks
+usr/share/man/man1/apport-unpack.1
+usr/share/man/man1/apport-bug.1
+usr/share/man/man1/apport-cli.1
 usr/bin/apport-cli
 usr/bin/apport-unpack
 usr/bin/apport-bug
 usr/bin/apport-collect
+usr/lib/pm-utils
 ../../java/apport.jar usr/share/apport/
 ../../java/crash.jar usr/share/apport/testsuite/
 ../../java/crash.class usr/share/apport/testsuite/
