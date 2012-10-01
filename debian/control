@@ -160,7 +160,7 @@ Section: kde
 Architecture: all
 Depends: python3,
  python3-apport (>= ${source:Version}),
- python3-kde4,
+ python-kde4,
  apport (>= 0.41),
  procps,
  ${misc:Depends}
