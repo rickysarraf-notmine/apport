@@ -2,10 +2,7 @@ Configuration
 -----------------
 
 To use apport to send bug reports, please set your email address
-and a smtp server in your /etc/default/apport configuration file.
-
-If you do not know a smtp server, leave it to the default.
-
+in the /etc/apport/crashdb.conf configuration file.
 
 
 Usage
