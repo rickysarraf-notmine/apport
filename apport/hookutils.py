@@ -247,7 +247,7 @@ def attach_hardware(report):
     # Use the hardware information to create a machine type.
     if 'dmi.sys.vendor' in report and 'dmi.product.name' in report:
         report['MachineType'] = '%s %s' % (report['dmi.sys.vendor'],
-                report['dmi.product.name'])
+                                           report['dmi.product.name'])
 
     if command_available('prtconf'):
         report['Prtconf'] = command_output(['prtconf'])
@@ -261,10 +261,9 @@ def attach_hardware(report):
             report['PccardctlIdent'] = out
 
 
-def attach_alsa(report):
-    '''Attach ALSA subsystem information to the report.
-
-    (loosely based on http://www.alsa-project.org/alsa-info.sh)
+def attach_alsa_old(report):
+    ''' (loosely based on http://www.alsa-project.org/alsa-info.sh)
+    for systems where alsa-info is not installed (i e, *buntu 12.04 and earlier)
     '''
     attach_file_if_exists(report, os.path.expanduser('~/.asoundrc'),
                           'UserAsoundrc')
@@ -306,19 +305,23 @@ def attach_alsa(report):
                     key = 'Card%d.Codecs.%s.%s' % (card, path_to_key(codec), path_to_key(name))
                     attach_file(report, path, key)
 
+
+def attach_alsa(report):
+    '''Attach ALSA subsystem information to the report.
+    '''
+    if os.path.exists('/usr/share/alsa-base/alsa-info.sh'):
+        report['AlsaInfo'] = command_output(['/usr/share/alsa-base/alsa-info.sh', '--stdout', '--no-upload'])
+    else:
+        attach_alsa_old(report)
+
     report['AudioDevicesInUse'] = command_output(
-        ['fuser', '-v'] + glob.glob('/dev/dsp*')
-            + glob.glob('/dev/snd/*')
-            + glob.glob('/dev/seq*'))
+        ['fuser', '-v'] + glob.glob('/dev/dsp*') + glob.glob('/dev/snd/*') + glob.glob('/dev/seq*'))
 
     if os.path.exists('/usr/bin/pacmd'):
         report['PulseList'] = command_output(['pacmd', 'list'])
 
     attach_dmi(report)
     attach_dmesg(report)
-
-    # This seems redundant with the amixer info, do we need it?
-    #report['AlsactlStore'] = command-output(['alsactl', '-f', '-', 'store'])
 
 
 def command_available(command):
@@ -336,7 +339,7 @@ def command_available(command):
 
 
 def command_output(command, input=None, stderr=subprocess.STDOUT,
-        keep_locale=False, decode_utf8=True):
+                   keep_locale=False, decode_utf8=True):
     '''Try to execute given command (array) and return its stdout.
 
     In case of failure, a textual error gets returned. This function forces
@@ -352,7 +355,7 @@ def command_output(command, input=None, stderr=subprocess.STDOUT,
         sp = subprocess.Popen(command, stdout=subprocess.PIPE,
                               stderr=stderr,
                               stdin=(input and subprocess.PIPE or None),
-                              close_fds=True, env=env)
+                              env=env)
     except OSError as e:
         return 'Error: ' + str(e)
 
@@ -360,8 +363,8 @@ def command_output(command, input=None, stderr=subprocess.STDOUT,
     if sp.returncode == 0:
         res = out.strip()
     else:
-        res = b'Error: command ' + str(command).encode() + b' failed with exit code ' \
-                + str(sp.returncode).encode() + b': ' + out
+        res = (b'Error: command ' + str(command).encode() + b' failed with exit code '
+               + str(sp.returncode).encode() + b': ' + out)
 
     if decode_utf8:
         res = res.decode('UTF-8', errors='replace')
@@ -370,40 +373,24 @@ def command_output(command, input=None, stderr=subprocess.STDOUT,
 
 def _root_command_prefix():
     if os.getuid() == 0:
-        prefix = []
-    elif os.getenv('DISPLAY') and \
-            subprocess.call(['which', 'kdesudo'], stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE) == 0 and \
-            subprocess.call(['pgrep', '-x', '-u', str(os.getuid()), 'ksmserver'],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0:
-        prefix = ['kdesudo', '--desktop', '/usr/share/applications/apport-kde-mime.desktop',
-                  '--', 'env', '-u', 'LANGUAGE', 'LC_MESSAGES=C']
-    elif os.getenv('DISPLAY') and \
-            subprocess.call(['which', 'gksu'], stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE) == 0 and \
-            subprocess.call(['pgrep', '-x', '-u', str(os.getuid()), 'gnome-panel|gconfd-2'],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0:
-        prefix = ['gksu', '-D', 'Apport', '--', 'env', '-u', 'LANGUAGE', 'LC_MESSAGES=C']
+        return []
     else:
-        prefix = ['sudo', 'LC_MESSAGES=C', 'LANGUAGE=']
-
-    return prefix
+        return ['pkexec']
 
 
 def root_command_output(command, input=None, stderr=subprocess.STDOUT, decode_utf8=True):
     '''Try to execute given command (array) as root and return its stdout.
 
-    This passes the command through gksu, kdesudo, or sudo, depending on the
-    running desktop environment.
+    This passes the command through pkexec, unless the caller is already root.
 
     In case of failure, a textual error gets returned.
 
     If decode_utf8 is True (default), the output will be converted to a string,
     otherwise left as bytes.
     '''
-    assert type(command) == type([]), 'command must be a list'
+    assert isinstance(command, list), 'command must be a list'
     return command_output(_root_command_prefix() + command, input, stderr,
-            keep_locale=True, decode_utf8=decode_utf8)
+                          keep_locale=True, decode_utf8=decode_utf8)
 
 
 def attach_root_command_outputs(report, command_map):
@@ -414,12 +401,14 @@ def attach_root_command_outputs(report, command_map):
     escaping yourself. To include stderr output of a command, end it with
     "2>&1".
 
-    Just like root_command_output() this will use gksu, kdesudo, or sudo for
-    gaining root privileges, depending on the running desktop environment.
+    Just like root_command_output, this passes the command through pkexec,
+    unless the caller is already root.
 
     This is preferrable to using root_command_output() multiple times, as that
     will ask for the password every time.
     '''
+    wrapper_path = os.path.join(os.path.abspath(
+        os.environ.get('APPORT_DATA_DIR', '/usr/share/apport')), 'root_info_wrapper')
     workdir = tempfile.mkdtemp()
     try:
         # create a shell script with all the commands
@@ -433,14 +422,18 @@ def attach_root_command_outputs(report, command_map):
         script.close()
 
         # run script
-        sp = subprocess.Popen(_root_command_prefix() + ['/bin/sh', script_path],
-            close_fds=True)
+        sp = subprocess.Popen(_root_command_prefix() + [wrapper_path, script_path])
         sp.wait()
 
         # now read back the individual outputs
         for keyname in command_map:
-            f = open(os.path.join(workdir, keyname))
-            buf = f.read().strip()
+            try:
+                with open(os.path.join(workdir, keyname)) as f:
+                    buf = f.read().strip()
+            except IOError:
+                # this can happen if the user dismisses authorization in
+                # _root_command_prefix
+                continue
             if buf:
                 report[keyname] = buf
             f.close()
@@ -465,7 +458,7 @@ def recent_logfile(logfile, pattern, maxlines=10000):
     lines = ''
     try:
         tail = subprocess.Popen(['tail', '-n', str(maxlines), logfile],
-                stdout=subprocess.PIPE)
+                                stdout=subprocess.PIPE)
         while tail.poll() is None:
             for line in tail.stdout:
                 line = line.decode('UTF-8', errors='replace')
@@ -584,7 +577,7 @@ def attach_gsettings_schema(report, schema):
     env = os.environ.copy()
     env['XDG_CONFIG_HOME'] = '/nonexisting'
     gsettings = subprocess.Popen(['gsettings', 'list-recursively', schema],
-            env=env, stdout=subprocess.PIPE)
+                                 env=env, stdout=subprocess.PIPE)
     for l in gsettings.stdout:
         try:
             (schema, key, value) = l.split(None, 2)
@@ -594,7 +587,7 @@ def attach_gsettings_schema(report, schema):
         defaults.setdefault(schema, {})[key] = value
 
     gsettings = subprocess.Popen(['gsettings', 'list-recursively', schema],
-            stdout=subprocess.PIPE)
+                                 stdout=subprocess.PIPE)
     for l in gsettings.stdout:
         try:
             (schema, key, value) = l.split(None, 2)
@@ -611,8 +604,7 @@ def attach_gsettings_schema(report, schema):
 def attach_gsettings_package(report, package):
     '''Attach user-modified gsettings keys of all schemas in a package.'''
 
-    for schema_file in files_in_package(package,
-            '/usr/share/glib-2.0/schemas/*.gschema.xml'):
+    for schema_file in files_in_package(package, '/usr/share/glib-2.0/schemas/*.gschema.xml'):
         schema = os.path.basename(schema_file)[:-12]
         attach_gsettings_schema(report, schema)
 
@@ -634,10 +626,11 @@ def attach_wifi(report):
     '''Attach wireless (WiFi) network information to report.'''
 
     report['WifiSyslog'] = recent_syslog(re.compile(r'(NetworkManager|modem-manager|dhclient|kernel|wpa_supplicant)(\[\d+\])?:'))
-    report['IwConfig'] = re.sub('ESSID:(.*)', 'ESSID:<hidden>',
+    report['IwConfig'] = re.sub(
+        'ESSID:(.*)', 'ESSID:<hidden>',
         re.sub('Encryption key:(.*)', 'Encryption key: <hidden>',
-        re.sub('Access Point: (.*)', 'Access Point: <hidden>',
-            command_output(['iwconfig']))))
+               re.sub('Access Point: (.*)', 'Access Point: <hidden>',
+                      command_output(['iwconfig']))))
     report['RfKill'] = command_output(['rfkill', 'list'])
     report['CRDA'] = command_output(['iw', 'reg', 'get'])
 
@@ -671,30 +664,57 @@ def attach_printing(report):
         'gutenprint-locales', 'system-config-printer-common', 'kdeprint')
 
 
-def attach_mac_events(report):
+def attach_mac_events(report, profiles=None):
     '''Attach MAC information and events to the report.'''
+
+    # Allow specifying a string, or a list of strings
+    if isinstance(profiles, str):
+        profiles = [profiles]
 
     mac_regex = 'audit\(|apparmor|selinux|security'
     mac_re = re.compile(mac_regex, re.IGNORECASE)
-    aa_denied_regex = 'apparmor="DENIED"'
-    aa_denied_re = re.compile(aa_denied_regex, re.IGNORECASE)
+    aa_regex = 'apparmor="DENIED".+?profile=([^ ]+?)[ ]'
+    aa_re = re.compile(aa_regex, re.IGNORECASE)
 
-    if os.path.exists('/var/log/kern.log'):
-        report['KernLog'] = recent_logfile('/var/log/kern.log', mac_re)
-    elif os.path.exists('/var/log/messages'):
-        report['KernLog'] = recent_logfile('/var/log/messages', mac_re)
+    if 'KernLog' not in report:
+        if os.path.exists('/var/log/kern.log'):
+            report['KernLog'] = recent_logfile('/var/log/kern.log', mac_re)
+        elif os.path.exists('/var/log/messages'):
+            report['KernLog'] = recent_logfile('/var/log/messages', mac_re)
 
-    if os.path.exists('/var/run/auditd.pid'):
+    if 'AuditLog' not in report and os.path.exists('/var/run/auditd.pid'):
         attach_root_command_outputs(report, {'AuditLog': 'egrep "' + mac_regex + '" /var/log/audit/audit.log'})
 
     attach_file(report, '/proc/version_signature', 'ProcVersionSignature')
     attach_file(report, '/proc/cmdline', 'ProcCmdline')
 
-    if re.search(aa_denied_re, report.get('KernLog', '')) or re.search(aa_denied_re, report.get('AuditLog', '')):
-        tags = report.get('Tags', '')
-        if tags:
-            tags += ' '
-        report['Tags'] = tags + 'apparmor'
+    for match in re.findall(aa_re, report.get('KernLog', '') + report.get('AuditLog', '')):
+        if not profiles:
+            _add_tag(report, 'apparmor')
+            break
+
+        try:
+            if match[0] == '"':
+                profile = match[1:-1]
+            elif sys.version[0] >= '3':
+                profile = bytes.fromhex(match).decode('UTF-8', errors='replace')
+            else:
+                profile = match.decode('hex', errors='replace')
+        except:
+            continue
+
+        for search_profile in profiles:
+            if re.match('^' + search_profile + '$', profile):
+                _add_tag(report, 'apparmor')
+                break
+
+
+def _add_tag(report, tag):
+    '''Adds or appends a tag to the report'''
+    current_tags = report.get('Tags', '')
+    if current_tags:
+        current_tags += ' '
+    report['Tags'] = current_tags + tag
 
 
 def attach_related_packages(report, packages):
@@ -778,7 +798,7 @@ def _get_module_license(module):
 
     try:
         modinfo = subprocess.Popen(['/sbin/modinfo', module],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out = modinfo.communicate()[0].decode('UTF-8')
         if modinfo.returncode != 0:
             return 'invalid'
@@ -865,13 +885,15 @@ def in_session_of_problem(report):
 
     try:
         bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
-        ck_manager = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, None,
+        ck_manager = Gio.DBusProxy.new_sync(
+            bus, Gio.DBusProxyFlags.NONE, None,
             'org.freedesktop.ConsoleKit', '/org/freedesktop/ConsoleKit/Manager',
             'org.freedesktop.ConsoleKit.Manager', None)
 
         cur_session = ck_manager.GetCurrentSession()
 
-        ck_session = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE, None,
+        ck_session = Gio.DBusProxy.new_sync(
+            bus, Gio.DBusProxyFlags.NONE, None,
             'org.freedesktop.ConsoleKit', cur_session,
             'org.freedesktop.ConsoleKit.Session', None)
 
@@ -880,8 +902,7 @@ def in_session_of_problem(report):
         sys.stderr.write('Error connecting to ConsoleKit: %s\n' % str(e))
         return None
 
-    m = re.match('(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.\d+Z)$',
-            session_start_time)
+    m = re.match('(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.\d+Z)$', session_start_time)
     if m:
         # CK gives UTC time
         session_start_time = calendar.timegm(time.strptime(m.group(1), '%Y-%m-%dT%H:%M:%S'))

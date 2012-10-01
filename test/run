@@ -49,7 +49,7 @@ if [ -d test -a -e setup.py ]; then
     # pyflakes, if available
     if type pyflakes >/dev/null 2>&1; then
         echo "Running pyflakes..."
-        pyflakes `find -name '*.py'` `find bin data -type f -executable ! -name is-enabled ! -name apport-bug`
+        pyflakes `find -name '*.py'` `find bin data -type f -executable ! -name is-enabled ! -name apport-bug ! -name root_info_wrapper`
     else
         echo "Skipping pyflakes tests, pyflakes is not installed"
     fi
@@ -76,6 +76,9 @@ export APPORT_IGNORE_OBSOLETE_PACKAGES=1
 export LC_MESSAGES=C
 unset LANGUAGE
 
+# do not assume/disturb session bus
+unset DBUS_SESSION_BUS_ADDRESS
+
 xvfb=
 if type xvfb-run >/dev/null && [ -z "$APPORT_TEST_NOXVFB" ]; then
     xvfb=xvfb-run
@@ -101,10 +104,17 @@ fi
 for t in $TESTS; do
     echo "--- Testing $t ---"
     if [ "${t#ui_}" != $t ]; then
+        while [ -e /tmp/.X99-lock ]; do
+           echo "Waiting for previous xvfb to finish..."
+           sleep 0.5
+        done
         prefix=$xvfb
     else
         # ensure that non-UI modules do not require X
         prefix="env -u DISPLAY"
+    fi
+    if [ "$t" = "python_crashes" ]; then
+        prefix="dbus-launch $prefix"
     fi
     test_file="$mydir/test_${t%%.*}.py"
     if [ "$t" = "${t#*.}" ]; then

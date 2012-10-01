@@ -72,13 +72,13 @@ class T(unittest.TestCase):
         pr.add_proc_info()
         self.assertEqual(pr.pid, os.getpid())
         self.assertTrue(set(['ProcEnviron', 'ProcMaps', 'ProcCmdline',
-            'ProcMaps']).issubset(set(pr.keys())), 'report has required fields')
+                             'ProcMaps']).issubset(set(pr.keys())), 'report has required fields')
         self.assertTrue('LANG=' + os.environ['LANG'] in pr['ProcEnviron'])
         self.assertTrue('USER' not in pr['ProcEnviron'])
         self.assertTrue('PWD' not in pr['ProcEnviron'])
         self.assertTrue('report.py' in pr['ExecutablePath'])
         self.assertEqual(int(pr['ExecutableTimestamp']),
-                int(os.stat(__file__).st_mtime))
+                         int(os.stat(__file__).st_mtime))
 
         # check with one additional safe environment variable
         pr = apport.report.Report()
@@ -105,8 +105,8 @@ class T(unittest.TestCase):
 
         # check escaping of ProcCmdline
         p = subprocess.Popen(['cat', '/foo bar', '\\h', '\\ \\', '-'],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, close_fds=True)
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         assert p.pid
         # wait until /proc/pid/cmdline exists
         while True:
@@ -126,8 +126,7 @@ class T(unittest.TestCase):
 
         # check correct handling of executable symlinks
         assert os.path.islink('/bin/sh'), '/bin/sh needs to be a symlink for this test'
-        p = subprocess.Popen(['sh'], stdin=subprocess.PIPE,
-            close_fds=True)
+        p = subprocess.Popen(['sh'], stdin=subprocess.PIPE)
         assert p.pid
         # wait until /proc/pid/cmdline exists
         while True:
@@ -142,11 +141,10 @@ class T(unittest.TestCase):
         self.assertFalse('InterpreterPath' in pr, pr.get('InterpreterPath'))
         self.assertEqual(pr['ExecutablePath'], os.path.realpath('/bin/sh'))
         self.assertEqual(int(pr['ExecutableTimestamp']),
-                int(os.stat(os.path.realpath('/bin/sh')).st_mtime))
+                         int(os.stat(os.path.realpath('/bin/sh')).st_mtime))
 
         # check correct handling of interpreted executables: shell
-        p = subprocess.Popen(['zgrep', 'foo'], stdin=subprocess.PIPE,
-            close_fds=True)
+        p = subprocess.Popen(['zgrep', 'foo'], stdin=subprocess.PIPE)
         assert p.pid
         # wait until /proc/pid/cmdline exists
         while True:
@@ -160,9 +158,9 @@ class T(unittest.TestCase):
         self.assertTrue(pr['ExecutablePath'].endswith('bin/zgrep'))
         with open(pr['ExecutablePath']) as fd:
             self.assertEqual(pr['InterpreterPath'],
-                os.path.realpath(fd.readline().strip()[2:]))
+                             os.path.realpath(fd.readline().strip()[2:]))
         self.assertEqual(int(pr['ExecutableTimestamp']),
-                int(os.stat(pr['ExecutablePath']).st_mtime))
+                         int(os.stat(pr['ExecutablePath']).st_mtime))
         self.assertTrue('[stack]' in pr['ProcMaps'])
 
         # check correct handling of interpreted executables: python
@@ -174,7 +172,7 @@ sys.stdin.readline()
         os.close(fd)
         os.chmod(testscript, 0o755)
         p = subprocess.Popen([testscript], stdin=subprocess.PIPE,
-            stderr=subprocess.PIPE, close_fds=True)
+                             stderr=subprocess.PIPE)
         assert p.pid
         # wait until /proc/pid/cmdline exists
         while True:
@@ -187,7 +185,7 @@ sys.stdin.readline()
         p.communicate(b'\n')
         self.assertEqual(pr['ExecutablePath'], testscript)
         self.assertEqual(int(pr['ExecutableTimestamp']),
-                int(os.stat(testscript).st_mtime))
+                         int(os.stat(testscript).st_mtime))
         os.unlink(testscript)
         self.assertTrue('python' in pr['InterpreterPath'])
         self.assertTrue('python' in pr['ProcMaps'])
@@ -201,33 +199,33 @@ sys.stdin.readline()
 
         # system default
         p = subprocess.Popen(['cat'], stdin=subprocess.PIPE,
-            env={'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games'})
+                             env={'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games'})
         time.sleep(0.1)
         r = apport.report.Report()
         r.add_proc_environ(pid=p.pid)
         p.communicate(b'')
         self.assertFalse('PATH' in r['ProcEnviron'],
-            'system default $PATH should be filtered out')
+                         'system default $PATH should be filtered out')
 
         # no user paths
         p = subprocess.Popen(['cat'], stdin=subprocess.PIPE,
-            env={'PATH': '/usr/sbin:/usr/bin:/sbin:/bin'})
+                             env={'PATH': '/usr/sbin:/usr/bin:/sbin:/bin'})
         time.sleep(0.1)
         r = apport.report.Report()
         r.add_proc_environ(pid=p.pid)
         p.communicate(b'')
         self.assertTrue('PATH=(custom, no user)' in r['ProcEnviron'],
-            'PATH is customized without user paths')
+                        'PATH is customized without user paths')
 
         # user paths
         p = subprocess.Popen(['cat'], stdin=subprocess.PIPE,
-            env={'PATH': '/home/pitti:/usr/sbin:/usr/bin:/sbin:/bin'})
+                             env={'PATH': '/home/pitti:/usr/sbin:/usr/bin:/sbin:/bin'})
         time.sleep(0.1)
         r = apport.report.Report()
         r.add_proc_environ(pid=p.pid)
         p.communicate(b'')
         self.assertTrue('PATH=(custom, user)' in r['ProcEnviron'],
-            'PATH is customized with user paths')
+                        'PATH is customized with user paths')
 
     def test_check_interpreted(self):
         '''_check_interpreted().'''
@@ -377,7 +375,25 @@ sys.stdin.readline()
             pr._check_interpreted()
             self.assertEqual(pr['InterpreterPath'], '/usr/bin/python2.7')
             self.assertTrue('report' in pr['ExecutablePath'],
-                'expecting "report" in ExecutablePath "%s"' % pr['ExecutablePath'])
+                            'expecting "report" in ExecutablePath "%s"' % pr['ExecutablePath'])
+
+            # python script through -m, with dot separator; top-level module
+            pr = apport.report.Report()
+            pr['ExecutablePath'] = '/usr/bin/python3'
+            pr['ProcStatus'] = 'Name:\tpython3'
+            pr['ProcCmdline'] = 'python\0-m\0re\0install'
+            pr._check_interpreted()
+            self.assertEqual(pr['InterpreterPath'], '/usr/bin/python3')
+            self.assertTrue('re.py' in pr['ExecutablePath'], pr['ExecutablePath'])
+
+            # python script through -m, with dot separator; sub-level module
+            pr = apport.report.Report()
+            pr['ExecutablePath'] = '/usr/bin/python3'
+            pr['ProcStatus'] = 'Name:\tpython3'
+            pr['ProcCmdline'] = 'python\0-m\0distutils.cmd\0foo'
+            pr._check_interpreted()
+            self.assertEqual(pr['InterpreterPath'], '/usr/bin/python3')
+            self.assertTrue('distutils/cmd.py' in pr['ExecutablePath'], pr['ExecutablePath'])
         finally:
             if restore_root:
                 os.setresuid(0, 0, -1)
@@ -451,11 +467,10 @@ int main() { return f(42); }
             assert os.path.exists('crash')
 
             # call it through gdb and dump core
-            subprocess.call(['gdb', '--batch', '--ex', 'run', '--ex',
-                'generate-core-file core', './crash'], stdout=subprocess.PIPE)
-            assert os.path.exists('core')
-            assert subprocess.call(['readelf', '-n', 'core'],
-                stdout=subprocess.PIPE) == 0
+            gdb = subprocess.Popen(['gdb', '--batch', '--ex', 'run', '--ex',
+                                    'generate-core-file core', './crash'], stdout=subprocess.PIPE)
+            gdb.communicate()
+            klass._validate_core('core')
 
             pr['ExecutablePath'] = os.path.join(workdir, 'crash')
             pr['CoreDump'] = (os.path.join(workdir, 'core'),)
@@ -470,6 +485,14 @@ int main() { return f(42); }
 
         return pr
 
+    @classmethod
+    def _validate_core(klass, core_path):
+        subprocess.check_call(['sync'])
+        assert os.path.exists(core_path)
+        readelf = subprocess.Popen(['readelf', '-n', core_path], stdout=subprocess.PIPE)
+        readelf.communicate()
+        assert readelf.returncode == 0
+
     def _validate_gdb_fields(self, pr):
         self.assertTrue('Stacktrace' in pr)
         self.assertTrue('ThreadStacktrace' in pr)
@@ -479,7 +502,7 @@ int main() { return f(42); }
         self.assertTrue('(no debugging symbols found)' not in pr['Stacktrace'])
         self.assertTrue('Core was generated by' not in pr['Stacktrace'], pr['Stacktrace'])
         self.assertTrue(not re.match(r'(?s)(^|.*\n)#0  [^\n]+\n#0  ',
-                                  pr['Stacktrace']))
+                                     pr['Stacktrace']))
         self.assertTrue('#0  0x' in pr['Stacktrace'])
         self.assertTrue('#1  0x' in pr['Stacktrace'])
         self.assertTrue('#0  0x' in pr['ThreadStacktrace'])
@@ -544,17 +567,17 @@ int main() {
             pr.load(f)
         pr.add_hooks_info('fake_ui')
         self.assertTrue('Skipped: missing required field "Architecture"' in pr['SegvAnalysis'],
-                     pr['SegvAnalysis'])
+                        pr['SegvAnalysis'])
 
         pr.add_os_info()
         pr.add_hooks_info('fake_ui')
         self.assertTrue('Skipped: missing required field "ProcMaps"' in pr['SegvAnalysis'],
-                     pr['SegvAnalysis'])
+                        pr['SegvAnalysis'])
 
         pr.add_proc_info()
         pr.add_hooks_info('fake_ui')
         self.assertTrue('not located in a known VMA region' in pr['SegvAnalysis'],
-                     pr['SegvAnalysis'])
+                        pr['SegvAnalysis'])
 
     def test_add_gdb_info_script(self):
         '''add_gdb_info() with a script.'''
@@ -576,9 +599,7 @@ kill -SEGV $$
 
             # call script and verify that it gives us a proper ELF core dump
             assert subprocess.call([script]) != 0
-            subprocess.check_call(['sync'])
-            assert subprocess.call(['readelf', '-n', coredump],
-                stdout=subprocess.PIPE) == 0
+            self._validate_core(coredump)
 
             pr = apport.report.Report()
             pr['InterpreterPath'] = '/bin/bash'
@@ -618,9 +639,7 @@ $0.bin 2>/dev/null
 
             # call script and verify that it gives us a proper ELF core dump
             assert subprocess.call([script]) != 0
-            subprocess.check_call(['sync'])
-            assert subprocess.call(['readelf', '-n', 'core'],
-                stdout=subprocess.PIPE) == 0
+            self._validate_core('core')
 
             pr = apport.report.Report()
             pr['ExecutablePath'] = script + '.bin'
@@ -633,7 +652,7 @@ $0.bin 2>/dev/null
 
         self._validate_gdb_fields(pr)
         self.assertTrue("<stdin>:2: main: Assertion `1 < 0' failed." in
-                pr['AssertionMessage'], pr['AssertionMessage'])
+                        pr['AssertionMessage'], pr['AssertionMessage'])
         self.assertFalse(pr['AssertionMessage'].startswith('$'), pr['AssertionMessage'])
         self.assertFalse('= 0x' in pr['AssertionMessage'], pr['AssertionMessage'])
         self.assertFalse(pr['AssertionMessage'].endswith('\\n'), pr['AssertionMessage'])
@@ -662,9 +681,7 @@ LIBC_FATAL_STDERR_=1 $0.bin aaaaaaaaaaaaaaaa 2>/dev/null
 
             # call script and verify that it gives us a proper ELF core dump
             assert subprocess.call([script]) != 0
-            subprocess.check_call(['sync'])
-            assert subprocess.call(['readelf', '-n', 'core'],
-                stdout=subprocess.PIPE) == 0
+            self._validate_core('core')
 
             pr = apport.report.Report()
             pr['ExecutablePath'] = script + '.bin'
@@ -677,7 +694,7 @@ LIBC_FATAL_STDERR_=1 $0.bin aaaaaaaaaaaaaaaa 2>/dev/null
 
         self._validate_gdb_fields(pr)
         self.assertTrue("** buffer overflow detected ***: %s.bin terminated" % (script) in
-                pr['AssertionMessage'], pr['AssertionMessage'])
+                        pr['AssertionMessage'], pr['AssertionMessage'])
         self.assertFalse(pr['AssertionMessage'].startswith('$'), pr['AssertionMessage'])
         self.assertFalse('= 0x' in pr['AssertionMessage'], pr['AssertionMessage'])
         self.assertFalse(pr['AssertionMessage'].endswith('\\n'), pr['AssertionMessage'])
@@ -702,9 +719,7 @@ $0.bin 2>/dev/null
 
             # call script and verify that it gives us a proper ELF core dump
             assert subprocess.call([script]) != 0
-            subprocess.check_call(['sync'])
-            assert subprocess.call(['readelf', '-n', 'core'],
-                stdout=subprocess.PIPE) == 0
+            self._validate_core('core')
 
             pr = apport.report.Report()
             pr['ExecutablePath'] = script + '.bin'
@@ -747,6 +762,10 @@ $0.bin 2>/dev/null
         <re key="SourcePackage">^bazaar$</re>
         <re key="LogFile">AssertionError</re>
     </pattern>
+    <pattern url="http://bugtracker.net/bugs/6">
+        <re key="Package">^update-notifier</re>
+        <re key="LogFile">AssertionError \xe2\x80\xbd</re>
+    </pattern>
 </patterns>''')
         patterns.flush()
 
@@ -773,60 +792,78 @@ $0.bin 2>/dev/null
         r_invalid = apport.report.Report()
         r_invalid['Package'] = 'invalid 1'
 
+        r_unicode = apport.report.Report()
+        r_unicode['Package'] = 'update-notifier'
+        r_unicode['LogFile'] = b'AssertionError \xe2\x80\xbd'
+
         pattern_url = 'file://' + patterns.name
 
         # positive match cases
         self.assertEqual(r_bash.search_bug_patterns(pattern_url),
-                'http://bugtracker.net/bugs/1')
+                         'http://bugtracker.net/bugs/1')
         r_bash['Foo'] = 'write_goodbye'
         self.assertEqual(r_bash.search_bug_patterns(pattern_url),
-                'http://bugtracker.net/bugs/2')
+                         'http://bugtracker.net/bugs/2')
         self.assertEqual(r_coreutils.search_bug_patterns(pattern_url),
-                'http://bugtracker.net/bugs/3')
+                         'http://bugtracker.net/bugs/3')
         self.assertEqual(r_bazaar.search_bug_patterns(pattern_url),
-                'http://bugtracker.net/bugs/5')
+                         'http://bugtracker.net/bugs/5')
+        self.assertEqual(r_unicode.search_bug_patterns(pattern_url),
+                         'http://bugtracker.net/bugs/6')
 
         # also works for CompressedValues
         r_bash_compressed = r_bash.copy()
         r_bash_compressed['Foo'] = problem_report.CompressedValue(b'bazaar')
         self.assertEqual(r_bash_compressed.search_bug_patterns(pattern_url),
-                'http://bugtracker.net/bugs/1')
+                         'http://bugtracker.net/bugs/1')
+
+        # also works for binary values
+        r_bash_utf8 = r_bash.copy()
+        r_bash_utf8['Foo'] = b'bazaar'
+        self.assertEqual(r_bash_utf8.search_bug_patterns(pattern_url),
+                         'http://bugtracker.net/bugs/1')
 
         # negative match cases
         r_bash['Package'] = 'bash-static 1-2'
         self.assertEqual(r_bash.search_bug_patterns(pattern_url), None)
         r_bash['Package'] = 'bash 1-21'
         self.assertEqual(r_bash.search_bug_patterns(pattern_url), None,
-            'does not match on wrong bash version')
+                         'does not match on wrong bash version')
         r_bash['Foo'] = 'zz'
         self.assertEqual(r_bash.search_bug_patterns(pattern_url), None,
-            'does not match on wrong Foo value')
+                         'does not match on wrong Foo value')
+        r_bash['Foo'] = b'zz'
+        self.assertEqual(r_bash.search_bug_patterns(pattern_url), None,
+                         'does not match on wrong Foo UTF-8 value')
+        r_bash['Foo'] = b'\x01\xFF'
+        self.assertEqual(r_bash.search_bug_patterns(pattern_url), None,
+                         'does not match on wrong Foo binary value')
         r_coreutils['Bar'] = '11'
         self.assertEqual(r_coreutils.search_bug_patterns(pattern_url), None,
-            'does not match on wrong Bar value')
+                         'does not match on wrong Bar value')
         r_bazaar['SourcePackage'] = 'launchpad'
         self.assertEqual(r_bazaar.search_bug_patterns(pattern_url), None,
-            'does not match on wrong source package')
+                         'does not match on wrong source package')
         r_bazaar['LogFile'] = ''
         self.assertEqual(r_bazaar.search_bug_patterns(pattern_url), None,
-            'does not match on empty attribute')
+                         'does not match on empty attribute')
 
         # various errors to check for robustness (no exceptions, just None
         # return value)
         del r_coreutils['Bar']
         self.assertEqual(r_coreutils.search_bug_patterns(pattern_url), None,
-            'does not match on nonexisting key')
+                         'does not match on nonexisting key')
         self.assertEqual(r_invalid.search_bug_patterns('file://' + invalid.name), None,
-            'gracefully handles invalid XML')
+                         'gracefully handles invalid XML')
         r_coreutils['Package'] = 'other 2'
         self.assertEqual(r_bash.search_bug_patterns('file:///nonexisting/directory/'), None,
-            'gracefully handles nonexisting base path')
+                         'gracefully handles nonexisting base path')
         # existing host, but no bug patterns
         self.assertEqual(r_bash.search_bug_patterns('http://security.ubuntu.com/'), None,
-            'gracefully handles base path without bug patterns')
+                         'gracefully handles base path without bug patterns')
         # nonexisting host
         self.assertEqual(r_bash.search_bug_patterns('http://nonexisting.domain/'), None,
-            'gracefully handles nonexisting URL domain')
+                         'gracefully handles nonexisting URL domain')
 
     def test_add_hooks_info(self):
         '''add_hooks_info().'''
@@ -874,24 +911,30 @@ def add_info(report):
             r['Package'] = 'bar'
             # should not throw any exceptions
             self.assertEqual(r.add_hooks_info('fake_ui'), False)
-            self.assertEqual(set(r.keys()), set(['ProblemType', 'Date',
-                'Package', 'CommonField1', 'CommonField2', 'CommonField3']),
-                'report has required fields')
+            self.assertEqual(set(r.keys()),
+                             set(['ProblemType', 'Date', 'Package',
+                                  'CommonField1', 'CommonField2',
+                                  'CommonField3']),
+                             'report has required fields')
 
             r = apport.report.Report()
             r['Package'] = 'baz 1.2-3'
             # should not throw any exceptions
             self.assertEqual(r.add_hooks_info('fake_ui'), False)
-            self.assertEqual(set(r.keys()), set(['ProblemType', 'Date',
-                'Package', 'CommonField1', 'CommonField2', 'CommonField3']),
-                'report has required fields')
+            self.assertEqual(set(r.keys()),
+                             set(['ProblemType', 'Date', 'Package',
+                                  'CommonField1', 'CommonField2',
+                                  'CommonField3']),
+                             'report has required fields')
 
             r = apport.report.Report()
             r['Package'] = 'foo'
             self.assertEqual(r.add_hooks_info('fake_ui'), False)
-            self.assertEqual(set(r.keys()), set(['ProblemType', 'Date',
-                'Package', 'Field1', 'Field2', 'CommonField1',
-                'CommonField2', 'CommonField3']), 'report has required fields')
+            self.assertEqual(set(r.keys()),
+                             set(['ProblemType', 'Date', 'Package', 'Field1',
+                                  'Field2', 'CommonField1', 'CommonField2',
+                                  'CommonField3']),
+                             'report has required fields')
             self.assertEqual(r['Field1'], 'Field 1')
             self.assertEqual(r['Field2'], 'Field 2\nBla')
             self.assertEqual(r['CommonField1'], 'CommonField 1')
@@ -901,9 +944,11 @@ def add_info(report):
             r = apport.report.Report()
             r['Package'] = 'foo 4.5-6'
             self.assertEqual(r.add_hooks_info('fake_ui'), False)
-            self.assertEqual(set(r.keys()), set(['ProblemType', 'Date',
-                'Package', 'Field1', 'Field2', 'CommonField1',
-                'CommonField2', 'CommonField3']), 'report has required fields')
+            self.assertEqual(set(r.keys()),
+                             set(['ProblemType', 'Date', 'Package', 'Field1',
+                                  'Field2', 'CommonField1', 'CommonField2',
+                                  'CommonField3']),
+                             'report has required fields')
             self.assertEqual(r['Field1'], 'Field 1')
             self.assertEqual(r['Field2'], 'Field 2\nBla')
             self.assertEqual(r['CommonField1'], 'CommonField 1')
@@ -929,9 +974,12 @@ def add_info(report, ui):
             r['SourcePackage'] = 'foo'
             r['Package'] = 'libfoo 3'
             self.assertEqual(r.add_hooks_info('fake_ui'), False)
-            self.assertEqual(set(r.keys()), set(['ProblemType', 'Date',
-                'Package', 'SourcePackage', 'Field1', 'Field2', 'CommonField1',
-                'CommonField2', 'CommonField3']), 'report has required fields')
+            self.assertEqual(set(r.keys()),
+                             set(['ProblemType', 'Date', 'Package',
+                                  'SourcePackage', 'Field1', 'Field2',
+                                  'CommonField1', 'CommonField2',
+                                  'CommonField3']),
+                             'report has required fields')
             self.assertEqual(r['Field1'], 'Field 1')
             self.assertEqual(r['Field2'], 'Field 2\nBla')
             self.assertEqual(r['CommonField1'], 'CommonField 1')
@@ -947,6 +995,44 @@ def add_info(report, ui):
             shutil.rmtree(apport.report._common_hook_dir)
             apport.report._hook_dir = orig_hook_dir
             apport.report._common_hook_dir = orig_common_hook_dir
+
+    def test_add_hooks_info_opt(self):
+        '''add_hooks_info() for a package in /opt'''
+
+        orig_hook_dir = apport.report._hook_dir
+        apport.report._hook_dir = tempfile.mkdtemp()
+        orig_common_hook_dir = apport.report._common_hook_dir
+        apport.report._common_hook_dir = tempfile.mkdtemp()
+        orig_opt_dir = apport.report._opt_dir
+        apport.report._opt_dir = tempfile.mkdtemp()
+        try:
+            opt_hook_dir = os.path.join(apport.report._opt_dir,
+                                        'foolabs.example.com', 'foo', 'share',
+                                        'apport', 'package-hooks')
+            os.makedirs(opt_hook_dir)
+            with open(os.path.join(opt_hook_dir, 'source_foo.py'), 'w') as fd:
+                fd.write('''def add_info(report, ui):
+    report['SourceHook'] = '1'
+''')
+            with open(os.path.join(opt_hook_dir, 'foo-bin.py'), 'w') as fd:
+                fd.write('''def add_info(report, ui):
+    report['BinHook'] = '1'
+''')
+
+            r = apport.report.Report()
+            r['Package'] = 'foo-bin 0.2'
+            r['SourcePackage'] = 'foo'
+            r['ExecutablePath'] = '%s/foolabs.example.com/foo/bin/frob' % apport.report._opt_dir
+
+            self.assertEqual(r.add_hooks_info('fake_ui'), False)
+            self.assertEqual(r['SourceHook'], '1')
+        finally:
+            shutil.rmtree(apport.report._opt_dir)
+            shutil.rmtree(apport.report._hook_dir)
+            shutil.rmtree(apport.report._common_hook_dir)
+            apport.report._hook_dir = orig_hook_dir
+            apport.report._common_hook_dir = orig_common_hook_dir
+            apport.report._opt_dir = orig_opt_dir
 
     def test_ignoring(self):
         '''mark_ignore() and check_ignored().'''
@@ -1141,34 +1227,34 @@ bar(x=3)
 baz()
 '''
         self.assertEqual(report.standard_title(),
-            'bash crashed with SIGSEGV in foo()')
+                         'bash crashed with SIGSEGV in foo()')
 
         # unnamed signal crash
         report['Signal'] = '42'
         self.assertEqual(report.standard_title(),
-            'bash crashed with signal 42 in foo()')
+                         'bash crashed with signal 42 in foo()')
 
         # do not crash on empty StacktraceTop
         report['StacktraceTop'] = ''
         self.assertEqual(report.standard_title(),
-            'bash crashed with signal 42')
+                         'bash crashed with signal 42')
 
         # do not create bug title with unknown function name
         report['StacktraceTop'] = '??()\nfoo()'
         self.assertEqual(report.standard_title(),
-            'bash crashed with signal 42 in foo()')
+                         'bash crashed with signal 42 in foo()')
 
         # if we do not know any function name, don't mention ??
         report['StacktraceTop'] = '??()\n??()'
         self.assertEqual(report.standard_title(),
-            'bash crashed with signal 42')
+                         'bash crashed with signal 42')
 
         # assertion message
         report['Signal'] = '6'
         report['ExecutablePath'] = '/bin/bash'
         report['AssertionMessage'] = 'foo.c:42 main: i > 0'
         self.assertEqual(report.standard_title(),
-            'bash assert failure: foo.c:42 main: i > 0')
+                         'bash assert failure: foo.c:42 main: i > 0')
 
         # Python crash
         report = apport.report.Report()
@@ -1186,7 +1272,7 @@ File "/usr/share/apport/apport-gtk", line 67, in ui_present_crash
 subprocess.call(['pgrep', '-x',
 NameError: global name 'subprocess' is not defined'''
         self.assertEqual(report.standard_title(),
-            "apport-gtk crashed with NameError in ui_present_crash(): global name 'subprocess' is not defined")
+                         "apport-gtk crashed with NameError in ui_present_crash(): global name 'subprocess' is not defined")
 
         # slightly weird Python crash
         report = apport.report.Report()
@@ -1194,7 +1280,7 @@ NameError: global name 'subprocess' is not defined'''
         report['Traceback'] = '''TypeError: Cannot create a consistent method resolution
 order (MRO) for bases GObject, CanvasGroupableIface, CanvasGroupable'''
         self.assertEqual(report.standard_title(),
-            'apport-gtk crashed with TypeError: Cannot create a consistent method resolution')
+                         'apport-gtk crashed with TypeError: Cannot create a consistent method resolution')
 
         # Python crash with custom message
         report = apport.report.Report()
@@ -1231,7 +1317,7 @@ Restarting AWN usually solves this issue'''
 ImportError: No module named nonexistent
 '''
         self.assertEqual(report.standard_title(),
-            "gnome-about crashed with ImportError in /usr/lib/pymodules/python2.6/pygtk.py: No module named nonexistent")
+                         "gnome-about crashed with ImportError in /usr/lib/pymodules/python2.6/pygtk.py: No module named nonexistent")
 
         # Python crash at top level in main program
         report = apport.report.Report()
@@ -1242,7 +1328,7 @@ ImportError: No module named nonexistent
 ImportError: No module named nonexistent
 '''
         self.assertEqual(report.standard_title(),
-            "dcut crashed with ImportError in __main__: No module named nonexistent")
+                         "dcut crashed with ImportError in __main__: No module named nonexistent")
 
         # package install problem
         report = apport.report.Report('Package')
@@ -1250,17 +1336,17 @@ ImportError: No module named nonexistent
 
         # no ErrorMessage
         self.assertEqual(report.standard_title(),
-            'package bash failed to install/upgrade')
+                         'package bash failed to install/upgrade')
 
         # empty ErrorMessage
         report['ErrorMessage'] = ''
         self.assertEqual(report.standard_title(),
-            'package bash failed to install/upgrade')
+                         'package bash failed to install/upgrade')
 
         # nonempty ErrorMessage
         report['ErrorMessage'] = 'botched\nnot found\n'
         self.assertEqual(report.standard_title(),
-            'package bash failed to install/upgrade: not found')
+                         'package bash failed to install/upgrade: not found')
 
         # matching package/system architectures
         report['Signal'] = '11'
@@ -1272,17 +1358,17 @@ baz()
         report['PackageArchitecture'] = 'amd64'
         report['Architecture'] = 'amd64'
         self.assertEqual(report.standard_title(),
-            'bash crashed with SIGSEGV in foo()')
+                         'bash crashed with SIGSEGV in foo()')
 
         # non-native package (on multiarch)
         report['PackageArchitecture'] = 'i386'
         self.assertEqual(report.standard_title(),
-            'bash crashed with SIGSEGV in foo() [non-native i386 package]')
+                         'bash crashed with SIGSEGV in foo() [non-native i386 package]')
 
         # Arch: all package (matches every system architecture)
         report['PackageArchitecture'] = 'all'
         self.assertEqual(report.standard_title(),
-            'bash crashed with SIGSEGV in foo()')
+                         'bash crashed with SIGSEGV in foo()')
 
         report = apport.report.Report('KernelOops')
         report['OopsText'] = '------------[ cut here ]------------\nkernel BUG at /tmp/oops.c:5!\ninvalid opcode: 0000 [#1] SMP'
@@ -1706,7 +1792,7 @@ ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsysca
 
         self.assertEqual(pr._address_to_offset(0x41d703), '/bin/bash+1d703')
         self.assertEqual(pr._address_to_offset(0x00007f491fac5687),
-            '/lib/x86_64-linux-gnu/libc-2.13.so+36687')
+                         '/lib/x86_64-linux-gnu/libc-2.13.so+36687')
 
         self.assertEqual(pr._address_to_offset(0x006ddfff), None)
         self.assertEqual(pr._address_to_offset(0x006de000), '/bin/bash+0')
@@ -1714,7 +1800,7 @@ ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsysca
         self.assertEqual(pr._address_to_offset(0x006df001), None)
 
         self.assertEqual(pr._address_to_offset(0x7f491fc24010),
-            '/lib/with spaces !/libfoo.so+10')
+                         '/lib/with spaces !/libfoo.so+10')
 
     def test_address_to_offset_live(self):
         '''_address_to_offset() for current /proc/pid/maps'''
@@ -1765,7 +1851,7 @@ No symbol table info available.
 #6  0x000000000041d703 in _start ()
 '''
         self.assertEqual(pr.crash_signature_addresses(),
-                '/bin/bash:42:%s:/lib/x86_64-linux-gnu/libc-2.13.so+36687:/bin/bash+3fd51:/bin/bash+2eb76:/bin/bash+324d8:/bin/bash+707e3:/bin/bash+1d703' % os.uname()[4])
+                         '/bin/bash:42:%s:/lib/x86_64-linux-gnu/libc-2.13.so+36687:/bin/bash+3fd51:/bin/bash+2eb76:/bin/bash+324d8:/bin/bash+707e3:/bin/bash+1d703' % os.uname()[4])
 
         # all resolvable, but too short
         pr['Stacktrace'] = '#0  0x00007f491fac5687 in kill () at ../sysdeps/unix/syscall-template.S:82'
