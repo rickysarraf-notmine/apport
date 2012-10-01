@@ -1,3 +1,10 @@
+apport (2.6.1-1) UNRELEASED; urgency=low
+
+  * [40bb859] Imported Upstream version 2.6.1
+    (Closes: #677980, #677630, #678393)
+
+ -- Ritesh Raj Sarraf <rrs@researchut.com>  Mon, 01 Oct 2012 22:19:35 +0530
+
 apport (2.2.3-4) experimental; urgency=low
 
   * [7d9a488] Check harder for distribution string
