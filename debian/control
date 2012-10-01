@@ -36,13 +36,15 @@ Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/apport.git
 
 Package: apport
 Architecture: all
-Depends: python3 (>= 2.6), 
+Depends: python3,
  python3-apport (>= ${source:Version}),
  lsb-base (>= 3.0-6),
  python3-gi,
  gir1.2-glib-2.0 (>= 1.29.17),
  sysv-rc (>= 2.86.ds1-14),
- ${misc:Depends}
+ ${misc:Depends},
+ ${python:Depends}
+Recommends: policykit-1
 Suggests: apport-gtk | apport-kde
 Description: automatically generate crash reports for debugging
  apport automatically collects data from crashed processes and
@@ -106,7 +108,7 @@ Depends: ${python3:Depends},
  lsb-release,
  ${misc:Depends}
 Recommends: apport
-Description: Python library for Apport crash report handling
+Description: Python 3 library for Apport crash report handling
  This Python package provides high-level functions for creating and
  handling apport crash reports:
  .
