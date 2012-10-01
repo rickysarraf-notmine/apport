@@ -1,9 +1,13 @@
-apport (2.6.1-1) UNRELEASED; urgency=low
+apport (2.6.1-1) experimental; urgency=low
 
   * [40bb859] Imported Upstream version 2.6.1
     (Closes: #677980, #677630, #678393)
+  * [7b55ecb] drop patches, now we have a crashdb
+  * [98a657c] update README.Developer about how to blacklist packages
+  * [0dcfe45] build python3 support too
+  * [d05573b] Add packaging changes from Ubuntu
 
- -- Ritesh Raj Sarraf <rrs@researchut.com>  Mon, 01 Oct 2012 22:19:35 +0530
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Mon, 01 Oct 2012 22:19:35 +0530
 
 apport (2.2.3-4) experimental; urgency=low
 
