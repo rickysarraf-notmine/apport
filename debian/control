@@ -158,12 +158,12 @@ Description: GTK+ frontend for the apport crash report system
 Package: apport-kde
 Section: kde
 Architecture: all
-Depends: python3,
- python3-apport (>= ${source:Version}),
+Depends: python (>= 2.4),
  python-kde4,
  apport (>= 0.41),
  procps,
- ${misc:Depends}
+ ${misc:Depends},
+ ${python:Depends}
 Recommends: update-notifier-kde, gdb
 Description: KDE frontend for the apport crash report system
  apport automatically collects data from crashed processes and

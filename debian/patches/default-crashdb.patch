@@ -1,3 +1,4 @@
+switch crashdb to debian
 Index: apport/etc/apport/crashdb.conf
 ===================================================================
 --- apport.orig/etc/apport/crashdb.conf	2012-10-01 22:17:51.312327837 +0530

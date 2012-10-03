@@ -1,7 +1,4 @@
-etc/apport/blacklist.d
-etc/default
-etc/cron.daily
-etc/bash_completion.d
+etc
 usr/share/apport/apport
 usr/share/apport/apport-checkreports
 usr/share/apport/package_hook
