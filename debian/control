@@ -159,6 +159,7 @@ Package: apport-kde
 Section: kde
 Architecture: all
 Depends: python (>= 2.4),
+ python-apport (>= ${source:Version}),
  python-kde4,
  apport (>= 0.41),
  procps,
