@@ -1,0 +1,16 @@
+crashdb fix. already committed upstream for 2.6.1+
+Index: apport/apport/crashdb_impl/debian.py
+===================================================================
+--- apport.orig/apport/crashdb_impl/debian.py	2012-10-17 12:25:36.094830063 +0530
++++ apport/apport/crashdb_impl/debian.py	2012-10-17 12:26:24.662828964 +0530
+@@ -48,9 +48,8 @@
+         # At this time, we are not ready to take CrashDumps
+         if not report.has_useful_stacktrace():
+             report['UnreportableReason'] = 'Incomplete backtrace. Please install the debug symbol packages'
+-            return False
+ 
+-        return apport.crashdb.CrashDatabase.accepts(self)
++        return apport.crashdb.CrashDatabase.accepts(self,report)
+ 
+     def upload(self, report, progress_callback=None):
+         '''Upload given problem report return a handle for it.
