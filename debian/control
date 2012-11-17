@@ -46,6 +46,7 @@ Depends: python3,
  ${python:Depends}
 Recommends: policykit-1
 Suggests: apport-gtk | apport-kde
+Breaks: python-apport (<< 2.6.1-1)
 Description: automatically generate crash reports for debugging
  apport automatically collects data from crashed processes and
  compiles a problem report in /var/crash/. This utilizes the crashdump
