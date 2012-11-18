@@ -1,0 +1,14 @@
+r2531 - Only reject reports with useless stack traces if the report actually has a stack trace at all.
+Index: apport/apport/crashdb_impl/debian.py
+===================================================================
+--- apport.orig/apport/crashdb_impl/debian.py	2012-11-17 15:10:18.193529192 +0530
++++ apport/apport/crashdb_impl/debian.py	2012-11-18 12:42:25.936048086 +0530
+@@ -46,7 +46,7 @@
+             report['UnreportableReason'] = 'Please configure sender settings in /etc/apport/crashdb.conf'
+ 
+         # At this time, we are not ready to take CrashDumps
+-        if not report.has_useful_stacktrace():
++        if 'Stacktrace' in report and not report.has_useful_stacktrace():
+             report['UnreportableReason'] = 'Incomplete backtrace. Please install the debug symbol packages'
+ 
+         return apport.crashdb.CrashDatabase.accepts(self, report)
