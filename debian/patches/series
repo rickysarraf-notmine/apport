@@ -1,2 +1,4 @@
+fix-package-and-version-extraction.patch
+fix-python3-str-interface.patch
 check-for-stacktrace.patch
 default-crashdb.patch

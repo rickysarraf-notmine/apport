@@ -1,0 +1,17 @@
+Index: apport/apport/crashdb_impl/debian.py
+===================================================================
+--- apport.orig/apport/crashdb_impl/debian.py	2012-11-18 12:58:09.376203671 +0530
++++ apport/apport/crashdb_impl/debian.py	2012-11-18 13:42:29.424645818 +0530
+@@ -68,9 +68,9 @@
+ 
+         temp = tempfile.NamedTemporaryFile()
+ 
+-        temp.file.write('Package: ' + buggyPackage + '\n')
+-        temp.file.write('Version: ' + buggyVersion + '\n\n\n')
+-        temp.file.write('=============================\n\n')
++        temp.file.write(('Package: ' + buggyPackage + '\n').encode() )
++        temp.file.write(('Version: ' + buggyVersion + '\n\n\n').encode() )
++        temp.file.write(('=============================\n\n').encode() )
+ 
+         # Let's remove the CoreDump first
+ 
