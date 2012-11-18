@@ -1,3 +1,19 @@
+apport (2.6.2-1) experimental; urgency=low
+
+  * [2177045] Imported Upstream version 2.6.2
+  * [8ebfca0] Add Breaks on python-apport.
+    Thanks to Laurent Bigonville (Closes: #689922)
+  * [b9c9605] Drop patch crashdb-fix.path. Applied upstream
+  * [f6c0656] Fix man page typo.
+    Thanks to Osamu Aoki (Closes: #692253)
+  * [2e97154] Only reject reports with useless stack traces if the report
+    actually has a stack trace at all.
+  * [51f3919] Fix error in Package and PackageVersion detection in the
+    Debian crashdb
+  * [74e3e02] Fix Python3 String buffer interface
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sun, 18 Nov 2012 14:08:35 +0530
+
 apport (2.6.1-2) experimental; urgency=low
 
   * [2809dc3] Add python-apport as Depends for apport-kde
