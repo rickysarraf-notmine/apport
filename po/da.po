@@ -8,14 +8,14 @@ msgstr ""
 "Project-Id-Version: apport\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2012-10-01 11:58+0200\n"
-"PO-Revision-Date: 2012-10-10 12:12+0000\n"
-"Last-Translator: AJenbo <anders@jenbo.dk>\n"
+"PO-Revision-Date: 2012-11-08 19:06+0000\n"
+"Last-Translator: Aputsiaq Niels Janussen <aj@isit.gl>\n"
 "Language-Team: Danish <dansk@dansk-gruppen.dk>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2012-10-27 04:32+0000\n"
-"X-Generator: Launchpad (build 16194)\n"
+"X-Launchpad-Export-Date: 2012-12-05 05:11+0000\n"
+"X-Generator: Launchpad (build 16335)\n"
 "Language: da\n"
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:105
@@ -257,7 +257,7 @@ msgstr "xprop kunne ikke bestemme proces-id for vinduet"
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:679
 #: ../apport/ui.py:679
 msgid "%prog <report number>"
-msgstr ""
+msgstr "%prog <rapportnummer>"
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:681
 #: ../apport/ui.py:681
@@ -290,12 +290,12 @@ msgstr ""
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:718
 #: ../apport/ui.py:718
 msgid "Click a window as a target for filing a problem report."
-msgstr ""
+msgstr "Klik på et vindue som et mål for indsendelse af en fejlrapport."
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:720
 #: ../apport/ui.py:720
 msgid "Start in bug updating mode. Can take an optional --package."
-msgstr ""
+msgstr "Start i fejlopdateringstilstand. Kan have et valgfrit --package."
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:722
 #: ../apport/ui.py:722
@@ -303,8 +303,8 @@ msgid ""
 "File a bug report about a symptom. (Implied if symptom name is given as only "
 "argument.)"
 msgstr ""
-"Lav en fejlrapport om et symptom. (Underforstået hvis symptomnavn er angivet "
-"som eneste argument.)"
+"Opret en fejlrapport om et symptom. (Underforstået hvis symptomnavn er "
+"angivet som eneste argument.)"
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:724
 #: ../apport/ui.py:724
@@ -322,6 +322,9 @@ msgid ""
 "report will contain more information.  (Implied if pid is given as only "
 "argument.)"
 msgstr ""
+"Vælg et kørende program i tilstanden --file-bug. Hvis dette er givet, vil "
+"fejlrapporten indeholde mere information. (Underforstået, hvis pid gives som "
+"eneste argument.)"
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:728
 #: ../apport/ui.py:728
@@ -337,7 +340,7 @@ msgid ""
 msgstr ""
 "Rapportér nedbruddet fra en given .apport- eller .crash-fil i stedet for de "
 "igangværende filer i %s. (Underforstået hvis fil er angivet som eneste "
-"argument."
+"argument.)"
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:732
 #: ../apport/ui.py:732
@@ -346,6 +349,9 @@ msgid ""
 "reporting it. This file can then be reported later on from a different "
 "machine."
 msgstr ""
+"Gem, under fejludfyldelsestilstanden, den indsamlede information i en fil i "
+"stedet for at rapportere den. Denne fil kan så rapporteres fra en anden "
+"maskine på et senere tidspunkt."
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:736
 #: ../apport/ui.py:736
@@ -492,7 +498,7 @@ msgstr "Vælg venligst (%s):"
 #: ../bin/apport-cli.py:144 ../debian/tmp/usr/bin/apport-cli.py:144
 #, python-format
 msgid "(%i bytes)"
-msgstr ""
+msgstr "(%i bytes)"
 
 #: ../debian/tmp/usr/share/apport/apport-kde.py:335 ../gtk/apport-gtk.py:138
 #: ../bin/apport-cli.py:146 ../debian/tmp/usr/share/apport/apport-gtk.py:138
@@ -729,7 +735,7 @@ msgstr "Foranstil tidsstempler i logbeskeder til batch-operation"
 
 #: ../bin/apport-retrace.py:64 ../debian/tmp/usr/bin/apport-retrace.py:64
 msgid "Cache directory for packages downloaded in the sandbox"
-msgstr ""
+msgstr "Mellemlagermappe for pakker som er hentet til sandkassen"
 
 #: ../bin/apport-retrace.py:66 ../debian/tmp/usr/bin/apport-retrace.py:66
 msgid ""
@@ -742,7 +748,7 @@ msgstr ""
 #: ../bin/apport-retrace.py:68 ../debian/tmp/usr/bin/apport-retrace.py:68
 msgid ""
 "Install an extra package into the sandbox (can be specified multiple times)"
-msgstr ""
+msgstr "Installér en ekstra pakke til sandkassen (kan angives flere gange)"
 
 #: ../bin/apport-retrace.py:70 ../debian/tmp/usr/bin/apport-retrace.py:70
 msgid ""
@@ -793,7 +799,7 @@ msgstr "Rapportér et problem..."
 #: ../gtk/apport-gtk-mime.desktop.in.h:2 ../kde/apport-kde-mime.desktop.in.h:2
 #: ../kde/apport-kde.desktop.in.h:2 ../gtk/apport-gtk.desktop.in.h:2
 msgid "Report a malfunction to the developers"
-msgstr "Rapportér en dårlig funktion til udviklerne"
+msgstr "Rapportér en funktionsfejl til udviklerne"
 
 #: ../debian/tmp/usr/share/apport/kernel_oops.py:28 ../data/kernel_oops.py:28
 msgid "Your system might become unstable now and might need to be restarted."
@@ -944,25 +950,27 @@ msgstr "Skjul detaljer"
 
 #: ../debian/tmp/usr/share/apport/apport-kde.py:291 ../kde/apport-kde.py:291
 msgid "Username:"
-msgstr ""
+msgstr "Brugernavn:"
 
 #: ../debian/tmp/usr/share/apport/apport-kde.py:292 ../kde/apport-kde.py:292
 msgid "Password:"
-msgstr ""
+msgstr "Adgangskode:"
 
 #: ../debian/tmp/usr/share/apport/apport-kde.py:379 ../kde/apport-kde.py:379
 msgid "Collecting Problem Information"
-msgstr ""
+msgstr "Indsamler information om problemet"
 
 #: ../debian/tmp/usr/share/apport/apport-kde.py:381 ../kde/apport-kde.py:381
 msgid ""
 "The collected information can be sent to the developers to improve the "
 "application. This might take a few minutes."
 msgstr ""
+"Den indsamlede information kan sendes til udviklerne for at forbedre "
+"programmet. Dette kan tage nogle få minutter."
 
 #: ../debian/tmp/usr/share/apport/apport-kde.py:407 ../kde/apport-kde.py:407
 msgid "Uploading Problem Information"
-msgstr ""
+msgstr "Afsender probleminformation"
 
 #: ../debian/tmp/usr/share/apport/apport-kde.py:409 ../gtk/apport-gtk.ui.h:15
 #: ../debian/tmp/usr/share/apport/apport-gtk.ui.h:15 ../kde/apport-kde.py:409
@@ -978,7 +986,7 @@ msgstr ""
 #: ../debian/tmp/usr/share/apport/apport-gtk.ui.h:1 ../kde/apport-kde.py:443
 #: ../kde/apport-kde.py:479
 msgid "Apport"
-msgstr ""
+msgstr "Apport"
 
 #: ../apport/com.ubuntu.apport.policy.in.h:1
 msgid "Collect system information"

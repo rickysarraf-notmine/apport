@@ -14,8 +14,8 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2012-10-27 04:32+0000\n"
-"X-Generator: Launchpad (build 16194)\n"
+"X-Launchpad-Export-Date: 2012-12-05 05:11+0000\n"
+"X-Generator: Launchpad (build 16335)\n"
 "Language: gu\n"
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:105
@@ -40,6 +40,10 @@ msgid ""
 "\n"
 "%s"
 msgstr ""
+"તમારે કેટલાક કાલગ્રસ્ત પેકેજ સ્થાપીત થયેલ છે. કૃપયા નિમ્નલિખિત પેકેજો ઊંચી "
+"કક્ષાએ ચડાવો અને તપાસો કે મુશ્કેલી હજુ જોવા મળે છે:\n"
+"\n"
+"%s"
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:232
 #: ../apport/ui.py:232
@@ -94,7 +98,7 @@ msgstr ""
 #: ../debian/tmp/usr/share/apport/testsuite/test_ui.py:1083
 #: ../debian/tmp/usr/share/apport/testsuite/test_ui.py:1094
 msgid "Invalid problem report"
-msgstr ""
+msgstr "અપ્રમાણ મુશ્કેલી રિપૉર્ટ"
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:252
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:1197
@@ -125,7 +129,7 @@ msgstr ""
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:311
 #: ../apport/ui.py:311
 msgid "There is not enough disk space available to process this report."
-msgstr ""
+msgstr "આ રિપૉર્ટ ને આગળ વધારવા માટે પુરતી માત્રામાં ડિસ્ક સ્પેઇસ મોજુદ નથી."
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:395
 #: ../apport/ui.py:395
@@ -148,7 +152,7 @@ msgstr "અમાન્ય પીઆઈડી"
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:414
 #: ../apport/ui.py:414
 msgid "The specified process ID does not belong to a program."
-msgstr ""
+msgstr "જણાવેલ પ્રોસેસ આઈડી પ્રોગ્રામ સાથે જોડાયેલું નથી."
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:422
 #: ../apport/ui.py:422
@@ -161,6 +165,8 @@ msgid ""
 "The specified process does not belong to you. Please run this program as the "
 "process owner or as root."
 msgstr ""
+"જણાવેલ પ્રોસેસ તમારી સાથે જોડાયેલી નથી. મહેરબાની કરીને આ પ્રોગ્રામ તમે "
+"પ્રોસેસ ના માલિક અથવા રૂટ તરીકે ચલાવો."
 
 #: ../debian/tmp/usr/lib/python2.7/dist-packages/apport/ui.py:444
 #: ../apport/ui.py:444

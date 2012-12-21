@@ -193,28 +193,25 @@ usr/bin/frobnicate                                      foo/frob
 usr/bin/frob                                            foo/frob-utils
 bo/gu/s                                                 na/mypackage
 ''')
+            # use this as a mirror
+            impl.set_mirror('file://' + basedir)
 
-            self.assertEqual(impl.get_file_package('usr/bin/frob', False, mapdir), None)
+            self.assertEqual(impl.get_file_package('usr/bin/frob', False), None)
             # must not match frob (same file name prefix)
-            self.assertEqual(impl.get_file_package('usr/bin/frob', True, mapdir), 'frob-utils')
-            self.assertEqual(impl.get_file_package('/usr/bin/frob', True, mapdir), 'frob-utils')
+            self.assertEqual(impl.get_file_package('usr/bin/frob', True), 'frob-utils')
+            self.assertEqual(impl.get_file_package('/usr/bin/frob', True), 'frob-utils')
 
             # invalid mirror
             impl.set_mirror('file:///foo/nonexisting')
             self.assertRaises(IOError, impl.get_file_package, 'usr/bin/frob', True)
 
-            # valid mirror, no cache directory
+            # valid mirror, test cache directory
             impl.set_mirror('file://' + basedir)
-            self.assertEqual(impl.get_file_package('usr/bin/frob', True), 'frob-utils')
-            self.assertEqual(impl.get_file_package('/usr/bin/frob', True), 'frob-utils')
-
-            # valid mirror, test caching
             cache_dir = os.path.join(basedir, 'cache')
             os.mkdir(cache_dir)
             self.assertEqual(impl.get_file_package('usr/bin/frob', True, cache_dir), 'frob-utils')
             self.assertEqual(len(os.listdir(cache_dir)), 1)
             cache_file = os.listdir(cache_dir)[0]
-            self.assertTrue(cache_file.startswith('Contents-'))
             self.assertEqual(impl.get_file_package('/bo/gu/s', True, cache_dir), 'mypackage')
 
             # valid cache, should not need to access the mirror
@@ -227,6 +224,117 @@ bo/gu/s                                                 na/mypackage
             os.utime(os.path.join(cache_dir, cache_file), (now, now - 90000))
 
             self.assertRaises(IOError, impl.get_file_package, '/bo/gu/s', True, cache_dir)
+        finally:
+            shutil.rmtree(basedir)
+
+    def test_get_file_package_uninstalled_multiarch(self):
+        '''get_file_package() on foreign arches and releases'''
+
+        # determine distro release code name
+        lsb_release = subprocess.Popen(['lsb_release', '-sc'],
+                                       stdout=subprocess.PIPE)
+        release_name = lsb_release.communicate()[0].decode('UTF-8').strip()
+        assert lsb_release.returncode == 0
+
+        # generate test Contents.gz for two fantasy architectures
+        basedir = tempfile.mkdtemp()
+        try:
+            mapdir = os.path.join(basedir, 'dists', release_name)
+            os.makedirs(mapdir)
+            with gzip.open(os.path.join(mapdir, 'Contents-even.gz'), 'w') as f:
+                f.write(b'''
+foo header
+FILE                                                    LOCATION
+usr/lib/even/libfrob.so.1                               foo/libfrob1
+usr/bin/frob                                            foo/frob-utils
+''')
+            with gzip.open(os.path.join(mapdir, 'Contents-odd.gz'), 'w') as f:
+                f.write(b'''
+foo header
+FILE                                                    LOCATION
+usr/lib/odd/libfrob.so.1                                foo/libfrob1
+usr/bin/frob                                            foo/frob-utils
+''')
+
+            # and another one for fantasy release
+            os.mkdir(os.path.join(basedir, 'dists', 'mocky'))
+            with gzip.open(os.path.join(basedir, 'dists', 'mocky', 'Contents-even.gz'), 'w') as f:
+                f.write(b'''
+foo header
+FILE                                                    LOCATION
+usr/lib/even/libfrob.so.0                               foo/libfrob0
+usr/bin/frob                                            foo/frob
+''')
+
+            # use this as a mirror
+            impl.set_mirror('file://' + basedir)
+
+            # must not match system architecture
+            self.assertEqual(impl.get_file_package('usr/bin/frob', False), None)
+            # must match correct architecture
+            self.assertEqual(impl.get_file_package('usr/bin/frob', True, arch='even'),
+                             'frob-utils')
+            self.assertEqual(impl.get_file_package('usr/bin/frob', True, arch='odd'),
+                             'frob-utils')
+            self.assertEqual(impl.get_file_package('/usr/lib/even/libfrob.so.1', True, arch='even'),
+                             'libfrob1')
+            self.assertEqual(impl.get_file_package('/usr/lib/even/libfrob.so.1', True, arch='odd'),
+                             None)
+            self.assertEqual(impl.get_file_package('/usr/lib/odd/libfrob.so.1', True, arch='odd'),
+                             'libfrob1')
+
+            # for mocky release
+            self.assertEqual(impl.get_file_package('/usr/lib/even/libfrob.so.1',
+                                                   True, release='mocky', arch='even'),
+                             None)
+            self.assertEqual(impl.get_file_package('/usr/lib/even/libfrob.so.0',
+                                                   True, release='mocky', arch='even'),
+                             'libfrob0')
+            self.assertEqual(impl.get_file_package('/usr/bin/frob',
+                                                   True, release='mocky', arch='even'),
+                             'frob')
+
+            # invalid mirror
+            impl.set_mirror('file:///foo/nonexisting')
+            self.assertRaises(IOError, impl.get_file_package,
+                              '/usr/lib/even/libfrob.so.1', True, arch='even')
+            self.assertRaises(IOError, impl.get_file_package,
+                              '/usr/lib/even/libfrob.so.0', True, release='mocky', arch='even')
+
+            # valid mirror, test caching
+            impl.set_mirror('file://' + basedir)
+            cache_dir = os.path.join(basedir, 'cache')
+            os.mkdir(cache_dir)
+            self.assertEqual(impl.get_file_package('/usr/lib/even/libfrob.so.1',
+                                                   True, cache_dir, arch='even'),
+                             'libfrob1')
+            self.assertEqual(len(os.listdir(cache_dir)), 1)
+            cache_file = os.listdir(cache_dir)[0]
+
+            self.assertEqual(impl.get_file_package('/usr/lib/even/libfrob.so.0',
+                                                   True, cache_dir, release='mocky', arch='even'),
+                             'libfrob0')
+            self.assertEqual(len(os.listdir(cache_dir)), 2)
+
+            # valid cache, should not need to access the mirror
+            impl.set_mirror('file:///foo/nonexisting')
+            self.assertEqual(impl.get_file_package('usr/bin/frob', True, cache_dir, arch='even'),
+                             'frob-utils')
+            self.assertEqual(impl.get_file_package('usr/bin/frob', True, cache_dir,
+                                                   release='mocky', arch='even'),
+                             'frob')
+
+            # but no cached file for the other arch
+            self.assertRaises(IOError, impl.get_file_package, 'usr/bin/frob',
+                              True, cache_dir, arch='odd')
+
+            # outdated cache, must refresh the cache and hit the invalid
+            # mirror
+            now = int(time.time())
+            os.utime(os.path.join(cache_dir, cache_file), (now, now - 90000))
+
+            self.assertRaises(IOError, impl.get_file_package, 'usr/bin/frob',
+                              True, cache_dir, arch='even')
         finally:
             shutil.rmtree(basedir)
 
@@ -308,7 +416,7 @@ bo/gu/s                                                 na/mypackage
         self.assertEqual(impl.enabled(), True)
         f.close()
 
-    def test_get_kernel_pacakge(self):
+    def test_get_kernel_package(self):
         '''get_kernel_package().'''
 
         self.assertTrue('linux' in impl.get_kernel_package())
@@ -326,14 +434,18 @@ bo/gu/s                                                 na/mypackage
         '''install_packages() with versions and with cache'''
 
         self._setup_foonux_config()
-        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
-                              [('coreutils', '7.4-2ubuntu2'),
-                               ('libc6', '2.11.1-0ubuntu7'),
-                               ('tzdata', '2010i-1'),
-                              ], False, self.cachedir)
+        obsolete = impl.install_packages(self.rootdir, self.configdir,
+                                         'Foonux 1.2',
+                                         [('coreutils', '8.13-3ubuntu3'),
+                                          ('libc6', '2.15-0ubuntu10'),
+                                          ('tzdata', '2012b-1'),
+                                         ], False, self.cachedir)
 
+        self.assertEqual(obsolete, '')
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
                                                     'usr/bin/stat')))
+        self.assert_elf_arch(os.path.join(self.rootdir, 'usr/bin/stat'),
+                             impl.get_system_architecture())
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
                                                     'usr/lib/debug/usr/bin/stat')))
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
@@ -343,7 +455,9 @@ bo/gu/s                                                 na/mypackage
 
         # does not clobber config dir
         self.assertEqual(os.listdir(self.configdir), ['Foonux 1.2'])
-        self.assertEqual(os.listdir(os.path.join(self.configdir, 'Foonux 1.2')),
+        self.assertEqual(sorted(os.listdir(os.path.join(self.configdir, 'Foonux 1.2'))),
+                         ['armhf', 'sources.list'])
+        self.assertEqual(os.listdir(os.path.join(self.configdir, 'Foonux 1.2', 'armhf')),
                          ['sources.list'])
 
         # caches packages
@@ -358,9 +472,11 @@ bo/gu/s                                                 na/mypackage
 
         # installs cached packages
         os.unlink(os.path.join(self.rootdir, 'usr/bin/stat'))
-        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
-                              [('coreutils', '7.4-2ubuntu2'),
-                              ], False, self.cachedir)
+        obsolete = impl.install_packages(self.rootdir, self.configdir,
+                                         'Foonux 1.2',
+                                         [('coreutils', '8.13-3ubuntu3'),
+                                         ], False, self.cachedir)
+        self.assertEqual(obsolete, '')
         self.assertTrue(os.path.exists(
             os.path.join(self.rootdir, 'usr/bin/stat')))
 
@@ -393,7 +509,7 @@ bo/gu/s                                                 na/mypackage
         # still installs packages after above operations
         os.unlink(os.path.join(self.rootdir, 'usr/bin/stat'))
         impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
-                              [('coreutils', '7.4-2ubuntu2'),
+                              [('coreutils', '8.13-3ubuntu3'),
                                ('dpkg', None),
                               ], False, self.cachedir)
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
@@ -406,13 +522,17 @@ bo/gu/s                                                 na/mypackage
         '''install_packages() without versions and no cache'''
 
         self._setup_foonux_config()
-        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
-                              [('coreutils', None),
-                               ('tzdata', None),
-                              ], False, None)
+        obsolete = impl.install_packages(self.rootdir, self.configdir,
+                                         'Foonux 1.2',
+                                         [('coreutils', None),
+                                          ('tzdata', None),
+                                         ], False, None)
 
+        self.assertEqual(obsolete, '')
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
                                                     'usr/bin/stat')))
+        self.assert_elf_arch(os.path.join(self.rootdir, 'usr/bin/stat'),
+                             impl.get_system_architecture())
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
                                                     'usr/lib/debug/usr/bin/stat')))
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
@@ -420,7 +540,9 @@ bo/gu/s                                                 na/mypackage
 
         # does not clobber config dir
         self.assertEqual(os.listdir(self.configdir), ['Foonux 1.2'])
-        self.assertEqual(os.listdir(os.path.join(self.configdir, 'Foonux 1.2')),
+        self.assertEqual(sorted(os.listdir(os.path.join(self.configdir, 'Foonux 1.2'))),
+                         ['armhf', 'sources.list'])
+        self.assertEqual(os.listdir(os.path.join(self.configdir, 'Foonux 1.2', 'armhf')),
                          ['sources.list'])
 
         # no cache
@@ -490,7 +612,7 @@ bo/gu/s                                                 na/mypackage
 
         # sources.list with wrong server
         with open(os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'), 'w') as f:
-            f.write('deb http://archive.ubuntu.com/nosuchdistro/ lucid main\n')
+            f.write('deb http://archive.ubuntu.com/nosuchdistro/ precise main\n')
 
         try:
             impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
@@ -562,6 +684,32 @@ bo/gu/s                                                 na/mypackage
                         'should have installed mpm-worker, but have mpm-event.')
 
     @unittest.skipUnless(_has_internet(), 'online test')
+    @unittest.skipIf(impl.get_system_architecture() == 'armhf', 'native armhf architecture')
+    def test_install_packages_armhf(self):
+        '''install_packages() for foreign architecture armhf'''
+
+        self._setup_foonux_config()
+        obsolete = impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+                                         [('coreutils', '8.13-3ubuntu3'),
+                                          ('libc6', '2.15-0ubuntu9'),
+                                         ], False, self.cachedir,
+                                         architecture='armhf')
+
+        self.assertEqual(obsolete, 'libc6 version 2.15-0ubuntu9 required, but 2.15-0ubuntu10 is available\n')
+
+        self.assertTrue(os.path.exists(os.path.join(self.rootdir,
+                                                    'usr/bin/stat')))
+        self.assert_elf_arch(os.path.join(self.rootdir, 'usr/bin/stat'), 'armhf')
+        self.assertTrue(os.path.exists(os.path.join(self.rootdir,
+                                                    'usr/share/doc/libc6/copyright')))
+
+        # caches packages
+        cache = os.listdir(os.path.join(self.cachedir, 'Foonux 1.2', 'apt',
+                                        'var', 'cache', 'apt', 'archives'))
+        self.assertTrue('coreutils_8.13-3ubuntu3_armhf.deb' in cache, cache)
+        self.assertTrue('libc6_2.15-0ubuntu10_armhf.deb' in cache, cache)
+
+    @unittest.skipUnless(_has_internet(), 'online test')
     def test_get_source_tree_sandbox(self):
         self._setup_foonux_config()
         out_dir = os.path.join(self.workdir, 'out')
@@ -572,7 +720,7 @@ bo/gu/s                                                 na/mypackage
         self.assertTrue(os.path.isdir(os.path.join(res, 'debian')))
         # this needs to be updated when the release in _setup_foonux_config
         # changes
-        self.assertTrue(res.endswith('/base-files-5.0.0ubuntu20'),
+        self.assertTrue(res.endswith('/base-files-6.5ubuntu6'),
                         'unexpected version: ' + res.split('/')[-1])
 
     def _setup_foonux_config(self):
@@ -586,9 +734,43 @@ bo/gu/s                                                 na/mypackage
         os.mkdir(self.configdir)
         os.mkdir(os.path.join(self.configdir, 'Foonux 1.2'))
         with open(os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'), 'w') as f:
-            f.write('deb http://archive.ubuntu.com/ubuntu/ lucid main\n')
-            f.write('deb-src http://archive.ubuntu.com/ubuntu/ lucid main\n')
-            f.write('deb http://ddebs.ubuntu.com/ lucid main\n')
+            f.write('deb http://archive.ubuntu.com/ubuntu/ precise main\n')
+            f.write('deb-src http://archive.ubuntu.com/ubuntu/ precise main\n')
+            f.write('deb http://ddebs.ubuntu.com/ precise main\n')
+        os.mkdir(os.path.join(self.configdir, 'Foonux 1.2', 'armhf'))
+        with open(os.path.join(self.configdir, 'Foonux 1.2', 'armhf', 'sources.list'), 'w') as f:
+            f.write('deb http://ports.ubuntu.com/ precise main\n')
+            f.write('deb-src http://ports.ubuntu.com/ precise main\n')
+            f.write('deb http://ddebs.ubuntu.com/ precise main\n')
+
+    def assert_elf_arch(self, path, expected):
+        '''Assert that an ELF file is for an expected machine type.
+
+        Expected is a Debian-style architecture (i386, amd64, armhf)
+        '''
+        archmap = {
+            'i386': '80386',
+            'amd64': 'X86-64',
+            'armhf': 'ARM',
+        }
+
+        # get ELF machine type
+        readelf = subprocess.Popen(['readelf', '-e', path], env={},
+                                   stdout=subprocess.PIPE,
+                                   universal_newlines=True)
+        out = readelf.communicate()[0]
+        assert readelf.returncode == 0
+        for line in out.splitlines():
+            if line.startswith('  Machine:'):
+                machine = line.split(maxsplit=1)[1]
+                break
+        else:
+            self.fail('could not fine Machine: in readelf output')
+
+        self.assertTrue(archmap[expected] in machine,
+                        '%s has unexpected machine type "%s" for architecture %s' % (
+                            path, machine, expected))
+
 
 # only execute if dpkg is available
 try:

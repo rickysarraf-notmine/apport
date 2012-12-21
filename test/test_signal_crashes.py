@@ -19,7 +19,12 @@ required_fields = ['ProblemType', 'CoreDump', 'Date', 'ExecutablePath',
                    'ProcCmdline', 'ProcEnviron', 'ProcMaps', 'Signal',
                    'UserGroups']
 
+orig_home = os.getenv('HOME')
+if orig_home is not None:
+    del os.environ['HOME']
 ifpath = os.path.expanduser(apport.report._ignore_file)
+if orig_home is not None:
+    os.environ['HOME'] = orig_home
 
 
 class T(unittest.TestCase):
@@ -112,7 +117,7 @@ class T(unittest.TestCase):
                         'LC_COLLATE', 'LC_TIME', 'LC_NUMERIC', 'LC_MONETARY',
                         'LC_MESSAGES', 'LC_PAPER', 'LC_NAME', 'LC_ADDRESS',
                         'LC_TELEPHONE', 'LC_MEASUREMENT', 'LC_IDENTIFICATION',
-                        'LOCPATH', 'TERM']
+                        'LOCPATH', 'TERM', 'XDG_RUNTIME_DIR']
 
         for l in pr['ProcEnviron'].splitlines():
             (k, v) = l.split('=', 1)
@@ -472,15 +477,15 @@ class T(unittest.TestCase):
             env['APPORT_LOG_FILE'] = log
             app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
                                    stdin=subprocess.PIPE, env=env,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   universal_newlines=True)
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
             (out, err) = app.communicate(b'hel\x01lo')
         finally:
             os.kill(test_proc, 9)
             os.waitpid(test_proc, 0)
 
-        self.assertEqual(out, '')
-        self.assertEqual(err, '')
+        self.assertEqual(out, b'')
+        self.assertEqual(err, b'')
         self.assertEqual(app.returncode, 0, err)
         with open(log) as f:
             logged = f.read()
@@ -509,14 +514,15 @@ class T(unittest.TestCase):
             env['APPORT_LOG_FILE'] = '/not/existing/apport.log'
             app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
                                    stdin=subprocess.PIPE, env=env,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   universal_newlines=True)
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
             (out, err) = app.communicate(b'hel\x01lo')
+            err = err.decode('UTF-8')
         finally:
             os.kill(test_proc, 9)
             os.waitpid(test_proc, 0)
 
-        self.assertEqual(out, '')
+        self.assertEqual(out, b'')
         self.assertEqual(app.returncode, 0, err)
         self.assertTrue('called for pid' in err, err)
         self.assertTrue('wrote report' in err, err)

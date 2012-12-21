@@ -10,7 +10,7 @@
 # the full text of the license.
 
 import subprocess, tempfile, os.path, re, pwd, grp, os
-import fnmatch, glob, traceback, errno, sys
+import fnmatch, glob, traceback, errno, sys, atexit
 
 import xml.dom, xml.dom.minidom
 from xml.parsers.expat import ExpatError
@@ -205,6 +205,8 @@ def _run_hook(report, ui, hook):
     except StopIteration:
         return True
     except:
+        hookname = os.path.splitext(os.path.basename(hook))[0].replace('-', '_')
+        report['HookError_' + hookname] = traceback.format_exc()
         apport.error('hook %s crashed:', hook)
         traceback.print_exc()
 
@@ -628,8 +630,8 @@ class Report(problem_report.ProblemReport):
         - ThreadStacktrace: Output of gdb's 'thread apply all bt full' command
         - StacktraceTop: simplified stacktrace (topmost 5 functions) for inline
           inclusion into bug reports and easier processing
-        - AssertionMessage: Value of __abort_msg or __glib_assert_msg, if
-          present
+        - AssertionMessage: Value of __abort_msg, __glib_assert_msg, or
+          __nih_abort_msg if present
 
         The optional rootdir can specify a root directory which has the
         executable, libraries, and debug symbols. This does not require
@@ -639,68 +641,49 @@ class Report(problem_report.ProblemReport):
         if 'CoreDump' not in self or 'ExecutablePath' not in self:
             return
 
-        unlink_core = False
+        gdb_reports = {'Registers': 'info registers',
+                       'Disassembly': 'x/16i $pc',
+                       'Stacktrace': 'bt full',
+                       'ThreadStacktrace': 'thread apply all bt full',
+                       'AssertionMessage': 'print __abort_msg->msg',
+                       'GLibAssertionMessage': 'print __glib_assert_msg',
+                       'NihAssertionMessage': 'print (char*) __nih_abort_msg'}
+
+        gdb_cmd = self.gdb_command(rootdir)
+
+        # limit maximum backtrace depth (to avoid looped stacks)
+        gdb_cmd += ['--batch', '--ex', 'set backtrace limit 2000']
+
+        value_keys = []
+        # append the actual commands and something that acts as a separator
+        for name, cmd in gdb_reports.items():
+            value_keys.append(name)
+            gdb_cmd += ['--ex', 'p -99', '--ex', cmd]
+
+        # call gdb
         try:
-            if hasattr(self['CoreDump'], 'find'):
-                (fd, core) = tempfile.mkstemp()
-                unlink_core = True
-                os.write(fd, self['CoreDump'])
-                os.close(fd)
-            elif hasattr(self['CoreDump'], 'gzipvalue'):
-                (fd, core) = tempfile.mkstemp()
-                unlink_core = True
-                os.close(fd)
-                with open(core, 'wb') as f:
-                    self['CoreDump'].write(f)
-            else:
-                core = self['CoreDump'][0]
+            out = _command_output(gdb_cmd).decode('UTF-8', errors='replace')
+        except OSError:
+            return
 
-            gdb_reports = {'Registers': 'info registers',
-                           'Disassembly': 'x/16i $pc',
-                           'Stacktrace': 'bt full',
-                           'ThreadStacktrace': 'thread apply all bt full',
-                           'AssertionMessage': 'print __abort_msg->msg',
-                           'GLibAssertionMessage': 'print __glib_assert_msg'}
-
-            command = ['gdb', '--batch']
-            executable = self.get('InterpreterPath', self['ExecutablePath'])
-            if rootdir:
-                command += ['--ex', 'set debug-file-directory %s/usr/lib/debug' % rootdir,
-                            '--ex', 'set solib-absolute-prefix ' + rootdir]
-                executable = rootdir + '/' + executable
-            command += ['--ex', 'file "%s"' % executable, '--ex', 'core-file ' + core]
-            # limit maximum backtrace depth (to avoid looped stacks)
-            command += ['--ex', 'set backtrace limit 2000']
-            value_keys = []
-            # append the actual commands and something that acts as a separator
-            for name, cmd in gdb_reports.items():
-                value_keys.append(name)
-                command += ['--ex', 'p -99', '--ex', cmd]
-
-            assert os.path.exists(executable)
-
-            # call gdb
-            try:
-                out = _command_output(command).decode('UTF-8', errors='replace')
-            except OSError:
-                return
-
-            # split the output into the various fields
-            part_re = re.compile('^\$\d+\s*=\s*-99$', re.MULTILINE)
-            parts = part_re.split(out)
-            # drop the gdb startup text prior to first separator
-            parts.pop(0)
-            for part in parts:
-                self[value_keys.pop(0)] = part.replace('\n\n', '\n.\n').strip()
-        finally:
-            if unlink_core:
-                os.unlink(core)
+        # split the output into the various fields
+        part_re = re.compile('^\$\d+\s*=\s*-99$', re.MULTILINE)
+        parts = part_re.split(out)
+        # drop the gdb startup text prior to first separator
+        parts.pop(0)
+        for part in parts:
+            self[value_keys.pop(0)] = part.replace('\n\n', '\n.\n').strip()
 
         # glib's assertion has precedence, since it internally uses
         # abort(), and then glib's __abort_msg is bogus
         if '"ERROR:' in self['GLibAssertionMessage']:
             self['AssertionMessage'] = self['GLibAssertionMessage']
         del self['GLibAssertionMessage']
+
+        # same reason for libnih's assertion messages
+        if self['NihAssertionMessage'].startswith('$'):
+            self['AssertionMessage'] = self['NihAssertionMessage']
+        del self['NihAssertionMessage']
 
         # clean up AssertionMessage
         if 'AssertionMessage' in self:
@@ -893,7 +876,12 @@ class Report(problem_report.ProblemReport):
 
         Raises ValueError if the file exists but is invalid XML.
         '''
+        orig_home = os.getenv('HOME')
+        if orig_home is not None:
+            del os.environ['HOME']
         ifpath = os.path.expanduser(_ignore_file)
+        if orig_home is not None:
+            os.environ['HOME'] = orig_home
         if not os.access(ifpath, os.R_OK) or os.path.getsize(ifpath) == 0:
             # create a document from scratch
             dom = xml.dom.getDOMImplementation().createDocument(None, 'apport', None)
@@ -1004,8 +992,16 @@ class Report(problem_report.ProblemReport):
             e.setAttribute('mtime', mtime)
             dom.documentElement.appendChild(e)
 
-        # write back file
-        with open(os.path.expanduser(_ignore_file), 'w') as fd:
+        # write back file; temporarily unset $HOME, as this gets the wrong home
+        # dir for e. g. sudo
+        orig_home = os.getenv('HOME')
+        if orig_home is not None:
+            del os.environ['HOME']
+        ignore_file_path = os.path.expanduser(_ignore_file)
+        if orig_home is not None:
+            os.environ['HOME'] = orig_home
+
+        with open(ignore_file_path, 'w') as fd:
             dom.writexml(fd, addindent='  ', newl='\n')
 
         dom.unlink()
@@ -1296,6 +1292,10 @@ class Report(problem_report.ProblemReport):
                 if not addr.startswith('0x'):
                     continue
                 addr = int(addr, 16)  # we do want to know about ValueErrors here, so don't catch
+                # ignore impossibly low addresses; these are usually artifacts
+                # from gdb when not having debug symbols
+                if addr < 0x1000:
+                    continue
                 offset = self._address_to_offset(addr)
                 if offset:
                     # avoid ':' in ELF paths, we use that as separator
@@ -1364,6 +1364,66 @@ class Report(problem_report.ProblemReport):
                         self[k] = pattern.sub(repl, self[k].decode('UTF-8', errors='replace')).encode('UTF-8')
                     else:
                         self[k] = pattern.sub(repl, self[k])
+
+    def gdb_command(self, sandbox):
+        '''Build gdb command for this report.
+
+        This builds a gdb command for processing the given report, by setting
+        the file to the ExectuablePath/InterpreterPath, unpacking the core dump
+        and pointing "core-file" to it (if the report has a core dump), and
+        setting up the paths when calling gdb in a package sandbox.
+
+        When available, this calls "gdb-multiarch" instead of "gdb", for
+        processing crash reports from foreign architectures.
+
+        Return argv list.
+        '''
+        assert 'ExecutablePath' in self
+        executable = self.get('InterpreterPath', self['ExecutablePath'])
+
+        command = ['gdb']
+
+        if self.get('Architecture') != packaging.get_system_architecture():
+            # check if we have gdb-multiarch
+            which = subprocess.Popen(['which', 'gdb-multiarch'],
+                                     stdout=subprocess.PIPE)
+            which.communicate()
+            if which.returncode == 0:
+                command = ['gdb-multiarch']
+
+            # check for foreign architecture
+            arch = self.get('Uname', 'none').split()[-1]
+            if 'arm' in arch:
+                command += ['--ex', 'set architecture arm', '--ex', 'set gnutarget elf32-littlearm']
+            # note, i386 vs. x86_64 is auto-detected just fine
+
+        if sandbox:
+            command += ['--ex', 'set debug-file-directory %s/usr/lib/debug' % sandbox,
+                        '--ex', 'set solib-absolute-prefix ' + sandbox]
+            executable = sandbox + '/' + executable
+
+        assert os.path.exists(executable)
+        command += ['--ex', 'file "%s"' % executable]
+
+        if 'CoreDump' in self:
+            if hasattr(self['CoreDump'], 'find'):
+                (fd, core) = tempfile.mkstemp(prefix='apport_core_')
+                atexit.register(os.unlink, core)
+                os.write(fd, self['CoreDump'])
+                os.close(fd)
+            elif hasattr(self['CoreDump'], 'gzipvalue'):
+                (fd, core) = tempfile.mkstemp(prefix='apport_core_')
+                atexit.register(os.unlink, core)
+                os.close(fd)
+                with open(core, 'wb') as f:
+                    self['CoreDump'].write(f)
+            else:
+                # value is a file path
+                core = self['CoreDump'][0]
+
+            command += ['--ex', 'core-file ' + core]
+
+        return command
 
     def _address_to_offset(self, addr):
         '''Resolve a memory address to an ELF name and offset.

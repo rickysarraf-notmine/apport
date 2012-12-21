@@ -1,5 +1,11 @@
 # coding: UTF-8
-import unittest, shutil, time, tempfile, os, subprocess, grp, atexit, re
+import unittest, shutil, time, tempfile, os, subprocess, grp, atexit, re, sys
+
+try:
+    from cStringIO import StringIO
+    StringIO  # pyflakes
+except ImportError:
+    from io import StringIO
 
 import apport.report
 import problem_report
@@ -767,6 +773,40 @@ $0.bin 2>/dev/null
         self.assertTrue(pr['AssertionMessage'].startswith('ERROR:<stdin>:2:main: assertion failed (1 < 0):'),
                         pr['AssertionMessage'])
 
+    def test_add_gdb_info_abort_libnih(self):
+        '''add_gdb_info() with libnih assertion'''
+        (fd, script) = tempfile.mkstemp()
+        assert not os.path.exists('core')
+        try:
+            os.close(fd)
+
+            # create a test script which produces a core dump for us
+            with open(script, 'w') as fd:
+                fd.write('''#!/bin/sh
+gcc -o $0.bin -x c - `pkg-config --cflags --libs libnih` <<EOF
+#include <libnih.h>
+int main() { nih_assert (1 < 0); }
+EOF
+ulimit -c unlimited
+$0.bin 2>/dev/null
+''')
+            # call script and verify that it gives us a proper ELF core dump
+            assert subprocess.call(['/bin/sh', script]) != 0
+            self._validate_core('core')
+
+            pr = apport.report.Report()
+            pr['ExecutablePath'] = script + '.bin'
+            pr['CoreDump'] = ('core',)
+            pr.add_gdb_info()
+        finally:
+            os.unlink(script)
+            os.unlink(script + '.bin')
+            os.unlink('core')
+
+        self._validate_gdb_fields(pr)
+        self.assertTrue('Assertion failed in main: 1 < 0' in pr['AssertionMessage'],
+                        pr['AssertionMessage'])
+
     def test_search_bug_patterns(self):
         '''search_bug_patterns().'''
 
@@ -1067,6 +1107,66 @@ def add_info(report, ui):
             apport.report._hook_dir = orig_hook_dir
             apport.report._common_hook_dir = orig_common_hook_dir
             apport.report._opt_dir = orig_opt_dir
+
+    def test_add_hooks_info_errors(self):
+        '''add_hooks_info() with errors in hooks'''
+
+        orig_hook_dir = apport.report._hook_dir
+        apport.report._hook_dir = tempfile.mkdtemp()
+        orig_common_hook_dir = apport.report._common_hook_dir
+        apport.report._common_hook_dir = tempfile.mkdtemp()
+        orig_stderr = sys.stderr
+        sys.stderr = StringIO()
+        try:
+            with open(os.path.join(apport.report._hook_dir, 'fooprogs.py'), 'w') as fd:
+                fd.write('''def add_info(report, ui):
+    report['BinHookBefore'] = '1'
+    1/0
+    report['BinHookAfter'] = '1'
+''')
+            with open(os.path.join(apport.report._hook_dir, 'source_foo.py'), 'w') as fd:
+                fd.write('''def add_info(report, ui):
+    report['SourceHookBefore'] = '1'
+    unknown()
+    report['SourceHookAfter'] = '1'
+''')
+
+            r = apport.report.Report()
+            r['Package'] = 'fooprogs 0.2'
+            r['SourcePackage'] = 'foo'
+            r['ExecutablePath'] = '/bin/foo-cli'
+
+            self.assertEqual(r.add_hooks_info('fake_ui'), False)
+
+            # should have the data until the crash
+            self.assertEqual(r['BinHookBefore'], '1')
+            self.assertEqual(r['SourceHookBefore'], '1')
+
+            # should print the exceptions to stderr
+            err = sys.stderr.getvalue()
+            self.assertTrue('ZeroDivisionError:' in err, err)
+            self.assertTrue("global name 'unknown' is not defined" in err, err)
+
+            # should also add the exceptions to the report
+            self.assertTrue('NameError:' in r['HookError_source_foo'],
+                            r['HookError_source_foo'])
+            self.assertTrue('line 3, in add_info' in r['HookError_source_foo'],
+                            r['HookError_source_foo'])
+            self.assertFalse('ZeroDivisionError' in r['HookError_source_foo'],
+                             r['HookError_source_foo'])
+
+            self.assertTrue('ZeroDivisionError:' in r['HookError_fooprogs'],
+                            r['HookError_fooprogs'])
+            self.assertTrue('line 3, in add_info' in r['HookError_source_foo'],
+                            r['HookError_fooprogs'])
+            self.assertFalse('NameError:' in r['HookError_fooprogs'],
+                             r['HookError_fooprogs'])
+        finally:
+            sys.stderr = orig_stderr
+            shutil.rmtree(apport.report._hook_dir)
+            shutil.rmtree(apport.report._common_hook_dir)
+            apport.report._hook_dir = orig_hook_dir
+            apport.report._common_hook_dir = orig_common_hook_dir
 
     def test_ignoring(self):
         '''mark_ignore() and check_ignored().'''
@@ -1832,6 +1932,8 @@ ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsysca
         self.assertEqual(pr._address_to_offset(0x006de000), '/bin/bash+0')
         self.assertEqual(pr._address_to_offset(0x006df000), '/bin/bash+1000')
         self.assertEqual(pr._address_to_offset(0x006df001), None)
+        self.assertEqual(pr._address_to_offset(0), None)
+        self.assertEqual(pr._address_to_offset(0x10), None)
 
         self.assertEqual(pr._address_to_offset(0x7f491fc24010),
                          '/lib/with spaces !/libfoo.so+10')
@@ -1904,7 +2006,27 @@ No symbol table info available.
 #6  0x000000000041d715 in main ()
 #7  0x000000000041d703 in _start ()
 '''
-        self.assertNotEqual(pr.crash_signature_addresses(), None)
+        sig = pr.crash_signature_addresses()
+        self.assertNotEqual(sig, None)
+
+        # one true unresolvable, and some "low address" artifacts; should be
+        # identical to the one above
+        pr['Stacktrace'] = '''
+#0  0x00007f491fac5687 in kill () at ../sysdeps/unix/syscall-template.S:82
+No locals.
+#1  0x000001000043fd51 in kill_pid ()
+#2  0x0000000000000010 in ??
+#3  g_main_context_iterate (context=0x1731680) at gmain.c:3068
+#4  0x000000000042eb76 in ?? ()
+#5  0x0000000000000000 in ?? ()
+#6  0x0000000000000421 in ?? ()
+#7  0x00000000004324d8 in ??
+No symbol table info available.
+#8  0x00000000004707e3 in parse_and_execute ()
+#9  0x000000000041d715 in main ()
+#10 0x000000000041d703 in _start ()
+'''
+        self.assertEqual(pr.crash_signature_addresses(), sig)
 
         # two unresolvables, 2/7 is too much
         pr['Stacktrace'] = '''

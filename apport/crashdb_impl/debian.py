@@ -46,7 +46,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             report['UnreportableReason'] = 'Please configure sender settings in /etc/apport/crashdb.conf'
 
         # At this time, we are not ready to take CrashDumps
-        if not report.has_useful_stacktrace():
+        if 'Stacktrace' in report and not report.has_useful_stacktrace():
             report['UnreportableReason'] = 'Incomplete backtrace. Please install the debug symbol packages'
 
         return apport.crashdb.CrashDatabase.accepts(self, report)
@@ -63,14 +63,14 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         # Frame the report in the format the BTS understands
         try:
             (buggyPackage, buggyVersion) = report['Package'].split(' ')
-        except KeyError:
+        except (KeyError, ValueError):
             return False
 
         temp = tempfile.NamedTemporaryFile()
 
-        temp.file.write('Package: ' + buggyPackage + '\n')
-        temp.file.write('Version: ' + buggyVersion + '\n\n\n')
-        temp.file.write('=============================\n\n')
+        temp.file.write(('Package: ' + buggyPackage + '\n').encode('UTF-8'))
+        temp.file.write(('Version: ' + buggyVersion + '\n\n\n').encode('UTF-8'))
+        temp.file.write(('=============================\n\n').encode('UTF-8'))
 
         # Let's remove the CoreDump first
 

@@ -51,7 +51,10 @@ def find_package_desktopfile(package):
             if desktopfile:
                 return None  # more than one
             else:
-                desktopfile = line
+                # only consider visible ones
+                with open(line, 'rb') as f:
+                    if b'NoDisplay=true' not in f.read():
+                        desktopfile = line
 
     return desktopfile
 
@@ -101,8 +104,15 @@ def seen_report(report):
 
 
 def mark_report_upload(report):
-    report = '%s.upload' % report.rsplit('.', 1)[0]
-    with open(report, 'a'):
+    upload = '%s.upload' % report.rsplit('.', 1)[0]
+    uploaded = '%s.uploaded' % report.rsplit('.', 1)[0]
+    # if uploaded exists and is older than the report remove it and upload
+    if os.path.exists(uploaded) and os.path.exists(upload):
+        report_st = os.stat(report)
+        upload_st = os.stat(upload)
+        if upload_st.st_mtime < report_st.st_mtime:
+            os.unlink(upload)
+    with open(upload, 'a'):
         pass
 
 

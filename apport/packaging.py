@@ -87,7 +87,8 @@ class PackageInfo:
         '''
         return {}
 
-    def get_file_package(self, file, uninstalled=False, map_cachedir=None):
+    def get_file_package(self, file, uninstalled=False, map_cachedir=None,
+                         release=None, arch=None):
         '''Return the package a file belongs to.
 
         Return None if the file is not shipped by any package.
@@ -97,6 +98,8 @@ class PackageInfo:
         lots of CPU and I/O resources. In this case, map_cachedir can be set to
         an existing directory which will be used to permanently store the
         downloaded maps. If it is not set, a temporary directory will be used.
+        Also, release and arch can be set to a foreign release/architecture
+        instead of the one from the current system.
         '''
         raise NotImplementedError('this method must be implemented by a concrete subclass')
 
@@ -173,7 +176,8 @@ class PackageInfo:
         raise NotImplementedError('this method must be implemented by a concrete subclass')
 
     def install_packages(self, rootdir, configdir, release, packages,
-                         verbose=False, cache_dir=None, permanent_rootdir=False):
+                         verbose=False, cache_dir=None,
+                         permanent_rootdir=False, architecture=None):
         '''Install packages into a sandbox (for apport-retrace).
 
         In order to work without any special permissions and without touching
@@ -197,6 +201,10 @@ class PackageInfo:
 
         If permanent_rootdir is True, then the sandbox created from the
         downloaded packages will be reused, to speed up subsequent retraces.
+
+        If architecture is given, the sandbox will be created with packages of
+        the given architecture (as specified in a report's "Architecture"
+        field). If not given it defaults to the host system's architecture.
 
         Return a string with outdated packages, or None if all packages were
         installed.

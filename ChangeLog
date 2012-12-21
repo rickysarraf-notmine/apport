@@ -1,3 +1,372 @@
+=== 2.7 ===
+2012-12-10  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2559] release 2.7
+
+	* NEWS,
+	* data/apportcheckresume: [2558] * apportcheckresume: Fix crash if
+	state file does not exist.
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2557] * Add exceptions from package hooks to
+	new HookError_<filename> report field, to make them more visible.
+	Until now they were only written to stderr. (LP: #1086309)
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py,
+	* doc/crashdb-conf.txt: [2556] * launchpad.py: Add "architecture"
+	option to process reports for a foreign architecture.
+
+	* NEWS,
+	* apport/report.py,
+	* bin/apport-retrace: [2555] * When a report's architecture does not
+	match the system architecture, try to use gdb-multiarch (if available,
+	as packaged on Debian/Ubuntu), and set architecture and gnutarget
+	accordingly in gdb. This supports x86, x86_64, and ARM for now, so
+	that reports from all these architectures can be retraced on an x86_84
+	machine. (LP: #1044437)
+
+	* apport/report.py,
+	* bin/apport-retrace: [2554] factor out building gdb command from
+	add_gdb_info() and apport-retrace into Report.gdb_command()
+
+	* NEWS,
+	* apport/packaging.py,
+	* backends/packaging-apt-dpkg.py,
+	* test/test_backend_apt_dpkg.py: [2553] * packaging.py,
+	install_packages(): Add optional "architecture" argument for creating
+	a sandbox for a foreign architecture. Implement this for apt/dpkg
+	backend.
+
+	* test/test_backend_apt_dpkg.py: [2552] test/test_backend_apt_dpkg.py:
+	move from lucid to precise
+
+2012-12-07  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py: [2551] * backends/packaging-apt-
+	dpkg.py, install_packages(): Set mirror to the one in the sandbox
+	config.
+
+2012-12-06  Martin Pitt <martin.pitt@canonical.com>
+
+	* apport/report.py,
+	* test/test_python_crashes.py,
+	* test/test_signal_crashes.py: [2550] finish r2545, consistently use
+	ignore file without $HOME
+
+2012-12-05  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/fileutils.py: [2549] * fileutils.py, mark_report_upload(): Do
+	not try to remove the .uploaded file, as this is not owned by the
+	user.
+
+	* NEWS,
+	* apport/packaging.py,
+	* backends/packaging-apt-dpkg.py,
+	* backends/packaging_rpm.py,
+	* test/test_backend_apt_dpkg.py: [2548] * packaging.py,
+	get_file_package(): Add optional "release" and "arch" arguments for
+	getting a file's package for a foreign release or architecture.
+	Implement this for apt/dpkg backend.
+
+2012-12-05  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2547] Launchpad automatic translations update.
+
+2012-12-02  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* bin/apport-cli: [2546] * apport-cli: Fix showing of prompt. Thanks
+	Dmitry Shachnev!
+
+2012-11-30  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/report.py: [2545] * report.py, mark_ignore(): Use home
+	directory of actual effective user, not of $HOME. Fixes ignore file
+	when using through sudo.
+
+	* NEWS,
+	* test/test_fileutils.py: [2544] * Fix test_find_package_desktopfile
+	test to not consider packages with only one "NoDisplay=true" .desktop
+	file for the "has one desktop file" test.
+
+=== 2.6.3 ===
+2012-11-30  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2543] release 2.6.3
+
+	* NEWS,
+	* apport/fileutils.py,
+	* test/test_fileutils.py: [2542] * fileutils.py: Ignore .desktop files
+	with NoDisplay=true. (LP: #1048524)
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2541] * Ignore implausibly low addresses when
+	computing StacktraceAddressSignature. These are usually artifacts from
+	gdb when not having debug symbols, and having too many of them
+	prevents proper client-side duplicate detection and proper bucketing
+	in daisy. (LP: #1084996)
+
+2012-11-29  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/launchpad.py,
+	* apport/fileutils.py,
+	* test/test_fileutils.py: [2540] * fileutils.py, mark_report_upload():
+	Refresh the .upload stamps if a previous version of the report was
+	already uploaded, but another instance of the problem happened since
+	then. Thanks Brian Murray. (LP: #1084296)
+
+	* NEWS,
+	* bin/apport-retrace: [2539] * apport-retrace: Disallow option -C
+	without option -S. Thanks Kyle Nitzsche.
+
+2012-11-27  Evan Dandrea <evan.dandrea@canonical.com>
+
+	* NEWS,
+	* apport/ui.py,
+	* gtk/apport-gtk,
+	* kde/apport-kde,
+	* test/test_ui_gtk.py,
+	* test/test_ui_kde.py: [2538] apport-gtk, apport-kde: Don't provide an
+	option to restart a crashed application when the crash occurred in a
+	thread (LP: #1033902).
+
+2012-11-23  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2537] Launchpad automatic translations update.
+
+2012-11-22  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2536] * report.py, add_gdb_info(): Handle
+	libnih's assertion messages. (LP: #997359)
+
+	* backends/packaging-apt-dpkg.py,
+	* test/run: [2535] fix PEP-8 issues, ignore "closing bracket does not
+	match visual indentation"
+
+2012-11-20  Evan Dandrea <evan.dandrea@canonical.com>
+
+	* NEWS,
+	* data/apport: [2534] data/apport: Call fsync when writing upstart
+	crash reports.
+
+2012-11-20  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/debian.py: [2533] * debian.py: Fix crash on
+	broken "Package" fields, as generated by current Debian/Ubuntu dkms
+	package.
+
+2012-11-19  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/debian.py: [2532] * debian.py: Fix UTF-8 string
+	handling. Thanks Ritesh Raj Sarraf.
+
+2012-11-15  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/debian.py: [2531] * debian.py: Only reject
+	reports with useless stack traces if the report actually has a stack
+	trace at all.
+
+2012-11-09  Launchpad Translations on behalf of apport-hackers
+
+	* po/da.po: [2530] Launchpad automatic translations update.
+
+2012-11-08  Launchpad Translations on behalf of apport-hackers
+
+	* po/da.po: [2529] Launchpad automatic translations update.
+
+2012-11-07  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/test_signal_crashes.py: [2528] * test_signal_crashes.py: Allow
+	XDG_RUNTIME_DIR environment variable, as it only shows whether or not
+	it is set. (Test regression from 2.6)
+
+	* NEWS,
+	* test/test_signal_crashes.py: [2527] * test_signal_crashes.py: Fix
+	incompatibility with Python 3.3.
+
+2012-11-07  Launchpad Translations on behalf of apport-hackers
+
+	* po/da.po: [2526] Launchpad automatic translations update.
+
 === 2.6.2 ===
 2012-11-06  Martin Pitt <martin.pitt@canonical.com>
 

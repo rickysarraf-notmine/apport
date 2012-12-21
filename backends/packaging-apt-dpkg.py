@@ -322,15 +322,19 @@ class __AptDpkgPackageInfo(PackageInfo):
 
         return match
 
-    def get_file_package(self, file, uninstalled=False, map_cachedir=None):
-        '''Return the package a file belongs to, or None if the file is not
-        shipped by any package.
+    def get_file_package(self, file, uninstalled=False, map_cachedir=None,
+                         release=None, arch=None):
+        '''Return the package a file belongs to.
+
+        Return None if the file is not shipped by any package.
 
         If uninstalled is True, this will also find files of uninstalled
         packages; this is very expensive, though, and needs network access and
         lots of CPU and I/O resources. In this case, map_cachedir can be set to
         an existing directory which will be used to permanently store the
         downloaded maps. If it is not set, a temporary directory will be used.
+        Also, release and arch can be set to a foreign release/architecture
+        instead of the one from the current system.
         '''
         # check if the file is a diversion
         dpkg = subprocess.Popen(['/usr/sbin/dpkg-divert', '--list', file],
@@ -361,7 +365,7 @@ class __AptDpkgPackageInfo(PackageInfo):
             return os.path.splitext(os.path.basename(match))[0].split(':')[0]
 
         if uninstalled:
-            return self._search_contents(file, map_cachedir)
+            return self._search_contents(file, map_cachedir, release, arch)
         else:
             return None
 
@@ -396,9 +400,17 @@ class __AptDpkgPackageInfo(PackageInfo):
         fetch distribution files/packages from the network.
 
         By default, the mirror will be read from the system configuration
-        files.'''
-
+        files.
+        '''
         self._mirror = url
+
+        # purge our contents dir cache
+        try:
+            if self._contents_dir:
+                shutil.rmtree(self._contents_dir)
+                self._contents_dir = None
+        except AttributeError:
+            pass
 
     def get_source_tree(self, srcpackage, dir, version=None, sandbox=None,
                         apt_update=False):
@@ -508,7 +520,8 @@ Debug::NoLocking "true";
         return (installed, outdated)
 
     def install_packages(self, rootdir, configdir, release, packages,
-                         verbose=False, cache_dir=None, permanent_rootdir=False):
+                         verbose=False, cache_dir=None,
+                         permanent_rootdir=False, architecture=None):
         '''Install packages into a sandbox (for apport-retrace).
 
         In order to work without any special permissions and without touching
@@ -533,6 +546,10 @@ Debug::NoLocking "true";
         If permanent_rootdir is True, then the sandbox created from the
         downloaded packages will be reused, to speed up subsequent retraces.
 
+        If architecture is given, the sandbox will be created with packages of
+        the given architecture (as specified in a report's "Architecture"
+        field). If not given it defaults to the host system's architecture.
+
         Return a string with outdated packages, or None if all packages were
         installed.
 
@@ -543,7 +560,24 @@ Debug::NoLocking "true";
         if not configdir:
             apt_sources = '/etc/apt/sources.list'
         else:
+            # support architecture specific config, fall back to global config
             apt_sources = os.path.join(configdir, release, 'sources.list')
+            if architecture:
+                arch_apt_sources = os.path.join(configdir, release,
+                                                architecture, 'sources.list')
+                if os.path.exists(arch_apt_sources):
+                    apt_sources = arch_apt_sources
+
+            # set mirror for get_file_package()
+            with open(apt_sources) as f:
+                for l in f:
+                    fields = l.split()
+                    if len(fields) >= 3 and fields[0] == 'deb' and fields[1].startswith('http://'):
+                        self.set_mirror(fields[1])
+                        break
+                else:
+                    apport.warning('cannot determine mirror, %s does not contain a valid deb line' % apt_sources)
+
         if not os.path.exists(apt_sources):
             raise SystemError('%s does not exist' % apt_sources)
 
@@ -559,6 +593,11 @@ Debug::NoLocking "true";
         else:
             tmp_aptroot = True
             aptroot = tempfile.mkdtemp()
+
+        if architecture:
+            apt.apt_pkg.config.set('APT::Architecture', architecture)
+        else:
+            apt.apt_pkg.config.set('APT::Architecture', self.get_system_architecture())
 
         if verbose:
             fetchProgress = apt.progress.text.AcquireProgress()
@@ -627,16 +666,14 @@ Debug::NoLocking "true";
                             debs = os.path.join(archives, '%s_*.deb' % p)
                             for path in glob.glob(debs):
                                 ver = self._deb_version(path)
-                                if apt.apt_pkg.check_dep(ver, conflict[2],
-                                                              conflict[1]):
+                                if apt.apt_pkg.check_dep(ver, conflict[2], conflict[1]):
                                     os.unlink(path)
                         del providers
                     else:
                         debs = os.path.join(archives, '%s_*.deb' % conflict[0])
                         for path in glob.glob(debs):
                             ver = self._deb_version(path)
-                            if apt.apt_pkg.check_dep(ver, conflict[2],
-                                                          conflict[1]):
+                            if apt.apt_pkg.check_dep(ver, conflict[2], conflict[1]):
                                 os.unlink(path)
 
             if candidate.architecture != 'all':
@@ -747,7 +784,7 @@ Debug::NoLocking "true";
 
         return self._mirror
 
-    def _search_contents(self, file, map_cachedir):
+    def _search_contents(self, file, map_cachedir, release, arch):
         '''Internal function for searching file in Contents.gz.'''
 
         if map_cachedir:
@@ -757,8 +794,16 @@ Debug::NoLocking "true";
                 self._contents_dir = tempfile.mkdtemp()
             dir = self._contents_dir
 
-        arch = self.get_system_architecture()
-        map = os.path.join(dir, 'Contents-%s.gz' % arch)
+        if arch is None:
+            arch = self.get_system_architecture()
+        if release is None:
+            # determine system distro release code name
+            lsb_release = subprocess.Popen(['lsb_release', '-sc'],
+                                           stdout=subprocess.PIPE)
+            release = lsb_release.communicate()[0].decode('UTF-8').strip()
+            assert lsb_release.returncode == 0
+
+        map = os.path.join(dir, '%s-Contents-%s.gz' % (release, arch))
 
         # check if map exists and is younger than a day; if not, we need to
         # refresh it
@@ -769,13 +814,7 @@ Debug::NoLocking "true";
             age = None
 
         if age is None or age >= 86400:
-            # determine distro release code name
-            lsb_release = subprocess.Popen(['lsb_release', '-sc'],
-                                           stdout=subprocess.PIPE)
-            release_name = lsb_release.communicate()[0].decode('UTF-8').strip()
-            assert lsb_release.returncode == 0
-
-            url = '%s/dists/%s/Contents-%s.gz' % (self._get_mirror(), release_name, arch)
+            url = '%s/dists/%s/Contents-%s.gz' % (self._get_mirror(), release, arch)
 
             src = urlopen(url)
             with open(map, 'wb') as f:
