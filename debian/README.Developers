@@ -1,0 +1,4 @@
+Q. I do not want apport reports for my package. How do I stop it?
+
+A. If you would like to opt out of apport reports, please read
+   /etc/apport/blacklist.d/README.blacklist

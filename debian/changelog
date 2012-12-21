@@ -1,0 +1,82 @@
+apport (2.7-1) experimental; urgency=low
+
+  * [be922e9] Imported Upstream version 2.7
+  * Drop patches, applied upstream
+    [2930811] drop patch fix-package-and-version-extraction.patch
+    [6c4581a] drop patch fix-python3-str-interface.patch
+    [90fc0ed] drop patch check-for-stacktrace.patch
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Fri, 21 Dec 2012 18:57:19 +0530
+
+apport (2.6.2-1) experimental; urgency=low
+
+  * [2177045] Imported Upstream version 2.6.2
+  * [8ebfca0] Add Breaks on python-apport.
+    Thanks to Laurent Bigonville (Closes: #689922)
+  * [b9c9605] Drop patch crashdb-fix.path. Applied upstream
+  * [f6c0656] Fix man page typo.
+    Thanks to Osamu Aoki (Closes: #692253)
+  * [2e97154] Only reject reports with useless stack traces if the report
+    actually has a stack trace at all.
+  * [51f3919] Fix error in Package and PackageVersion detection in the
+    Debian crashdb
+  * [74e3e02] Fix Python3 String buffer interface
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sun, 18 Nov 2012 14:08:35 +0530
+
+apport (2.6.1-2) experimental; urgency=low
+
+  * [2809dc3] Add python-apport as Depends for apport-kde
+  * [268891c] Fix debian crashdb. Add patch crashdb-fix.patch
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Wed, 17 Oct 2012 14:02:28 +0530
+
+apport (2.6.1-1) experimental; urgency=low
+
+  * [40bb859] Imported Upstream version 2.6.1
+    (Closes: #677980, #677630, #678393)
+  * [7b55ecb] drop patches, now we have a crashdb
+  * [98a657c] update README.Developer about how to blacklist packages
+  * [0dcfe45] build python3 support too
+  * [d05573b] Add packaging changes from Ubuntu
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Mon, 01 Oct 2012 22:19:35 +0530
+
+apport (2.2.3-4) experimental; urgency=low
+
+  * [7d9a488] Check harder for distribution string
+  * [b284128] Use subprocess instead of os.popen()
+  * [3ce6341] Drop non-existent Recommends of apport-symptoms package
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Thu, 19 Jul 2012 01:13:43 +0530
+
+apport (2.2.3-3) experimental; urgency=low
+
+  * [e6ebc33] fix bts email address
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Wed, 18 Jul 2012 13:00:46 +0530
+
+apport (2.2.3-2) experimental; urgency=low
+
+  * [cd3d4e5] Switch package source format to 3.0 (quilt)
+  * [accce3a] Add Debian bug reporting support in Apport (Closes: #677629)
+  * [906855a] Add some READMEs documenting apport's purpose
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Tue, 17 Jul 2012 18:00:14 +0530
+
+apport (2.2.3-1) experimental; urgency=low
+
+  * [fc4f37c] add Vcs headers
+  * [12c1b4a] Imported Upstream version 2.2.3 (Closes: #676379, #677563)
+  * [755ad3d] add build-dep: pep8, pyflakes
+  * [d0ee9a9] add initscript LSB Description Header
+  * [84e90ae] add initscript LSB Command status
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sat, 16 Jun 2012 03:35:03 +0530
+
+apport (1.94.1-1) experimental; urgency=low
+
+  * Initial release. (Closes: #383347)
+  * Initial release to get other dependent infrastructure to align with 
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Fri, 06 Apr 2012 20:38:44 +0530

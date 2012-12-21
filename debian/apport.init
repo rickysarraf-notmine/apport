@@ -1,0 +1,80 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          apport
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $network $remote_fs sendsigs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: automatic crash report generation tool
+# Description:	     automatic crash report generation tool
+### END INIT INFO
+
+# apport - automatic crash report generation
+#
+# While this job is active, core dumps will captured by apport and
+# used to generate automatic crash reports.
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+. /lib/lsb/init-functions
+
+
+if [ -f /etc/default/apport ]; then
+	. /etc/default/apport
+fi
+
+start() {
+
+    [ "$enabled" = "1" ] || [ "$force_start" = "1" ] || exit 0
+
+    mkdir -p -m 1777 /var/crash
+
+    # check for kernel crash dump, convert it to apport report
+    if [ -e /var/crash/vmcore ]
+    then
+    log_daemon_msg "Checking for kernel crash dumps"
+	/usr/share/apport/kernel_crashdump || true
+    log_end_msg 0
+    fi
+
+    log_daemon_msg "Enabling apport service"
+    echo "|/usr/share/apport/apport %p %s %c" > /proc/sys/kernel/core_pattern
+    log_end_msg 0
+}
+
+stop() {
+    log_daemon_msg "Disabling apport service"
+    if [ "`dd if=/proc/sys/kernel/core_pattern count=1 bs=1 2>/dev/null`" != "|" ]
+    then
+	exit 1
+    else
+	echo "core" > /proc/sys/kernel/core_pattern
+    fi
+    log_end_msg 0
+}
+
+restart() {
+    stop
+    start
+}
+
+status() {
+    log_daemon_msg "Checking apport service"
+    grep -qi "|/usr/share/apport/apport" /proc/sys/kernel/core_pattern && log_end_msg 0 || log_end_msg 1
+}
+
+case "$1" in
+    start|stop|restart)
+	$1
+	;;
+    force-reload)
+	restart
+	;;
+    status)
+	status
+	;;
+    *)
+	echo "Usage: $0 {start|stop|restart|force-reload|status}"
+	exit 1;
+	;;
+esac
+

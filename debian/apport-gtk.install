@@ -1,0 +1,3 @@
+usr/share/apport/*gtk*
+usr/share/applications/*gtk-mime*
+usr/share/applications/apport-gtk.desktop

@@ -1,0 +1,12 @@
+Configuration
+-----------------
+
+To use apport to send bug reports, please set your email address
+in the /etc/apport/crashdb.conf configuration file.
+
+
+Usage
+---------
+
+Please be conscious when filing bug reports with apport. Ensure that
+it is a bug and not a faulty user error behavior
