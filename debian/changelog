@@ -1,3 +1,9 @@
+apport (2.7-2) experimental; urgency=low
+
+  * [17d5cac] Encode stream before sending it to write
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Mon, 31 Dec 2012 18:10:04 +0530
+
 apport (2.7-1) experimental; urgency=low
 
   * [be922e9] Imported Upstream version 2.7
