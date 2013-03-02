@@ -1,6 +1,50 @@
 This file summarizes the major and interesting changes for each release. For a
 detailled list of changes, please see ChangeLog.
 
+2.9 (2013-03-01):
+-----------------
+Improvements:
+ * fileutils.py, shared_libraries(): Return a "name → path" dict instead of
+   just a set of names. Thanks Kyle Nitzsche.
+ * sandboxutils.py: Support unpackaged executables, i. e. reports which do not
+   have "Package" and "Dependencies" fields. For those, get required libraries
+   from "ProcMaps". Thanks Kyle Nitzsche.
+
+Bug fixes:
+ * Add "com.ubuntu.apport.apport-gtk-root" polkit action for running apport-gtk
+   through pkexec to access system crash reports. Thanks Brian Murray.
+ * ui.py: Check $PKEXEC_UID in addition to $SUDO_UID for opening a browser.
+ * apport/report.py: report if LD_PRELOAD and LD_LIBRARY_PATH are set. Thanks
+   James Hunt.
+ * apport-valgrind: Cleanly exit on keyboard interrupts. Thanks Kyle Nitzsche.
+ * debian.py: Fix "string payload expected" crash when building the report.
+   Thanks Dmitry Shachnev. (Debian #698010)
+ * Move shared_libraries() and links_with_shared_library() from hookutils into
+   fileutils, so that we can use it from apport-valgrind. Thanks to Kyle
+   Nitzsche for the initial patch.
+ * fileutils.shared_libraries(): Filter out virtual "linux-vdso" from result.
+   Thanks Kyle Nitzsche.
+ * apport-valgrind: Fix path to debug symbols in the sandbox.
+ * ui.py, get_desktop_entry(): Fix for Python 2.
+
+2.8 (2013-01-08):
+-----------------
+Improvements:
+ * Factor out sandbox management functions from apport-retrace into
+   apport/sandboxutils.py, so that other programs can re-use the API easily.
+   Thanks to Kyle Nitzsche for the initial work on this.
+ * Generate a crash signature for kernel OOPSes.
+ * Add "apport-valgrind" tool to produce valgrind reports in a temporary
+   sandbox with debug symbols (similar to apport-retrace). Thanks Alex Chiang
+   and Kyle Nitzsche!
+
+Bug fixes:
+ * Fix StacktraceAddressSignature generation on ARM. (LP: #1089778)
+ * debian.py: Fix TypeError crash in payload generation. Thanks Ritesh Raj
+   Sarraf.
+ * apport_python_hook.py: Update "ExecutableTimestamp" field when mangling
+   "ExecutablePath". (LP: #1077253)
+
 2.7 (2012-12-10):
 -----------------
 Improvements:

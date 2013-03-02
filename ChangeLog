@@ -1,3 +1,383 @@
+=== 2.9 ===
+2013-03-01  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2596] release 2.9
+
+	* NEWS,
+	* apport/ui.py,
+	* test/test_ui.py: [2595] * ui.py, get_desktop_entry(): Fix for Python
+	2.
+
+	* NEWS,
+	* apport/sandboxutils.py,
+	* bin/apport-valgrind,
+	* man/apport-valgrind.1,
+	* test/test_apport_valgrind.py: [2594] * sandboxutils.py: Support
+	unpackaged executables, i. e. reports which do not have "Package" and
+	"Dependencies" fields. For those, get required libraries from
+	"ProcMaps". Thanks Kyle Nitzsche. * apport-valgrind: Fix path to debug
+	symbols in the sandbox.
+
+	* NEWS,
+	* apport/fileutils.py,
+	* test/test_fileutils.py: [2593] * fileutils.py, shared_libraries():
+	Return a "name ? path" dict instead of just a set of names. Thanks
+	Kyle Nitzsche.
+
+2013-03-01  Launchpad Translations on behalf of apport-hackers
+
+	* po/tr.po: [2592] Launchpad automatic translations update.
+
+2013-02-18  Launchpad Translations on behalf of apport-hackers
+
+	* po/et.po: [2591] Launchpad automatic translations update.
+
+2013-02-15  Launchpad Translations on behalf of apport-hackers
+
+	* po/sr.po: [2590] Launchpad automatic translations update.
+
+2013-02-14  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/fileutils.py,
+	* test/test_fileutils.py: [2589] * fileutils.shared_libraries():
+	Filter out virtual "linux-vdso" from result. Thanks Kyle Nitzsche.
+
+	* apport/fileutils.py: [2588] fix previous commit for Python 2,
+	Popen.wait() does not yet support timeout there
+
+2013-02-11  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/fileutils.py,
+	* apport/hookutils.py,
+	* bin/apport-valgrind,
+	* data/general-hooks/generic.py,
+	* test/test_fileutils.py: [2587] * Move shared_libraries() and
+	links_with_shared_library() from hookutils into fileutils, so that we
+	can use it from apport-valgrind. Thanks to Kyle Nitzsche for the
+	initial patch.
+
+2013-02-10  Launchpad Translations on behalf of apport-hackers
+
+	* po/ar.po: [2586] Launchpad automatic translations update.
+
+2013-02-08  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/crashdb_impl/debian.py: [2585] * debian.py: Fix "string
+	payload expected" crash when building the report. Thanks Dmitry
+	Shachnev. (Debian #698010)
+
+	* NEWS,
+	* bin/apport-valgrind: [2584] * apport-valgrind: Cleanly exit on
+	keyboard interrupts. Thanks Kyle Nitzsche.
+
+	* NEWS,
+	* apport/report.py: [2583] * apport/report.py: report if LD_PRELOAD
+	and LD_LIBRARY_PATH are set. Thanks James Hunt.
+
+2013-02-05  Launchpad Translations on behalf of apport-hackers
+
+	* po/ja.po: [2582] Launchpad automatic translations update.
+
+2013-02-03  Martin Pitt <martin.pitt@canonical.com>
+
+	* apport/crashdb_impl/launchpad.py: [2581] launchpad.py: Remove
+	running-unity from the tags to copy since the majority of users are
+	now having unity
+
+2013-02-01  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2580] * ui.py: Check $PKEXEC_UID in addition to
+	$SUDO_UID for opening a browser.
+
+2013-01-31  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/com.ubuntu.apport.policy.in: [2579] properly name polkit
+	action from previous commit
+
+2013-01-30  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/com.ubuntu.apport.policy.in: [2578] * Add "com.ubuntu.pkexec
+	.apport-gtk" polkit action for running apport-gtk through pkexec to
+	access system crash reports. Thanks Brian Murray.
+
+2013-01-26  Launchpad Translations on behalf of apport-hackers
+
+	* po/uk.po: [2577] Launchpad automatic translations update.
+
+2013-01-15  Launchpad Translations on behalf of apport-hackers
+
+	* po/fr.po,
+	* po/pl.po: [2576] Launchpad automatic translations update.
+
+=== 2.8 ===
+2013-01-08  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2575] release 2.8
+
+	* test/test_apport_valgrind.py: [2574] test_apport_valgrind.py: Skip
+	tests if valgrind is not installed
+
+2013-01-08  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2573] Launchpad automatic translations update.
+
+2013-01-07  Martin Pitt <martin.pitt@canonical.com>
+
+	* bin/apport-valgrind,
+	* man/apport-valgrind.1,
+	* test/test_apport_valgrind.py: Added.
+
+	* NEWS,
+	* apport/sandboxutils.py,
+	* bin/apport-retrace,
+	* po/apport.pot,
+	* test/run: Modified.
+
+	[2572] * Add "apport-valgrind" tool to produce valgrind reports in a
+	temporary sandbox with debug symbols (similar to apport-retrace).
+	Thanks Alex Chiang and Kyle Nitzsche!
+
+2013-01-04  Evan Dandrea <evan.dandrea@canonical.com>
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2571] Generate a crash signature for kernel
+	OOPSes.
+
+2013-01-04  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport_python_hook.py,
+	* test/test_python_crashes.py: [2570] * apport_python_hook.py: Update
+	"ExecutableTimestamp" field when mangling "ExecutablePath". (LP:
+	#1077253)
+
+	* test/test_python_crashes.py: [2569] test_python_crashes.py: Defer
+	removal of temporary scripts to the end of test cases, so that we can
+	compare their mtime
+
+	* NEWS,
+	* apport/crashdb_impl/debian.py: [2568] * debian.py: Fix TypeError
+	crash in payload generation. Thanks Ritesh Raj Sarraf.
+
+2012-12-28  Launchpad Translations on behalf of apport-hackers
+
+	* po/hr.po: [2567] Launchpad automatic translations update.
+
+2012-12-24  Launchpad Translations on behalf of apport-hackers
+
+	* po/hr.po: [2566] Launchpad automatic translations update.
+
+2012-12-21  Launchpad Translations on behalf of apport-hackers
+
+	* po/uz.po: Added.
+
+	[2565] Launchpad automatic translations update.
+
+2012-12-20  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2564] Launchpad automatic translations update.
+
+2012-12-13  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2563] * Fix StacktraceAddressSignature
+	generation on ARM. (LP: #1089778)
+
+2012-12-12  Martin Pitt <martin.pitt@canonical.com>
+
+	* bin/crash-digger: [2562] crash-digger: use apport.log
+
+2012-12-12  Martin Pitt <martin.pitt@canonical.com>
+
+	* apport/sandboxutils.py: Added.
+
+	* NEWS,
+	* apport/__init__.py,
+	* bin/apport-retrace: Modified.
+
+	[2561] * Factor out sandbox management functions from apport-retrace
+	into apport/sandboxutils.py, so that other programs can re-use the API
+	easily. Thanks to Kyle Nitzsche for the initial work on this.
+
+2012-12-11  Launchpad Translations on behalf of apport-hackers
+
+	* po/el.po: [2560] Launchpad automatic translations update.
+
 === 2.7 ===
 2012-12-10  Martin Pitt <martin.pitt@canonical.com>
 
