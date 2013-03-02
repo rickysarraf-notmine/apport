@@ -1,3 +1,10 @@
+apport (2.9-1) UNRELEASED; urgency=low
+
+  * [cc98382] Imported Upstream version 2.9
+    (Closes: #698010)
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sat, 02 Mar 2013 13:36:01 +0530
+
 apport (2.7-2) experimental; urgency=low
 
   * [17d5cac] Encode stream before sending it to write
