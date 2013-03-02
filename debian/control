@@ -130,6 +130,7 @@ Depends: python (>= 2.4),
  gdb,
  libc6-dbg,
  ${misc:Depends}
+Suggests: gdb-multiarch
 Description: tools for reprocessing Apport crash reports
  apport-retrace recombines an Apport crash report (either a file or a
  Launchpad bug) and debug symbol packages (.ddebs) into fully symbolic
@@ -188,3 +189,21 @@ Description: debhelper extension for the apport crash report system
  .
  This package provides a debhelper extension to make it easier for other
  packages to include apport hooks.
+
+Package: apport-valgrind
+Section: devel
+Architecture: all
+Depends: python3,
+ python3-apport (>= ${source:Version}),
+ apt,
+ binutils,
+ valgrind (>= 3.8.1),
+ dpkg-dev,
+ libc6-dbg, ${misc:Depends}
+Description: valgrind wrapper that first downloads debug symbols
+ apport-valgrind is a valgrind wrapper that automatically downloads related
+ available debug symbols and provides them to valgrind's memcheck tool, which
+ is executed. The output is a valgrind log file ("valgrind.log") that contains
+ stack traces (with as many symbols resolved as available) and that shows
+ memory leaks.
+
