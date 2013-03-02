@@ -318,3 +318,55 @@ def get_config(section, setting, default=None, path=None, bool=False):
         return default
 
 get_config.config = None
+
+
+def shared_libraries(path):
+    '''Get libraries with which the specified binary is linked.
+
+    Return a library name -> path mapping, for example 'libc.so.6' ->
+    '/lib/x86_64-linux-gnu/libc.so.6'.
+    '''
+    libs = {}
+
+    ldd = subprocess.Popen(['ldd', path], stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT,
+                           universal_newlines=True)
+    for line in ldd.stdout:
+        try:
+            name, rest = line.split('=>', 1)
+        except ValueError:
+            continue
+
+        name = name.strip()
+        # exclude linux-vdso since that is a virtual so
+        if 'linux-vdso' in name:
+            continue
+        # this is usually "path (address)"
+        rest = rest.split()[0].strip()
+        if rest.startswith('('):
+            continue
+        libs[name] = rest
+    ldd.stdout.close()
+    ldd.wait()
+
+    if ldd.returncode != 0:
+        return {}
+    return libs
+
+
+def links_with_shared_library(path, lib):
+    '''Check if the binary at path links with the library named lib.
+
+    path should be a fully qualified path (e.g. report['ExecutablePath']),
+    lib may be of the form 'lib<name>' or 'lib<name>.so.<version>'
+    '''
+    libs = shared_libraries(path)
+
+    if lib in libs:
+        return True
+
+    for linked_lib in libs:
+        if linked_lib.startswith(lib + '.so.'):
+            return True
+
+    return False

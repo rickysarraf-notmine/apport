@@ -13,7 +13,7 @@ implementation (like GTK, Qt, or CLI).
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-__version__ = '2.7'
+__version__ = '2.9'
 
 import glob, sys, os.path, optparse, traceback, locale, gettext, re
 import errno, zlib
@@ -29,8 +29,10 @@ from apport import unicode_gettext as _
 if sys.version_info.major == 2:
     from ConfigParser import ConfigParser
     ConfigParser  # pyflakes
+    PY3 = False
 else:
     from configparser import ConfigParser
+    PY3 = True
 
 
 def excstr(exception):
@@ -1094,7 +1096,7 @@ class UserInterface:
         # If we are called through sudo, determine the real user id and run the
         # browser with it to get the user's web browser settings.
         try:
-            uid = int(os.getenv('SUDO_UID'))
+            uid = int(os.getenv('PKEXEC_UID', os.getenv('SUDO_UID')))
             sudo_prefix = ['sudo', '-H', '-u', '#' + str(uid)]
         except TypeError:
             sudo_prefix = []
@@ -1268,9 +1270,14 @@ class UserInterface:
         if not desktop_file:
             return None
 
-        cp = ConfigParser(interpolation=None, strict=False)
+        if PY3:
+            cp = ConfigParser(interpolation=None, strict=False)
+            kwargs = {'encoding': 'UTF-8'}
+        else:
+            cp = ConfigParser()
+            kwargs = {}
         try:
-            cp.read(desktop_file, encoding='UTF-8')
+            cp.read(desktop_file, **kwargs)
         except Exception as e:
             if 'onfig' in str(e.__class__) and 'arser' in str(e.__class__):
                 sys.stderr.write('Warning! %s is broken: %s\n' % (desktop_file, str(e)))
