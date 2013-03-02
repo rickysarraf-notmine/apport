@@ -1,7 +1,9 @@
-apport (2.9-1) UNRELEASED; urgency=low
+apport (2.9-1) experimental; urgency=low
 
   * [cc98382] Imported Upstream version 2.9
     (Closes: #698010)
+  * [a2e7951] Drop patch handle-python3-unicode-string.patch. Applied upstream
+  * [ec8b3de] Introduce new package apport-valgrind
 
  -- Ritesh Raj Sarraf <rrs@debian.org>  Sat, 02 Mar 2013 13:36:01 +0530
 
