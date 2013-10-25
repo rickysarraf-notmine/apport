@@ -67,6 +67,8 @@ def needed_runtime_packages(report, sandbox, cache_dir, verbose=False):
         libs = apport.fileutils.shared_libraries(report['ExecutablePath']).values()
     if sandbox:
         cache_dir = os.path.join(cache_dir, report['DistroRelease'])
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
 
     # grab as much as we can
     for l in libs:
@@ -74,6 +76,7 @@ def needed_runtime_packages(report, sandbox, cache_dir, verbose=False):
             continue
 
         pkg = apport.packaging.get_file_package(l, True, cache_dir,
+                                                release=report['DistroRelease'],
                                                 arch=report.get('Architecture'))
         if pkg:
             if verbose:
@@ -148,9 +151,10 @@ def make_sandbox(report, config_dir, cache_dir=None, sandbox_dir=None,
 
     pkgs = []
 
-    # when ProcMaps is available, it is enough to get the libraries in it; if
-    # it is not available, get Package/Dependencies
-    if 'ProcMaps' not in report:
+    # when ProcMaps is available and we don't have any third-party packages, it
+    # is enough to get the libraries in it and map their files to packages;
+    # otherwise, get Package/Dependencies
+    if 'ProcMaps' not in report or '[origin' in (report.get('Package', '') + report.get('Dependencies', '')):
         pkgs = needed_packages(report)
 
     # add user-specified extra packages, if any
@@ -176,6 +180,7 @@ def make_sandbox(report, config_dir, cache_dir=None, sandbox_dir=None,
     for path in ('InterpreterPath', 'ExecutablePath'):
         if path in report and not os.path.exists(sandbox_dir + report[path]):
             pkg = apport.packaging.get_file_package(report[path], True, cache_dir,
+                                                    release=report['DistroRelease'],
                                                     arch=report.get('Architecture'))
             if pkg:
                 apport.log('Installing extra package %s to get %s' % (pkg, path), log_timestamps)

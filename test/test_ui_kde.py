@@ -16,10 +16,14 @@ import os
 import shutil
 
 from mock import patch
-from PyQt4.QtCore import QTimer, QCoreApplication
-from PyQt4.QtGui import QTreeWidget
-from PyKDE4.kdecore import ki18n, KCmdLineArgs, KAboutData, KLocalizedString
-from PyKDE4.kdeui import KApplication
+try:
+    from PyQt4.QtCore import QTimer, QCoreApplication
+    from PyQt4.QtGui import QTreeWidget
+    from PyKDE4.kdecore import ki18n, KCmdLineArgs, KAboutData, KLocalizedString
+    from PyKDE4.kdeui import KApplication
+except ImportError as e:
+    sys.stderr.write('SKIP: PyQt/PyKDE not available: %s\n' % str(e))
+    sys.exit(0)
 
 import apport
 from apport import unicode_gettext as _
@@ -337,7 +341,7 @@ Type=Application''')
         def cont(*args):
             if self.app.dialog and self.app.dialog.continue_button.isVisible():
                 self.app.dialog.continue_button.click()
-                QTimer.singleShot(500, check_progress)
+                QTimer.singleShot(200, check_progress)
                 return
             # try again
             QTimer.singleShot(1000, cont)
@@ -389,7 +393,7 @@ Type=Application''')
 
             if self.app.dialog and self.app.dialog.continue_button.isVisible():
                 self.app.dialog.continue_button.click()
-                QTimer.singleShot(500, check_progress)
+                QTimer.singleShot(200, check_progress)
                 return
             # try again
             QTimer.singleShot(200, cont)
@@ -426,7 +430,7 @@ Type=Application''')
         def cont(*args):
             if self.app.dialog and self.app.dialog.continue_button.isVisible():
                 self.app.dialog.continue_button.click()
-                QTimer.singleShot(500, check_progress)
+                QTimer.singleShot(200, check_progress)
                 return
             # try again
             QTimer.singleShot(1000, cont)
@@ -443,7 +447,7 @@ Type=Application''')
         self.assertEqual(self.app.open_url.call_count, 0)
 
         # no progress dialog for non-accepting DB
-        self.assertEqual(self.visible_progress, False)
+        self.assertNotEqual(self.visible_progress, True)
 
         # data was collected for whoopsie
         r = self.app.report

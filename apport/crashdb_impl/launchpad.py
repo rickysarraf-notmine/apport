@@ -130,7 +130,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             return self.__launchpad
 
         if Launchpad is None:
-            sys.stderr.write('ERROR: The launchpadlib Python module is not installed. This functionality is not available.\n')
+            sys.stderr.write('ERROR: The launchpadlib Python %s module is not installed. This functionality is not available.\n' % sys.version[0])
             sys.exit(1)
 
         if self.options.get('launchpad_instance'):
@@ -819,8 +819,12 @@ in a dependent package.' % master,
                 if task.target.resource_type_link.endswith('#distribution'):
                     task.target = self.lp_distro.getSourcePackage(
                         name=report['SourcePackage'])
-                    task.lp_save()
-                    bug = self.launchpad.bugs[id]
+                    try:
+                        task.lp_save()
+                        bug = self.launchpad.bugs[id]
+                    except HTTPError:
+                        # might fail if there is already another Ubuntu package task
+                        pass
                     break
 
         if 'need-duplicate-check' in bug.tags:
@@ -924,9 +928,10 @@ in a dependent package.' % master,
         # privacy/retracing for distro reports
         # FIXME: ugly hack until LP has a real crash db
         if 'DistroRelease' in report:
-            if a and ('VmCore' in report or 'CoreDump' in report):
+            if a and ('VmCore' in report or 'CoreDump' in report or 'LaunchpadPrivate' in report):
                 hdr['Private'] = 'yes'
-                hdr['Subscribers'] = self.options.get('initial_subscriber', 'apport')
+                hdr['Subscribers'] = report.get('LaunchpadSubscribe',
+                                                self.options.get('initial_subscriber', 'apport'))
                 hdr['Tags'] += ' need-%s-retrace' % a
             elif 'Traceback' in report:
                 hdr['Private'] = 'yes'
@@ -946,7 +951,9 @@ in a dependent package.' % master,
 
         # write MIME/Multipart version into temporary file
         mime = tempfile.TemporaryFile()
-        report.write_mime(mime, extra_headers=hdr, skip_keys=['Tags'], priority_fields=order)
+        report.write_mime(mime, extra_headers=hdr,
+                          skip_keys=['Tags', 'LaunchpadPrivate', 'LaunchpadSubscribe'],
+                          priority_fields=order)
         mime.flush()
         mime.seek(0)
 

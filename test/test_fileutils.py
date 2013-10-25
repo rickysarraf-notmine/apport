@@ -60,8 +60,8 @@ class T(unittest.TestCase):
             pkg = apport.packaging.get_file_package(path)
             num = len([f for f in apport.packaging.get_files(pkg)
                        if f.endswith('.desktop')])
-            with open(path) as f:
-                if 'NoDisplay=true' in f.read():
+            with open(path, 'rb') as f:
+                if b'NoDisplay=true' in f.read():
                     if not nodisplay and num == 1:
                         nodisplay = pkg
                     continue
@@ -196,6 +196,24 @@ class T(unittest.TestCase):
             tr = [r for r in self._create_reports(True) if not 'inaccessible' in r]
             self.assertEqual(set(apport.fileutils.get_all_system_reports()), set([]))
             self.assertEqual(set(apport.fileutils.get_new_system_reports()), set([]))
+
+    def test_unwritable_report(self):
+        '''get_all_reports() and get_new_reports() for unwritable report'''
+
+        self.assertEqual(apport.fileutils.get_all_reports(), [])
+        self.assertEqual(apport.fileutils.get_all_system_reports(), [])
+
+        r = os.path.join(apport.fileutils.report_dir, 'unwritable.crash')
+        with open(r, 'w') as fd:
+            fd.write('unwritable')
+        os.chmod(r, 0o444)
+
+        if os.getuid() == 0:
+            self.assertEqual(set(apport.fileutils.get_new_reports()), set([r]))
+            self.assertEqual(set(apport.fileutils.get_all_reports()), set([r]))
+        else:
+            self.assertEqual(set(apport.fileutils.get_new_reports()), set())
+            self.assertEqual(set(apport.fileutils.get_all_reports()), set())
 
     def test_delete_report(self):
         '''delete_report()'''

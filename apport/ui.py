@@ -13,7 +13,7 @@ implementation (like GTK, Qt, or CLI).
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-__version__ = '2.9'
+__version__ = '2.12.6'
 
 import glob, sys, os.path, optparse, traceback, locale, gettext, re
 import errno, zlib
@@ -252,9 +252,9 @@ class UserInterface:
                 heading = _('Sorry, the program "%s" closed unexpectedly') % subject
                 self.ui_error_message(
                     _('Problem in %s') % subject,
-                    '%s\n\n%s' % (heading, _('Your computer does not have '
-                    'enough free memory to automatically analyze the problem '
-                    'and send a report to the developers.')))
+                    '%s\n\n%s' % (heading, _('Your computer does not have enough free '
+                                             'memory to automatically analyze the problem '
+                                             'and send a report to the developers.')))
                 return
 
             allowed_to_report = apport.fileutils.allowed_to_report()
@@ -263,7 +263,7 @@ class UserInterface:
                 try:
                     if 'Dependencies' not in self.report:
                         self.collect_info()
-                except (IOError, zlib.error) as e:
+                except (IOError, EOFError, zlib.error) as e:
                     # can happen with broken core dumps
                     self.report = None
                     self.ui_error_message(
@@ -423,21 +423,19 @@ class UserInterface:
                     self.options.package = 'linux'
                 else:
                     self.report.add_proc_info(self.options.pid)
-            except (ValueError, IOError):
+            except (ValueError, IOError, OSError) as e:
+                if hasattr(e, 'errno'):
+                    # silently ignore nonexisting PIDs; the user must not close the
+                    # application prematurely
+                    if e.errno == errno.ENOENT:
+                        return False
+                    elif e.errno == errno.EACCES:
+                        self.ui_error_message(_('Permission denied'),
+                                              _('The specified process does not belong to you. Please run this program as the process owner or as root.'))
+                        return False
                 self.ui_error_message(_('Invalid PID'),
                                       _('The specified process ID does not belong to a program.'))
                 return False
-            except OSError as e:
-                # silently ignore nonexisting PIDs; the user must not close the
-                # application prematurely
-                if e.errno == errno.ENOENT:
-                    return False
-                elif e.errno == errno.EACCES:
-                    self.ui_error_message(_('Permission denied'),
-                                          _('The specified process does not belong to you. Please run this program as the process owner or as root.'))
-                    return False
-                else:
-                    raise
         else:
             self.report.add_proc_environ()
 
@@ -755,6 +753,12 @@ class UserInterface:
 
         (self.options, self.args) = optparser.parse_args()
 
+        # mutually exclusive arguments
+        if self.options.update_report:
+            if self.options.filebug or self.options.window or self.options.symptom \
+               or self.options.pid or self.options.crash_file or self.options.save:
+                optparser.error('-u/--update-bug option cannot be used together with options for a new report')
+
         # "do what I mean" for zero or one arguments
         if len(sys.argv) == 0:
             return
@@ -948,6 +952,32 @@ class UserInterface:
         If a symptom script is given, this will be run first (used by
         run_symptom()).
         '''
+        # check if we already ran (we might load a processed report), skip if so
+        if (self.report.get('ProblemType') == 'Crash' and 'Stacktrace' in self.report) or (self.report.get('ProblemType') != 'Crash' and 'Dependencies' in self.report):
+            if on_finished:
+                on_finished()
+            return
+
+        # ensure that the crashed program is still installed:
+        if self.report['ProblemType'] == 'Crash':
+            exe_path = self.report.get('ExecutablePath', '')
+            if not os.path.exists(exe_path):
+                msg = _('This problem report applies to a program which is not installed any more.')
+                if exe_path:
+                    msg = '%s (%s)' % (msg, self.report['ExecutablePath'])
+                self.report['UnreportableReason'] = msg
+                if on_finished:
+                    on_finished()
+                return
+
+            if 'InterpreterPath' in self.report:
+                if not os.path.exists(self.report['InterpreterPath']):
+                    msg = _('This problem report applies to a program which is not installed any more.')
+                    self.report['UnreportableReason'] = '%s (%s)' % (msg, self.report['InterpreterPath'])
+                    if on_finished:
+                        on_finished()
+                    return
+
         # check if binary changed since the crash happened
         if 'ExecutablePath' in self.report and 'ExecutableTimestamp' in self.report:
             orig_time = int(self.report['ExecutableTimestamp'])
@@ -966,12 +996,6 @@ class UserInterface:
             # package
             self.report.add_os_info()
         else:
-            # check if we already ran, skip if so
-            if (self.report.get('ProblemType') == 'Crash' and 'Stacktrace' in self.report) or (self.report.get('ProblemType') != 'Crash' and 'Dependencies' in self.report):
-                if on_finished:
-                    on_finished()
-                return
-
             # since this might take a while, create separate threads and
             # display a progress dialog.
             self.ui_start_info_collection_progress()
@@ -1056,7 +1080,7 @@ class UserInterface:
 
             # check that we were able to determine package names
             if 'UnreportableReason' not in self.report:
-                if ('SourcePackage' not in self.report or
+                if (('SourcePackage' not in self.report and 'Dependencies' not in self.report) or
                     (not self.report['ProblemType'].startswith('Kernel')
                      and 'Package' not in self.report)):
                     self.ui_error_message(_('Invalid problem report'),
@@ -1215,24 +1239,6 @@ class UserInterface:
         else:
             self.cur_package = apport.fileutils.find_file_package(self.report.get('ExecutablePath', ''))
 
-        # ensure that the crashed program is still installed:
-        if self.report['ProblemType'] == 'Crash':
-            exe_path = self.report.get('ExecutablePath', '')
-            if not os.path.exists(exe_path):
-                msg = _('This problem report applies to a program which is not installed any more.')
-                if exe_path:
-                    msg = '%s (%s)' % (msg, self.report['ExecutablePath'])
-                self.report = None
-                self.ui_info_message(_('Invalid problem report'), msg)
-                return False
-
-            if 'InterpreterPath' in self.report:
-                if not os.path.exists(self.report['InterpreterPath']):
-                    msg = _('This problem report applies to a program which is not installed any more.')
-                    self.ui_info_message(_('Invalid problem report'), '%s (%s)'
-                                         % (msg, self.report['InterpreterPath']))
-                    return False
-
         return True
 
     def check_unreportable(self):
@@ -1331,7 +1337,7 @@ might be helpful for the developers.'))
     # abstract UI methods that must be implemented in derived classes
     #
 
-    def ui_present_report_details(self, allowed_to_report=True):
+    def ui_present_report_details(self, allowed_to_report=True, modal_for=None):
         '''Show details of the bug report.
 
         Return the action and options as a dictionary:

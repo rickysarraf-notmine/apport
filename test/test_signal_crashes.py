@@ -15,6 +15,12 @@ test_executable = '/usr/bin/yes'
 test_package = 'coreutils'
 test_source = 'coreutils'
 
+# (core ulimit (kb), expect core signal, expect core file, expect report)
+core_ulimit_table = [(1, False, False, False),
+                     (10, True, False, True),
+                     (10000, True, True, True),
+                     (-1, True, True, True)]
+
 required_fields = ['ProblemType', 'CoreDump', 'Date', 'ExecutablePath',
                    'ProcCmdline', 'ProcEnviron', 'ProcMaps', 'Signal',
                    'UserGroups']
@@ -91,6 +97,7 @@ class T(unittest.TestCase):
         self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
         st = os.stat(self.test_report)
         self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
+        self.assertEqual(st.st_uid, os.geteuid(), 'report has correct owner')
 
         # a subsequent crash does not alter unseen report
         self.do_crash()
@@ -117,7 +124,7 @@ class T(unittest.TestCase):
                         'LC_COLLATE', 'LC_TIME', 'LC_NUMERIC', 'LC_MONETARY',
                         'LC_MESSAGES', 'LC_PAPER', 'LC_NAME', 'LC_ADDRESS',
                         'LC_TELEPHONE', 'LC_MEASUREMENT', 'LC_IDENTIFICATION',
-                        'LOCPATH', 'TERM', 'XDG_RUNTIME_DIR']
+                        'LOCPATH', 'TERM', 'XDG_RUNTIME_DIR', 'LD_PRELOAD']
 
         for l in pr['ProcEnviron'].splitlines():
             (k, v) = l.split('=', 1)
@@ -284,44 +291,29 @@ class T(unittest.TestCase):
     def test_core_dump_packaged(self):
         '''packaged executables create core dumps on proper ulimits'''
 
-        # for SIGSEGV
-        resource.setrlimit(resource.RLIMIT_CORE, (1, -1))
-        self.do_crash(expect_coredump=False, expect_corefile=False)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-        resource.setrlimit(resource.RLIMIT_CORE, (10, -1))
-        self.do_crash(expect_corefile=False)
-        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
-        self.check_report_coredump(self.test_report)
-        apport.fileutils.delete_report(self.test_report)
-        resource.setrlimit(resource.RLIMIT_CORE, (10000, -1))
-        self.do_crash(expect_corefile=True)
-        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
-        self.check_report_coredump(self.test_report)
-        apport.fileutils.delete_report(self.test_report)
-        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
-        self.do_crash(expect_corefile=True)
-        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
-        self.check_report_coredump(self.test_report)
-        apport.fileutils.delete_report(self.test_report)
+        # for SEGV and ABRT we expect reports and core files
+        for sig in (signal.SIGSEGV, signal.SIGABRT):
+            for (kb, exp_sig, exp_file, exp_report) in core_ulimit_table:
+                resource.setrlimit(resource.RLIMIT_CORE, (kb, -1))
+                self.do_crash(expect_coredump=exp_sig,
+                              expect_corefile=exp_file,
+                              expect_corefile_owner=os.geteuid(),
+                              sig=sig)
+                if exp_report:
+                    self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
+                    self.check_report_coredump(self.test_report)
+                    apport.fileutils.delete_report(self.test_report)
+                else:
+                    self.assertEqual(apport.fileutils.get_all_reports(), [])
 
-        # for SIGABRT
-        resource.setrlimit(resource.RLIMIT_CORE, (1, -1))
-        self.do_crash(expect_coredump=False, expect_corefile=False, sig=signal.SIGABRT)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-        resource.setrlimit(resource.RLIMIT_CORE, (10, -1))
-        self.do_crash(expect_corefile=False, sig=signal.SIGABRT)
-        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
-        apport.fileutils.delete_report(self.test_report)
-        resource.setrlimit(resource.RLIMIT_CORE, (10000, -1))
-        self.do_crash(expect_corefile=True, sig=signal.SIGABRT)
-        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
-        apport.fileutils.delete_report(self.test_report)
-        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
-        self.do_crash(expect_corefile=True, sig=signal.SIGABRT)
-        self.assertEqual(apport.fileutils.get_all_reports(), [self.test_report])
+            # creates core file with existing crash report, too
+            self.do_crash(expect_corefile=True)
+            apport.fileutils.delete_report(self.test_report)
 
-        # creates core file with existing crash report, too
-        self.do_crash(expect_corefile=True)
+        # for SIGQUIT we only expect core files, no report
+        resource.setrlimit(resource.RLIMIT_CORE, (10000, -1))
+        self.do_crash(expect_corefile=True, sig=signal.SIGQUIT)
+        self.assertEqual(apport.fileutils.get_all_reports(), [])
 
     def test_core_dump_unpackaged(self):
         '''unpackaged executables create core dumps on proper ulimits'''
@@ -332,32 +324,15 @@ class T(unittest.TestCase):
                 dest.write(src.read())
         os.chmod(local_exe, 0o755)
 
-        # for SIGSEGV
-        resource.setrlimit(resource.RLIMIT_CORE, (1, -1))
-        self.do_crash(expect_coredump=False, expect_corefile=False, command=local_exe)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-        resource.setrlimit(resource.RLIMIT_CORE, (10, -1))
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-        resource.setrlimit(resource.RLIMIT_CORE, (10000, -1))
-        self.do_crash(expect_corefile=True, command=local_exe)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
-        self.do_crash(expect_corefile=True, command=local_exe)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-
-        # for SIGABRT
-        resource.setrlimit(resource.RLIMIT_CORE, (1, -1))
-        self.do_crash(expect_coredump=False, expect_corefile=False, command=local_exe, sig=signal.SIGABRT)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-        resource.setrlimit(resource.RLIMIT_CORE, (10, -1))
-        self.do_crash(expect_corefile=False, command=local_exe, sig=signal.SIGABRT)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-        resource.setrlimit(resource.RLIMIT_CORE, (10000, -1))
-        self.do_crash(expect_corefile=True, command=local_exe, sig=signal.SIGABRT)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
-        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
-        self.do_crash(expect_corefile=True, command=local_exe, sig=signal.SIGABRT)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
+        for sig in (signal.SIGSEGV, signal.SIGABRT, signal.SIGQUIT):
+            for (kb, exp_sig, exp_file, exp_report) in core_ulimit_table:
+                resource.setrlimit(resource.RLIMIT_CORE, (kb, -1))
+                self.do_crash(expect_coredump=exp_sig,
+                              expect_corefile=exp_file,
+                              expect_corefile_owner=os.geteuid(),
+                              command=local_exe,
+                              sig=sig)
+                self.assertEqual(apport.fileutils.get_all_reports(), [])
 
     def test_limit_size(self):
         '''core dumps are capped on available memory size'''
@@ -436,36 +411,34 @@ class T(unittest.TestCase):
         # create executable in a path we can modify which apport regards as
         # likely packaged
         (fd, myexe) = tempfile.mkstemp(dir='/var/tmp')
+        self.addCleanup(os.unlink, myexe)
+        with open(test_executable, 'rb') as f:
+            os.write(fd, f.read())
+        os.close(fd)
+        os.chmod(myexe, 0o755)
+        time.sleep(1)
+
         try:
-            with open(test_executable, 'rb') as f:
-                os.write(fd, f.read())
-            os.close(fd)
-            os.chmod(myexe, 0o755)
-            time.sleep(1)
+            test_proc = self.create_test_process(command=myexe)
 
-            try:
-                test_proc = self.create_test_process(command=myexe)
+            # bump mtime of myexe to make it more recent than process start
+            # time; ensure this works with file systems with only second
+            # resolution
+            time.sleep(1.1)
+            os.utime(myexe, None)
 
-                # bump mtime of myexe to make it more recent than process start
-                # time; ensure this works with file systems with only second
-                # resolution
-                time.sleep(1.1)
-                os.utime(myexe, None)
-
-                app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
-                                       stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-                app.stdin.write(b'boo')
-                app.stdin.close()
-                err = app.stderr.read().decode()
-                self.assertNotEqual(app.wait(), 0, err)
-                app.stderr.close()
-            finally:
-                os.kill(test_proc, 9)
-                os.waitpid(test_proc, 0)
-
-            self.assertEqual(self.get_temp_all_reports(), [])
+            app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
+                                   stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+            app.stdin.write(b'boo')
+            app.stdin.close()
+            err = app.stderr.read().decode()
+            self.assertNotEqual(app.wait(), 0, err)
+            app.stderr.close()
         finally:
-            os.unlink(myexe)
+            os.kill(test_proc, 9)
+            os.waitpid(test_proc, 0)
+
+        self.assertEqual(self.get_temp_all_reports(), [])
 
     def test_logging_file(self):
         '''outputs to log file, if available'''
@@ -540,12 +513,64 @@ class T(unittest.TestCase):
         self.assertEqual(pr['ExecutablePath'], test_executable)
         self.assertEqual(pr['CoreDump'], b'hel\x01lo')
 
+    @unittest.skipIf(os.geteuid() != 0, 'this test needs to be run as root')
+    def test_crash_setuid_keep(self):
+        '''report generation and core dump for setuid program which stays root'''
+
+        # create suid root executable in a path we can modify which apport
+        # regards as likely packaged
+        (fd, myexe) = tempfile.mkstemp(dir='/var/tmp')
+        self.addCleanup(os.unlink, myexe)
+        with open(test_executable, 'rb') as f:
+            os.write(fd, f.read())
+        os.close(fd)
+        os.chmod(myexe, 0o4755)
+
+        # run test program as user "mail"
+        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
+        # expect the core file to be owned by root
+        self.do_crash(command=myexe, expect_corefile=True, uid=8,
+                      expect_corefile_owner=0)
+
+        # check crash report
+        reports = apport.fileutils.get_all_reports()
+        self.assertEqual(len(reports), 1)
+        report = reports[0]
+        st = os.stat(report)
+        os.unlink(report)
+        self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
+        # this must not be owned by root as it is a setuid binary
+        self.assertEqual(st.st_uid, 0, 'report has correct owner')
+
+    @unittest.skipUnless(os.path.exists('/bin/ping'), 'this test needs /bin/ping')
+    @unittest.skipIf(os.geteuid() != 0, 'this test needs to be run as root')
+    def test_crash_setuid_drop(self):
+        '''report generation and core dump for setuid program which drops root'''
+
+        # run ping as user "mail"
+        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
+        # expect the core file to be owned by root
+        self.do_crash(command='/bin/ping', args=['127.0.0.1'],
+                      expect_corefile=True, uid=8,
+                      expect_corefile_owner=0)
+
+        # check crash report
+        reports = apport.fileutils.get_all_reports()
+        self.assertEqual(len(reports), 1)
+        report = reports[0]
+        st = os.stat(report)
+        os.unlink(report)
+        self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
+        # this must not be owned by root as it is a setuid binary
+        self.assertEqual(st.st_uid, 0, 'report has correct owner')
+
     #
     # Helper methods
     #
 
     @classmethod
-    def create_test_process(klass, check_running=True, command=test_executable):
+    def create_test_process(klass, check_running=True, command=test_executable,
+                            uid=None, args=[]):
         '''Spawn test_executable.
 
         Wait until it is fully running, and return its PID.
@@ -555,10 +580,12 @@ class T(unittest.TestCase):
             assert subprocess.call(['pidof', command]) == 1, 'no running test executable processes'
         pid = os.fork()
         if pid == 0:
+            if uid is not None:
+                os.setuid(uid)
             os.dup2(os.open('/dev/null', os.O_WRONLY), sys.stdout.fileno())
             sys.stdin.close()
             os.setsid()
-            os.execv(command, [command])
+            os.execv(command, [command] + args)
             assert False, 'Could not execute ' + command
 
         # wait until child process has execv()ed properly
@@ -575,7 +602,8 @@ class T(unittest.TestCase):
 
     def do_crash(self, expect_coredump=True, expect_corefile=False,
                  sig=signal.SIGSEGV, check_running=True, sleep=0,
-                 command=test_executable):
+                 command=test_executable, uid=None,
+                 expect_corefile_owner=None, args=[]):
         '''Generate a test crash.
 
         This runs command (by default test_executable) in /tmp, lets it crash,
@@ -587,7 +615,7 @@ class T(unittest.TestCase):
         already running.
         '''
         self.assertFalse(os.path.exists('core'), '/tmp/core already exists, please clean up first')
-        pid = self.create_test_process(check_running, command)
+        pid = self.create_test_process(check_running, command, uid=uid, args=args)
         if sleep > 0:
             time.sleep(sleep)
         os.kill(pid, sig)
@@ -615,6 +643,12 @@ class T(unittest.TestCase):
         if expect_corefile:
             self.assertTrue(os.path.exists('/tmp/core'), 'leaves wanted core file')
             try:
+                # check core file permissions
+                st = os.stat('/tmp/core')
+                self.assertEqual(stat.S_IMODE(st.st_mode), 0o600, 'core file has correct permissions')
+                if expect_corefile_owner is not None:
+                    self.assertEqual(st.st_uid, expect_corefile_owner, 'core file has correct owner')
+
                 # check that core file is valid
                 gdb = subprocess.Popen(['gdb', '--batch', '--ex', 'bt',
                                         command, '/tmp/core'],

@@ -70,8 +70,8 @@ def _read_file(path):
     Return its content, or return a textual error if it failed.
     '''
     try:
-        with open(path) as fd:
-            return fd.read().strip()
+        with open(path, 'rb') as fd:
+            return fd.read().strip().decode('UTF-8', errors='replace')
     except (OSError, IOError) as e:
         return 'Error: ' + str(e)
 
@@ -251,6 +251,8 @@ class Report(problem_report.ProblemReport):
                 origin = packaging.get_package_origin(package)
                 if origin:
                     suffix += ' [origin: %s]' % origin
+                else:
+                    suffix += ' [origin: unknown]'
         except ValueError:
             # no-op for nonexisting packages
             pass
@@ -263,7 +265,7 @@ class Report(problem_report.ProblemReport):
         If package is not given, the report must have ExecutablePath.
         This adds:
         - Package: package name and installed version
-        - SourcePackage: source package name
+        - SourcePackage: source package name (if possible to determine)
         - PackageArchitecture: processor architecture this package was built
           for
         - Dependencies: package names and versions of all dependencies and
@@ -287,7 +289,11 @@ class Report(problem_report.ProblemReport):
         self['Package'] = '%s %s%s' % (package, version or '(not installed)',
                                        self._customized_package_suffix(package))
         if version or 'SourcePackage' not in self:
-            self['SourcePackage'] = packaging.get_source(package)
+            try:
+                self['SourcePackage'] = packaging.get_source(package)
+            except ValueError:
+                # might not exist for non-free third-party packages
+                pass
         if not version:
             return
 
@@ -315,19 +321,20 @@ class Report(problem_report.ProblemReport):
         '''Add operating system information.
 
         This adds:
-        - DistroRelease: lsb_release -sir output
+        - DistroRelease: NAME and VERSION from /etc/os-release, or
+          'lsb_release -sir' output
         - Architecture: system architecture in distro specific notation
         - Uname: uname -srm output
         - NonfreeKernelModules: loaded kernel modules which are not free (if
             there are none, this field will not be present)
         '''
-        p = subprocess.Popen(['lsb_release', '-sir'], stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        self['DistroRelease'] = p.communicate()[0].decode().strip().replace('\n', ' ')
-
-        u = os.uname()
-        self['Uname'] = '%s %s %s' % (u[0], u[2], u[4])
-        self['Architecture'] = packaging.get_system_architecture()
+        if 'DistroRelease' not in self:
+            self['DistroRelease'] = '%s %s' % apport.packaging.get_os_version()
+        if 'Uname' not in self:
+            u = os.uname()
+            self['Uname'] = '%s %s %s' % (u[0], u[2], u[4])
+        if 'Architecture' not in self:
+            self['Architecture'] = packaging.get_system_architecture()
 
     def add_user_info(self):
         '''Add information about the user.
@@ -335,7 +342,7 @@ class Report(problem_report.ProblemReport):
         This adds:
         - UserGroups: system groups the user is in
         '''
-        user = pwd.getpwuid(os.getuid()).pw_name
+        user = pwd.getpwuid(os.getuid())[0]
         groups = [name for name, p, gid, memb in grp.getgrall()
                   if user in memb and gid < 1000]
         groups.sort()
@@ -684,14 +691,16 @@ class Report(problem_report.ProblemReport):
 
         # glib's assertion has precedence, since it internally uses
         # abort(), and then glib's __abort_msg is bogus
-        if '"ERROR:' in self['GLibAssertionMessage']:
-            self['AssertionMessage'] = self['GLibAssertionMessage']
-        del self['GLibAssertionMessage']
+        if 'GLibAssertionMessage' in self:
+            if '"ERROR:' in self['GLibAssertionMessage']:
+                self['AssertionMessage'] = self['GLibAssertionMessage']
+            del self['GLibAssertionMessage']
 
         # same reason for libnih's assertion messages
-        if self['NihAssertionMessage'].startswith('$'):
-            self['AssertionMessage'] = self['NihAssertionMessage']
-        del self['NihAssertionMessage']
+        if 'NihAssertionMessage' in self:
+            if self['NihAssertionMessage'].startswith('$'):
+                self['AssertionMessage'] = self['NihAssertionMessage']
+            del self['NihAssertionMessage']
 
         # clean up AssertionMessage
         if 'AssertionMessage' in self:
@@ -950,7 +959,12 @@ class Report(problem_report.ProblemReport):
         except OSError:
             pass
 
-        dom = self._get_ignore_dom()
+        try:
+            dom = self._get_ignore_dom()
+        except (ValueError, KeyError):
+            apport.error('Could not get ignore file:')
+            traceback.print_exc()
+            return False
 
         try:
             cur_mtime = int(os.stat(self['ExecutablePath']).st_mtime)
@@ -1202,6 +1216,10 @@ class Report(problem_report.ProblemReport):
 
         For Python crashes, this concatenates the ExecutablePath, exception
         name, and Traceback function names, again separated by a colon.
+
+        For suspend/resume failures, this concatenates whether it was a suspend
+        or resume failure with the hardware identifier and the BIOS version, if
+        it exists.
         '''
         if 'ExecutablePath' not in self:
             if not self['ProblemType'] in ('KernelCrash', 'KernelOops'):
@@ -1266,9 +1284,23 @@ class Report(problem_report.ProblemReport):
                     if m.group(3) != '<module>':
                         sig += ':' + m.group(3)
                     else:
-                        sig += ':%s@%s' % (m.group(1), m.group(2))
+                        # resolve symlinks for more stable signatures
+                        f = m.group(1)
+                        if os.path.islink(f):
+                            f = os.path.realpath(f)
+                        sig += ':%s@%s' % (f, m.group(2))
 
             return self['ExecutablePath'] + ':' + trace[-1].split(':')[0] + sig
+
+        if self['ProblemType'] == 'KernelOops' and 'Failure' in self:
+            if 'suspend' in self['Failure'] or 'resume' in self['Failure']:
+                # Suspend / resume failure
+                sig = self['Failure']
+                if self.get('MachineType'):
+                    sig += ':%s' % self['MachineType']
+                if self.get('dmi.bios.version'):
+                    sig += ':%s' % self['dmi.bios.version']
+                return sig
 
         # KernelOops crashes
         if 'OopsText' in self:
@@ -1384,17 +1416,17 @@ class Report(problem_report.ProblemReport):
             # do not replace "root"
             p = pwd.getpwuid(os.getuid())
             if len(p[0]) >= 2:
-                replacements.append((re.compile('\\b%s\\b' % p[0]), 'username'))
-            replacements.append((re.compile('\\b%s\\b' % p[5]), '/home/username'))
+                replacements.append((re.compile(r'\b%s\b' % re.escape(p[0])), 'username'))
+            replacements.append((re.compile(r'\b%s\b' % re.escape(p[5])), '/home/username'))
 
             for s in p[4].split(','):
                 s = s.strip()
                 if len(s) > 2:
-                    replacements.append((re.compile('\\b%s\\b' % s), 'User Name'))
+                    replacements.append((re.compile(r'(\b|\s)%s\b' % re.escape(s)), r'\1User Name'))
 
         hostname = os.uname()[1]
         if len(hostname) >= 2:
-            replacements.append((re.compile('\\b%s\\b' % hostname), 'hostname'))
+            replacements.append((re.compile(r'\b%s\b' % re.escape(hostname)), 'hostname'))
 
         try:
             del self['ProcCwd']
@@ -1417,7 +1449,7 @@ class Report(problem_report.ProblemReport):
         '''Build gdb command for this report.
 
         This builds a gdb command for processing the given report, by setting
-        the file to the ExectuablePath/InterpreterPath, unpacking the core dump
+        the file to the ExecutablePath/InterpreterPath, unpacking the core dump
         and pointing "core-file" to it (if the report has a core dump), and
         setting up the paths when calling gdb in a package sandbox.
 
@@ -1443,6 +1475,8 @@ class Report(problem_report.ProblemReport):
             arch = self.get('Uname', 'none').split()[-1]
             if 'arm' in arch:
                 command += ['--ex', 'set architecture arm', '--ex', 'set gnutarget elf32-littlearm']
+            elif 'ppc' in arch:
+                command += ['--ex', 'set architecture powerpc:common', '--ex', 'set gnutarget elf32-powerpc']
             # note, i386 vs. x86_64 is auto-detected just fine
 
         if sandbox:

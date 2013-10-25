@@ -80,7 +80,7 @@ class GTKUserInterface(apport.ui.UserInterface):
         parent = treeview.get_parent()
         parent.remove(treeview)
         overlay = Gtk.Overlay()
-        parent.add_with_viewport(overlay)
+        parent.add(overlay)
         overlay.add(treeview)
         spinner = Gtk.Spinner()
         spinner.set_size_request(42, 42)
@@ -166,7 +166,7 @@ class GTKUserInterface(apport.ui.UserInterface):
         # `apport-collect $id`.
 
         # avoid collecting information again, in this mode we already have it 
-        if 'Uname' in self.report:
+        if 'DistroRelease' in self.report:
             self.collect_called = True
             self.ui_update_view()
         self.w('title_label').set_label('<big><b>%s</b></big>' %
@@ -237,7 +237,7 @@ class GTKUserInterface(apport.ui.UserInterface):
                 name = os.path.basename(self.report['ExecutablePath'])
                 title = _('The program "%s" has stopped responding.') % name
             self.w('title_label').set_label('<big><b>%s</b></big>' % title)
-        elif not self.report_file:
+        elif not self.report_file or report_type == 'Bug':
             self.setup_bug_report()
         elif report_type == 'KernelCrash' or report_type == 'KernelOops':
             self.w('ignore_future_problems').set_active(False)

@@ -167,20 +167,17 @@ class __AptDpkgPackageInfo(PackageInfo):
         return None
 
     def is_distro_package(self, package):
-        '''Check if a package is a genuine distro package (True) or comes from
-        a third-party source.'''
+        '''Check if a package is a genuine distro package.
 
-        lsb_release = subprocess.Popen(['lsb_release', '-i', '-s'],
-                                       stdout=subprocess.PIPE)
-        this_os = lsb_release.communicate()[0].decode().strip()
-        assert lsb_release.returncode == 0
-
+        Return True for a native distro package, False if it comes from a
+        third-party source.
+        '''
         pkg = self._apt_pkg(package)
         # some PPA packages have installed version None, see LP#252734
         if pkg.installed and pkg.installed.version is None:
             return False
 
-        native_origins = [this_os]
+        native_origins = [self.get_os_version()[0]]
         for f in glob.glob('/etc/apport/native-origins.d/*'):
             try:
                 with open(f) as fd:
@@ -253,7 +250,7 @@ class __AptDpkgPackageInfo(PackageInfo):
                     if not words:
                         apport.warning('%s contains empty line, ignoring line', sumfile)
                         continue
-                    s = os.stat('/' + words[-1].decode('UTF-8'))
+                    s = os.stat(('/' + words[-1].decode('UTF-8')).encode('UTF-8'))
                     if max(s.st_mtime, s.st_ctime) <= max_time:
                         continue
                 except OSError:
@@ -290,14 +287,17 @@ class __AptDpkgPackageInfo(PackageInfo):
             path, default_md5sum = line.strip().split()[:2]
 
             if os.path.exists(path):
-                with open(path, 'rb') as fd:
-                    contents = fd.read()
-                m = hashlib.md5()
-                m.update(contents)
-                calculated_md5sum = m.hexdigest()
+                try:
+                    with open(path, 'rb') as fd:
+                        contents = fd.read()
+                    m = hashlib.md5()
+                    m.update(contents)
+                    calculated_md5sum = m.hexdigest()
 
-                if calculated_md5sum != default_md5sum:
-                    modified[path] = contents
+                    if calculated_md5sum != default_md5sum:
+                        modified[path] = contents
+                except IOError as e:
+                    modified[path] = '[inaccessible: %s]' % str(e)
             else:
                 modified[path] = '[deleted]'
 
@@ -559,6 +559,7 @@ Debug::NoLocking "true";
         '''
         if not configdir:
             apt_sources = '/etc/apt/sources.list'
+            self.current_release_codename = self.get_distro_codename()
         else:
             # support architecture specific config, fall back to global config
             apt_sources = os.path.join(configdir, release, 'sources.list')
@@ -569,14 +570,14 @@ Debug::NoLocking "true";
                     apt_sources = arch_apt_sources
 
             # set mirror for get_file_package()
-            with open(apt_sources) as f:
-                for l in f:
-                    fields = l.split()
-                    if len(fields) >= 3 and fields[0] == 'deb' and fields[1].startswith('http://'):
-                        self.set_mirror(fields[1])
-                        break
-                else:
-                    apport.warning('cannot determine mirror, %s does not contain a valid deb line' % apt_sources)
+            try:
+                self.set_mirror(self._get_primary_mirror_from_apt_sources(apt_sources))
+            except SystemError as e:
+                apport.warning('cannot determine mirror: %s' % str(e))
+
+            # set current release code name for _distro_release_to_codename
+            with open(os.path.join(configdir, release, 'codename')) as f:
+                self.current_release_codename = f.read().strip()
 
         if not os.path.exists(apt_sources):
             raise SystemError('%s does not exist' % apt_sources)
@@ -615,6 +616,8 @@ Debug::NoLocking "true";
             c.open()
 
         obsolete = ''
+
+        src_records = apt.apt_pkg.SourceRecords()
 
         # mark packages for installation
         real_pkgs = set()
@@ -679,11 +682,21 @@ Debug::NoLocking "true";
             if candidate.architecture != 'all':
                 if pkg + '-dbg' in c:
                     real_pkgs.add(pkg + '-dbg')
-                elif pkg + '-dbgsym' in c:
-                    real_pkgs.add(pkg + '-dbgsym')
-                    if c[pkg + '-dbgsym'].candidate.version != candidate.version:
-                        obsolete += 'outdated debug symbol package for %s: package version %s dbgsym version %s\n' % (
-                            pkg, candidate.version, c[pkg + '-dbgsym'].candidate.version)
+                else:
+                    # install all -dbg from the source package
+                    if src_records.lookup(candidate.source_name):
+                        dbgs = [p for p in src_records.binaries if p.endswith('-dbg') and p in c]
+                    else:
+                        dbgs = []
+                    if dbgs:
+                        for p in dbgs:
+                            real_pkgs.add(p)
+                    else:
+                        if pkg + '-dbgsym' in c:
+                            real_pkgs.add(pkg + '-dbgsym')
+                            if c[pkg + '-dbgsym'].candidate.version != candidate.version:
+                                obsolete += 'outdated debug symbol package for %s: package version %s dbgsym version %s\n' % (
+                                    pkg, candidate.version, c[pkg + '-dbgsym'].candidate.version)
 
         for p in real_pkgs:
             c[p].mark_install(False, False)
@@ -714,6 +727,7 @@ Debug::NoLocking "true";
 
         if permanent_rootdir:
             self._save_virtual_mapping(aptroot)
+
         return obsolete
 
     def package_name_glob(self, nameglob):
@@ -767,6 +781,25 @@ Debug::NoLocking "true";
 
         return mismatches
 
+    @classmethod
+    def _get_primary_mirror_from_apt_sources(klass, apt_sources):
+        '''Heuristically determine primary mirror from an apt sources.list'''
+
+        with open(apt_sources) as f:
+            for l in f:
+                fields = l.split()
+                if len(fields) >= 3 and fields[0] == 'deb':
+                    if fields[1].startswith('['):
+                        # options given, mirror is in third field
+                        mirror_idx = 2
+                    else:
+                        mirror_idx = 1
+                    if fields[mirror_idx].startswith('http://'):
+                        return fields[mirror_idx]
+            else:
+                raise SystemError('cannot determine default mirror: %s does not contain a valid deb line'
+                                  % apt_sources)
+
     def _get_mirror(self):
         '''Return the distribution mirror URL.
 
@@ -774,15 +807,18 @@ Debug::NoLocking "true";
         configuration.'''
 
         if not self._mirror:
-            for l in open('/etc/apt/sources.list'):
-                fields = l.split()
-                if len(fields) >= 3 and fields[0] == 'deb' and fields[1].startswith('http://'):
-                    self._mirror = fields[1]
-                    break
-            else:
-                raise SystemError('cannot determine default mirror: /etc/apt/sources.list does not contain a valid deb line')
-
+            self._mirror = self._get_primary_mirror_from_apt_sources('/etc/apt/sources.list')
         return self._mirror
+
+    def _distro_release_to_codename(self, release):
+        '''Map a DistroRelease: field value to a release code name'''
+
+        # if we called install_packages() with a configdir, we can read the
+        # codename from there
+        if hasattr(self, 'current_release_codename') and self.current_release_codename is not None:
+            return self.current_release_codename
+
+        raise NotImplementedError('Cannot map DistroRelease to a code name without install_packages()')
 
     def _search_contents(self, file, map_cachedir, release, arch):
         '''Internal function for searching file in Contents.gz.'''
@@ -797,11 +833,9 @@ Debug::NoLocking "true";
         if arch is None:
             arch = self.get_system_architecture()
         if release is None:
-            # determine system distro release code name
-            lsb_release = subprocess.Popen(['lsb_release', '-sc'],
-                                           stdout=subprocess.PIPE)
-            release = lsb_release.communicate()[0].decode('UTF-8').strip()
-            assert lsb_release.returncode == 0
+            release = self.get_distro_codename()
+        else:
+            release = self._distro_release_to_codename(release)
 
         map = os.path.join(dir, '%s-Contents-%s.gz' % (release, arch))
 
@@ -920,5 +954,18 @@ Debug::NoLocking "true";
             return True
 
         return re.search('^\s*enabled\s*=\s*0\s*$', conf, re.M) is None
+
+    _distro_codename = None
+
+    def get_distro_codename(self):
+        '''Get "lsb_release -sc", cache the result.'''
+
+        if self._distro_codename is None:
+            lsb_release = subprocess.Popen(['lsb_release', '-sc'],
+                                           stdout=subprocess.PIPE)
+            self._distro_codename = lsb_release.communicate()[0].decode('UTF-8').strip()
+            assert lsb_release.returncode == 0
+
+        return self._distro_codename
 
 impl = __AptDpkgPackageInfo()
