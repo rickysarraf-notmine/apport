@@ -1,3 +1,10 @@
+apport (2.12.6-1) UNRELEASED; urgency=low
+
+  * [5769987] Add dependency on gir1.2-wnck-3.0 for apport-gtk
+  * [cdf0304] Imported Upstream version 2.12.6
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Fri, 25 Oct 2013 23:06:40 +0530
+
 apport (2.9-1) experimental; urgency=low
 
   * [cc98382] Imported Upstream version 2.9
