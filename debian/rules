@@ -1,5 +1,8 @@
 #!/usr/bin/make -f
 
+# For now, permanently disable test cases
+DEB_BUILD_OPTIONS=nocheck
+
 %:
 	dh "$@" --with python2,python3
 
@@ -21,8 +24,6 @@ override_dh_auto_install:
         done
 
 override_dh_auto_test:
-	# For now, permanently disable test cases
-	DEB_BUILD_OPTIONS="nocheck"
 ifeq (, $(findstring nocheck, $(DEB_BUILD_OPTIONS)))
 	-env -u LD_PRELOAD -u TMPDIR APPORT_TEST_NOXVFB=1 sh test/run
 endif
