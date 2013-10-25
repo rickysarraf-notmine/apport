@@ -7,22 +7,22 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apport\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-01-07 22:54+0100\n"
+"POT-Creation-Date: 2013-10-25 06:19+0200\n"
 "PO-Revision-Date: 2012-12-10 20:33+0000\n"
 "Last-Translator: Nick Andrik <nick.andrik@gmail.com>\n"
 "Language-Team: Greek, Modern (1453-) <el@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2013-01-08 04:40+0000\n"
-"X-Generator: Launchpad (build 16402)\n"
-"Language: \n"
+"X-Launchpad-Export-Date: 2013-10-08 05:10+0000\n"
+"X-Generator: Launchpad (build 16799)\n"
 
-#: ../apport/ui.py:122
+#: ../apport/ui.py:124
 msgid "This package does not seem to be installed correctly"
 msgstr "Αυτό το πακέτο δεν φαίνεται να έχει εγκατασταθεί σωστά"
 
-#: ../apport/ui.py:126
+#: ../apport/ui.py:128
 #, python-format
 msgid ""
 "This is not an official %s package. Please remove any third party package "
@@ -31,7 +31,7 @@ msgstr ""
 "Αυτό δεν είναι ένα επίσημο πακέτο του %s. Παρακαλώ αφαιρέστε κάθε πακέτο από "
 "τρίτους και προσπαθήστε ξανά."
 
-#: ../apport/ui.py:143
+#: ../apport/ui.py:145
 #, python-format
 msgid ""
 "You have some obsolete package versions installed. Please upgrade the "
@@ -45,21 +45,21 @@ msgstr ""
 "\n"
 "%s"
 
-#: ../apport/ui.py:249
+#: ../apport/ui.py:251
 msgid "unknown program"
 msgstr "άγνωστο πρόγραμμα"
 
-#: ../apport/ui.py:250
+#: ../apport/ui.py:252
 #, python-format
 msgid "Sorry, the program \"%s\" closed unexpectedly"
 msgstr "Συγνώμη, το πρόγραμμα \"%s\" τερματίστηκε απροσδόκητα"
 
-#: ../apport/ui.py:252 ../apport/ui.py:1247
+#: ../apport/ui.py:254 ../apport/ui.py:1255
 #, python-format
 msgid "Problem in %s"
 msgstr "Πρόβλημα στο %s"
 
-#: ../apport/ui.py:253
+#: ../apport/ui.py:255
 msgid ""
 "Your computer does not have enough free memory to automatically analyze the "
 "problem and send a report to the developers."
@@ -68,76 +68,75 @@ msgstr ""
 "πρόβλημα και να στείλει μια αναφορά στους προγραμματιστές."
 
 #. package does not exist
-#: ../apport/ui.py:268 ../apport/ui.py:274 ../apport/ui.py:280
-#: ../apport/ui.py:318 ../apport/ui.py:326 ../apport/ui.py:455
-#: ../apport/ui.py:458 ../apport/ui.py:659 ../apport/ui.py:1060
-#: ../apport/ui.py:1201 ../apport/ui.py:1205 ../apport/ui.py:1224
-#: ../apport/ui.py:1230
+#: ../apport/ui.py:270 ../apport/ui.py:276 ../apport/ui.py:282
+#: ../apport/ui.py:320 ../apport/ui.py:328 ../apport/ui.py:455
+#: ../apport/ui.py:458 ../apport/ui.py:659 ../apport/ui.py:1086
+#: ../apport/ui.py:1227 ../apport/ui.py:1231
 msgid "Invalid problem report"
 msgstr "Μη έγκυρη αναφορά προβλήματος"
 
-#: ../apport/ui.py:269 ../apport/ui.py:1207
+#: ../apport/ui.py:271 ../apport/ui.py:1233
 msgid "This problem report is damaged and cannot be processed."
 msgstr ""
 "Αυτή η αναφορά προβλήματος έχει καταστραφεί και είναι αδύνατη η επεξεργασία "
 "της."
 
-#: ../apport/ui.py:275
+#: ../apport/ui.py:277
 msgid "The report belongs to a package that is not installed."
 msgstr "Η αναφορά ανήκει σε ένα πακέτο το οποίο δεν είναι εγκατεστημένο."
 
-#: ../apport/ui.py:281
+#: ../apport/ui.py:283
 msgid "An error occurred while attempting to process this problem report:"
 msgstr ""
 "Παρουσιάστηκε ένα σφάλμα κατά την προσπάθεια επεξεργασίας αυτής της αναφοράς "
 "προβλήματος:"
 
-#: ../apport/ui.py:319
+#: ../apport/ui.py:321
 msgid "You are not allowed to access this problem report."
 msgstr ""
 "Δεν σας επιτρέπεται να αποκτήσετε πρόσβαση σε αυτή την αναφορά προβλήματος."
 
-#: ../apport/ui.py:322
+#: ../apport/ui.py:324
 msgid "Error"
 msgstr "Σφάλμα"
 
-#: ../apport/ui.py:323
+#: ../apport/ui.py:325
 msgid "There is not enough disk space available to process this report."
 msgstr ""
 "Δεν υπάρχει αρκετός χώρος στον δίσκο για την επεξεργασία αυτής της αναφοράς."
 
-#: ../apport/ui.py:407
+#: ../apport/ui.py:409
 msgid "No package specified"
 msgstr "Δεν ορίστηκε πακέτο"
 
-#: ../apport/ui.py:408
+#: ../apport/ui.py:410
 msgid ""
 "You need to specify a package or a PID. See --help for more information."
 msgstr ""
 "Χρειάζεται να ορίσετε ένα πακέτο ή ένα PID. Δείτε την --help για "
 "περισσότερες πληροφορίες."
 
-#: ../apport/ui.py:425
-msgid "Invalid PID"
-msgstr "Άκυρος αριθμός αναγνώρισης της διεργασίας (PID)"
-
-#: ../apport/ui.py:426
-msgid "The specified process ID does not belong to a program."
-msgstr ""
-"Αυτός ο αριθμός αναγνώρισης της διεργασίας (PID) δεν ανήκει σε κάποιο "
-"πρόγραμμα"
-
-#: ../apport/ui.py:434
+#: ../apport/ui.py:433
 msgid "Permission denied"
 msgstr "Δεν επιτρέπεται η πρόσβαση"
 
-#: ../apport/ui.py:435
+#: ../apport/ui.py:434
 msgid ""
 "The specified process does not belong to you. Please run this program as the "
 "process owner or as root."
 msgstr ""
 "Η συγκεκριμένη διεργασία δεν ανήκει σε εσάς. Παρακαλούμε τρέξτε το πρόγραμμα "
 "ως ιδιοκτήτης της διεργασίας ή ως root."
+
+#: ../apport/ui.py:436
+msgid "Invalid PID"
+msgstr "Άκυρος αριθμός αναγνώρισης της διεργασίας (PID)"
+
+#: ../apport/ui.py:437
+msgid "The specified process ID does not belong to a program."
+msgstr ""
+"Αυτός ο αριθμός αναγνώρισης της διεργασίας (PID) δεν ανήκει σε κάποιο "
+"πρόγραμμα"
 
 #: ../apport/ui.py:456
 #, python-format
@@ -175,8 +174,8 @@ msgid ""
 "bug as a duplicate of another than to move your comments and attachments to "
 "a new bug.\n"
 "\n"
-"Subsequently, we recommend that you file a new bug report using \"apport-"
-"bug\" and make a comment in this bug about the one you file.\n"
+"Subsequently, we recommend that you file a new bug report using \"apport-bug"
+"\" and make a comment in this bug about the one you file.\n"
 "\n"
 "Do you really want to proceed?"
 msgstr ""
@@ -233,11 +232,10 @@ msgstr ""
 "Προσθέστε μια επιπλέον ετικέτα στην αναφορά. Μπορεί να οριστεί πολλές φορές."
 
 #: ../apport/ui.py:725
-msgid ""
-"%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
+msgid "%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
 msgstr ""
-"%prog [επιλογές] [σύμπτωμα|pid|πακέτο|διαδρομή προγράμματος|αρχείο "
-".apport/.crash]"
+"%prog [επιλογές] [σύμπτωμα|pid|πακέτο|διαδρομή προγράμματος|αρχείο .apport/."
+"crash]"
 
 #: ../apport/ui.py:728
 msgid ""
@@ -318,28 +316,33 @@ msgstr ""
 msgid "Print the Apport version number."
 msgstr "Τυπώστε τον αριθμό έκδοσης της εφαρμογής Apport."
 
-#: ../apport/ui.py:882
+#: ../apport/ui.py:888
 msgid ""
 "This will launch apport-retrace in a terminal window to examine the crash."
 msgstr ""
 "Αυτό θα εκκινήσει το apport-retrace σε ένα παράθυρο τερματικού για να "
 "διερευνηθεί η σύγκρουση."
 
-#: ../apport/ui.py:883
+#: ../apport/ui.py:889
 msgid "Run gdb session"
 msgstr "Εκτέλεση συνεδρίας gdb"
 
-#: ../apport/ui.py:884
+#: ../apport/ui.py:890
 msgid "Run gdb session without downloading debug symbols"
 msgstr "Εκτέλεση συνεδρίας gdb χωρίς λήψη συμβόλων εκφαλμάτωσης"
 
 #. TRANSLATORS: %s contains the crash report file name
-#: ../apport/ui.py:886
+#: ../apport/ui.py:892
 #, python-format
 msgid "Update %s with fully symbolic stack trace"
 msgstr "Ενημέρωση %s με πλήρως συμβολική παρακολούθηση στίβας"
 
-#: ../apport/ui.py:957
+#: ../apport/ui.py:965 ../apport/ui.py:975
+msgid ""
+"This problem report applies to a program which is not installed any more."
+msgstr "Αυτή η αναφορά αφορά πρόγραμμα το οποίο έχει πλέον απεγκατασταθεί."
+
+#: ../apport/ui.py:989
 #, python-format
 msgid ""
 "The problem happened with the program %s which changed since the crash "
@@ -348,54 +351,49 @@ msgstr ""
 "Το πρόβλημα παρουσιάστηκε με το πρόγραμμα %s το οποίο έχει αλλάξει από τη "
 "στιγμή που συνέβη η κατάρρευση."
 
-#: ../apport/ui.py:1061
+#: ../apport/ui.py:1087
 msgid "Could not determine the package or source package name."
 msgstr ""
 "Αδύνατος ο καθορισμός του πακέτου ή του ονόματος του πακέτου πηγαίου κώδικα."
 
-#: ../apport/ui.py:1079
+#: ../apport/ui.py:1105
 msgid "Unable to start web browser"
 msgstr "Αδύνατη η εκκίνηση του περιηγητή"
 
-#: ../apport/ui.py:1080
+#: ../apport/ui.py:1106
 #, python-format
 msgid "Unable to start web browser to open %s."
 msgstr "Αδύνατη η εκκίνηση του περιηγητή για το άνοιγμα του %s."
 
-#: ../apport/ui.py:1155
+#: ../apport/ui.py:1181
 #, python-format
 msgid "Please enter your account information for the %s bug tracking system"
 msgstr ""
 "Εισάγετε τα στοιχεία του λογαριασμού σας στο σύστημα παρακολούθησης "
 "σφαλμάτων %s."
 
-#: ../apport/ui.py:1167
+#: ../apport/ui.py:1193
 msgid "Network problem"
 msgstr "Πρόβλημα δικτύου"
 
-#: ../apport/ui.py:1169
+#: ../apport/ui.py:1195
 msgid ""
 "Cannot connect to crash database, please check your Internet connection."
 msgstr ""
 "Αδυναμία σύνδεσης στη βάση δεδομένων καταρρεύσεων, παρακαλώ ελέγξτε τη "
 "σύνδεσή σας στο διαδίκτυο."
 
-#: ../apport/ui.py:1196
+#: ../apport/ui.py:1222
 msgid "Memory exhaustion"
 msgstr "Εξάντληση μνήμης"
 
-#: ../apport/ui.py:1197
+#: ../apport/ui.py:1223
 msgid "Your system does not have enough memory to process this crash report."
 msgstr ""
 "Το σύστημα δεν έχει αρκετή ελεύθερη μνήμη για τη διαδικασία αναφοράς "
 "κατάρρευσης."
 
-#: ../apport/ui.py:1220 ../apport/ui.py:1229
-msgid ""
-"This problem report applies to a program which is not installed any more."
-msgstr "Αυτή η αναφορά αφορά πρόγραμμα το οποίο έχει πλέον απεγκατασταθεί."
-
-#: ../apport/ui.py:1250
+#: ../apport/ui.py:1258
 #, python-format
 msgid ""
 "The problem cannot be reported:\n"
@@ -406,11 +404,11 @@ msgstr ""
 "\n"
 "%s"
 
-#: ../apport/ui.py:1301 ../apport/ui.py:1308
+#: ../apport/ui.py:1314 ../apport/ui.py:1321
 msgid "Problem already known"
 msgstr "Πρόβλημα ήδη γνωστό"
 
-#: ../apport/ui.py:1302
+#: ../apport/ui.py:1315
 msgid ""
 "This problem was already reported in the bug report displayed in the web "
 "browser. Please check if you can add any further information that might be "
@@ -420,7 +418,7 @@ msgstr ""
 "που βλέπετε. Παρακαλώ εξετάστε, αν μπορείτε να προσθέσετε κάποιες επιπλέον "
 "πληροφορίες, που να είναι χρήσιμες στους προγραμματιστές."
 
-#: ../apport/ui.py:1309
+#: ../apport/ui.py:1322
 msgid "This problem was already reported to developers. Thank you!"
 msgstr ""
 "Αυτό το πρόβλημα έχει ήδη αναφερθεί στους συντελεστές της εφαρμογής. Σας "
@@ -632,6 +630,8 @@ msgstr ""
 #: ../bin/apport-retrace.py:39
 msgid "Remove the core dump from the report after stack trace regeneration"
 msgstr ""
+"Αφαίρεση του αρχείου εικόνας μνήμης (core dump) από την αναφορά μετά την "
+"επαναδημιουργία της ακολουθίας κλήσεων στοίβας"
 
 #: ../bin/apport-retrace.py:41
 msgid "Override report's CoreFile"
@@ -668,8 +668,7 @@ msgstr ""
 "αποδέσμευση."
 
 #: ../bin/apport-retrace.py:51
-msgid ""
-"Report download/install progress when installing packages into sandbox"
+msgid "Report download/install progress when installing packages into sandbox"
 msgstr ""
 "Αναφορά προόδου λήψης/εγκατάστασης όταν εγκαθίστανται πακέτα στο δοκιμαστικό "
 "χώρο"
@@ -721,8 +720,7 @@ msgstr ""
 "επιβεβαίωση πριν την αποστολή τους στη βάση δεδομένων κατάρρευσης."
 
 #: ../bin/apport-retrace.py:65
-msgid ""
-"Path to the duplicate sqlite database (default: no duplicate checking)"
+msgid "Path to the duplicate sqlite database (default: no duplicate checking)"
 msgstr ""
 "Διαδρομή προς τη διπλότυπη βάση δεδομένων sqlite (προεπιλογή: μη έλεγχος "
 "διπλότυπου)"
@@ -735,7 +733,7 @@ msgstr ""
 
 #: ../bin/apport-retrace.py:76
 msgid "You cannot use -C without -S. Stopping."
-msgstr ""
+msgstr "Δεν μπορείτε να χρησιμοποιήσετε το -C χωρίς το -S. Διακοπή."
 
 #: ../bin/apport-retrace.py:80
 msgid ""
@@ -751,13 +749,13 @@ msgstr ""
 msgid "OK to send these as attachments? [y/n]"
 msgstr "Συμφωνείτε με την αποστολή αυτών ως συνημμένων; [y/n]"
 
-#: ../gtk/apport-gtk-mime.desktop.in.h:1 ../kde/apport-kde.desktop.in.h:1
-#: ../kde/apport-kde-mime.desktop.in.h:1 ../gtk/apport-gtk.desktop.in.h:1
+#: ../kde/apport-kde.desktop.in.h:1 ../kde/apport-kde-mime.desktop.in.h:1
+#: ../gtk/apport-gtk.desktop.in.h:1
 msgid "Report a problem..."
 msgstr "Αναφορά προβλήματος..."
 
-#: ../gtk/apport-gtk-mime.desktop.in.h:2 ../kde/apport-kde.desktop.in.h:2
-#: ../kde/apport-kde-mime.desktop.in.h:2 ../gtk/apport-gtk.desktop.in.h:2
+#: ../kde/apport-kde.desktop.in.h:2 ../kde/apport-kde-mime.desktop.in.h:2
+#: ../gtk/apport-gtk.desktop.in.h:2
 msgid "Report a malfunction to the developers"
 msgstr "Αναφορά δυσλειτουργίας στους προγραμματιστές"
 
@@ -855,45 +853,55 @@ msgstr "Απόκρυψη λεπτομεριών"
 
 #: ../bin/apport-valgrind.py:37
 msgid "See man page for details."
-msgstr ""
+msgstr "Δείτε τη σελίδα τεκμηρίωσης για λεπτομέρειες."
 
 #: ../bin/apport-valgrind.py:43
 msgid "specify the log file name produced by valgrind"
-msgstr ""
+msgstr "ορίστε το όνομα αρχείου καταγραφών που θα παράγεται από το valgrind"
 
 #: ../bin/apport-valgrind.py:46
 msgid ""
 "reuse a previously created sandbox dir (SDIR) or, if it does not exist, "
 "create it"
 msgstr ""
+"επαναχρησιμοποίηση ενός καταλόγου απομόνωσης (SDIR) που δημιουργήθηκε την "
+"προηγούμενη φορά, ή αν δεν υπάρχει, δημιούργησε το"
 
 #: ../bin/apport-valgrind.py:50
 msgid ""
 "do  not  create  or reuse a sandbox directory for additional debug symbols "
 "but rely only on installed debug symbols."
 msgstr ""
+"να μη δημιουργηθεί ή επαναχρησιμοποιηθεί κατάλογος απομόνωσης για σύμβολα "
+"αποσφαλμάτωσης, αλλά να χρησιμοποιηθούν μόνο εγκαταστημένα σύμβολα "
+"αποσφαλμάτωσης."
 
 #: ../bin/apport-valgrind.py:54
 msgid ""
 "reuse a previously created cache dir (CDIR) or, if it does not exist, create "
 "it"
 msgstr ""
+"επαναχρησιμοποίηση ενός καταλόγου προσωρινής μνήμης (CDIR) που δημιουργήθηκε "
+"προηγούμενη φορά, ή αν δεν υπάρχει, δημιούργησε το"
 
 #: ../bin/apport-valgrind.py:58
-msgid ""
-"report download/install progress when installing packages into sandbox"
+msgid "report download/install progress when installing packages into sandbox"
 msgstr ""
+"να αναφέρεται η πρόοδος λήψης/εγκατάστασης όταν γίνεται εγκατάσταση πακέτων "
+"σε περιβάλλον απομόνωσης"
 
 #: ../bin/apport-valgrind.py:62
 msgid ""
 "the executable that is run under valgrind's memcheck tool  for memory leak "
 "detection"
 msgstr ""
+"το εκτελέσιμο που τρέχει το εργαλείο ελέγχου μνήμης του valgrind για την "
+"ανίχνευση διαρροής μνήμης (memory leak)"
 
-#: ../bin/apport-valgrind.py:92
+#: ../bin/apport-valgrind.py:97
 #, python-format
 msgid "Error: %s is not an executable. Stopping."
-msgstr ""
+msgstr "Σφάλμα: το %s δεν είναι εκτελέσιμο. Διακοπή."
 
 #: ../kde/apport-kde.py:294
 msgid "Username:"
@@ -943,6 +951,16 @@ msgid ""
 msgstr ""
 "Απαιτείται πιστοποίηση για την συλλογή πληροφοριών συστήματος για αυτήν την "
 "αναφορά προβλήματος"
+
+#: ../apport/com.ubuntu.apport.policy.in.h:3
+msgid "System problem reports"
+msgstr "Αναφορές προβλημάτων συστήματος"
+
+#: ../apport/com.ubuntu.apport.policy.in.h:4
+msgid "Please enter your password to access problem reports of system programs"
+msgstr ""
+"Παρακαλώ εισάγετε το συνθηματικό σας για να αποκτήσετε πρόσβαση στις "
+"αναφορές προβλημάτων των προγραμμάτων συστήματος"
 
 #: ../gtk/apport-gtk.ui.h:2
 msgid "Crash report"
@@ -996,14 +1014,12 @@ msgstr "Ο κατάλογος προορισμού υπάρχει ήδη και 
 
 #~ msgid "You can help the developers to fix the problem by reporting it."
 #~ msgstr ""
-#~ "Μπορείτε να βοηθήσετε τους υπεύθυνους ανάπτυξης να το φτιάξουν αναφέροντας "
-#~ "το."
+#~ "Μπορείτε να βοηθήσετε τους υπεύθυνους ανάπτυξης να το φτιάξουν "
+#~ "αναφέροντας το."
 
-#, python-format
 #~ msgid "The package \"%s\" failed to install or upgrade."
 #~ msgstr "Το πακέτο \"%s\" απέτυχε να εγκατασταθεί ή να ενημερωθεί."
 
-#, no-c-format, python-format
 #~ msgid "Complete report (recommended; %s)"
 #~ msgstr "Ολοκληρωμένη αναφορά (προτείνεται το %s)"
 
@@ -1013,20 +1029,20 @@ msgstr "Ο κατάλογος προορισμού υπάρχει ήδη και 
 #~ "After the problem report has been sent, please fill out the form in the "
 #~ "automatically opened web browser."
 #~ msgstr ""
-#~ "<big><b>Να αποσταλεί η αναφορά του προβλήματος στους "
-#~ "προγραμματιστές;</b></big>\n"
+#~ "<big><b>Να αποσταλεί η αναφορά του προβλήματος στους προγραμματιστές;</"
+#~ "b></big>\n"
 #~ "\n"
 #~ "Μετά την αναφορά του προβλήματος, παρακαλώ συμπληρώστε τη φόρμα που θα "
 #~ "ανοίξει αυτόματα στον περιηγητή ιστού."
 
 #~ msgid ""
 #~ "If you were not doing anything confidential (entering passwords or other "
-#~ "private information), you can help to improve the application by reporting "
-#~ "the problem."
+#~ "private information), you can help to improve the application by "
+#~ "reporting the problem."
 #~ msgstr ""
-#~ "Αν δεν κάνατε κάτι πολύ εμπιστευτικό (εισαγωγή κωδικών πρόσβασης ή κάποιων "
-#~ "άλλων ιδιωτικών σας δεδομένων), μπορείτε να βοηθήσετε στην βελτίωση της "
-#~ "εφαρμογής, αναφέροντας το πρόβλημα."
+#~ "Αν δεν κάνατε κάτι πολύ εμπιστευτικό (εισαγωγή κωδικών πρόσβασης ή "
+#~ "κάποιων άλλων ιδιωτικών σας δεδομένων), μπορείτε να βοηθήσετε στην "
+#~ "βελτίωση της εφαρμογής, αναφέροντας το πρόβλημα."
 
 #~ msgid "Application problem"
 #~ msgstr "Πρόβλημα εφαρμογής"
@@ -1036,21 +1052,20 @@ msgstr "Ο κατάλογος προορισμού υπάρχει ήδη και 
 
 #~ msgid ""
 #~ "If you were not doing anything confidential (entering passwords or other\n"
-#~ "private information), you can help to improve the application by reporting\n"
+#~ "private information), you can help to improve the application by "
+#~ "reporting\n"
 #~ "the problem."
 #~ msgstr ""
 #~ "Αν δεν κάνατε κάτι πολύ εμπιστευτικό (εισαγωγή κωδικών πρόσβασης ή \n"
 #~ "κάποιων άλλων ιδιωτικών σας δεδομένων), μπορείτε να βοηθήσετε στην \n"
 #~ "βελτίωση της εφαρμογής, αναφέροντας το πρόβλημα."
 
-#, python-format
 #~ msgid "%s closed unexpectedly on %s at %s."
 #~ msgstr "Το %s τερματίστηκε απροσδόκητα στο %s και στο %s."
 
 #~ msgid "Restart _Program"
 #~ msgstr "Επανεκκίνηση_Προγράμματος"
 
-#, no-c-format
 #~ msgid ""
 #~ "<span weight=\"bold\" size=\"larger\">Sorry, the package \"%s\" failed to "
 #~ "install or upgrade.</span>"
@@ -1058,11 +1073,9 @@ msgstr "Ο κατάλογος προορισμού υπάρχει ήδη και 
 #~ "<span weight=\"bold\" size=\"larger\"> Λυπούμαστε, αλλά το πακέτο \"%s\" "
 #~ "απέτυχε να εγκατασταθεί ή να αναβαθμιστεί.</span>"
 
-#, python-format
 #~ msgid "&Send complete report (recommended; %s)"
 #~ msgstr "&Αποστολή ολοκληρωμένης αναφοράς (προτείνεται %s)"
 
-#, no-c-format, python-format
 #~ msgid "Reduced report (slow Internet connection; %s)"
 #~ msgstr "Περιορισμένη αναφορά (αργή σύνδεση με το διαδίκτυο: %s)"
 
@@ -1070,18 +1083,18 @@ msgstr "Ο κατάλογος προορισμού υπάρχει ήδη και 
 #~ msgstr ""
 #~ "Να αγνοηθούν μελλοντικές καταρρεύσεις αυτής της έκδοσης του προγράμματος"
 
-#, python-format
 #~ msgid "Send &reduced report (slow Internet connection; %s)"
 #~ msgstr "Απόστολή &περιορισμένης αναφοράς (αργή σύνδεση με το διαδίκτυο %s)"
 
 #~ msgid ""
-#~ "This will remove some large items from the report. These are very useful for "
-#~ "developers to debug the problem, but might be too big for you to upload if "
-#~ "you have a slow internet connection."
+#~ "This will remove some large items from the report. These are very useful "
+#~ "for developers to debug the problem, but might be too big for you to "
+#~ "upload if you have a slow internet connection."
 #~ msgstr ""
-#~ "Αυτό θα αφαιρέσει κάποια ογκώδη στοιχεία από την αναφορά. Τα στοιχεία αυτά "
-#~ "είναι πολύ χρήσιμα στους προγραμματιστές για τον εντοπισμό και την διόρθωση "
-#~ "λαθών, αλλά είναι πολύ μεγάλα για να τα αποστείλετε αν έχετε αργή σύνδεση."
+#~ "Αυτό θα αφαιρέσει κάποια ογκώδη στοιχεία από την αναφορά. Τα στοιχεία "
+#~ "αυτά είναι πολύ χρήσιμα στους προγραμματιστές για τον εντοπισμό και την "
+#~ "διόρθωση λαθών, αλλά είναι πολύ μεγάλα για να τα αποστείλετε αν έχετε "
+#~ "αργή σύνδεση."
 
 #~ msgid "&Report Problem..."
 #~ msgstr "&Αναφορά Προβλήματος..."
@@ -1098,7 +1111,6 @@ msgstr "Ο κατάλογος προορισμού υπάρχει ήδη και 
 #~ "Μπορείτε να βοηθήσετε τους προγραμματιστές να διορθώσουν το πακέτο "
 #~ "αναφέροντας το πρόβλημα."
 
-#, python-format
 #~ msgid "This is not a genuine %s package"
 #~ msgstr "Αυτό δεν είναι γνήσιο το πακέτο %s"
 
@@ -1111,6 +1123,5 @@ msgstr "Ο κατάλογος προορισμού υπάρχει ήδη και 
 #~ msgid "Your system encountered a serious kernel problem."
 #~ msgstr "Το σύστημα σας αντιμετώπισε ένα σοβαρό πρόβλημα στον πυρήνα."
 
-#, python-format
 #~ msgid "Sorry, the application %s has closed unexpectedly."
 #~ msgstr "Συγνώμη, η εφαρμογή %s τερματίστηκε απροσδόκητα."

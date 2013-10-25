@@ -20,8 +20,6 @@ class T(unittest.TestCase):
         bashversion = apport.packaging.get_version('bash')
 
         pr = apport.report.Report()
-        self.assertRaises(ValueError, pr.add_package_info, 'nonexistant_package')
-
         pr.add_package_info('bash')
         self.assertEqual(pr['Package'], 'bash ' + bashversion.strip())
         self.assertEqual(pr['SourcePackage'], 'bash')
@@ -54,6 +52,14 @@ class T(unittest.TestCase):
         self.assertGreater(len(pr['DistroRelease']), 5)
         self.assertTrue(pr['Architecture'])
 
+        # does not overwrite an already existing uname
+        pr['Uname'] = 'foonux 1.2'
+        dr = pr['DistroRelease']
+        del pr['DistroRelease']
+        pr.add_os_info()
+        self.assertEqual(pr['Uname'], 'foonux 1.2')
+        self.assertEqual(pr['DistroRelease'], dr)
+
     def test_add_user_info(self):
         '''add_user_info().'''
 
@@ -69,9 +75,6 @@ class T(unittest.TestCase):
     def test_add_proc_info(self):
         '''add_proc_info().'''
 
-        # set test environment
-        assert 'LANG' in os.environ, 'please set $LANG for this test'
-
         # check without additional safe environment variables
         pr = apport.report.Report()
         self.assertEqual(pr.pid, None)
@@ -79,7 +82,10 @@ class T(unittest.TestCase):
         self.assertEqual(pr.pid, os.getpid())
         self.assertTrue(set(['ProcEnviron', 'ProcMaps', 'ProcCmdline',
                              'ProcMaps']).issubset(set(pr.keys())), 'report has required fields')
-        self.assertTrue('LANG=' + os.environ['LANG'] in pr['ProcEnviron'])
+        if 'LANG' in os.environ:
+            self.assertTrue('LANG=' + os.environ['LANG'] in pr['ProcEnviron'])
+        else:
+            self.assertFalse('LANG=' in pr['ProcEnviron'])
         self.assertTrue('USER' not in pr['ProcEnviron'])
         self.assertTrue('PWD' not in pr['ProcEnviron'])
         self.assertTrue('report.py' in pr['ExecutablePath'])
@@ -199,6 +205,24 @@ sys.stdin.readline()
 
         # test process is gone, should complain about nonexisting PID
         self.assertRaises(ValueError, pr.add_proc_info, p.pid)
+
+    def test_add_proc_info_nonascii(self):
+        '''add_proc_info() for non-ASCII values'''
+
+        lang = b'n\xc3\xb6_v\xc3\xb8lid'
+
+        # one variable from each category (ignored/filtered/shown)
+        p = subprocess.Popen(['cat'], stdin=subprocess.PIPE,
+                             env={'MYNAME': b'J\xc3\xbcrgen-Ren\xc3\xa9',
+                                  'XDG_RUNTIME_DIR': b'/a\xc3\xafb',
+                                  'LANG': lang})
+
+        time.sleep(0.1)
+        r = apport.report.Report()
+        r.add_proc_environ(pid=p.pid)
+        p.communicate(b'')
+        self.assertTrue(lang in r['ProcEnviron'].encode('UTF-8'))
+        self.assertTrue('XDG_RUNTIME_DIR=<set>' in r['ProcEnviron'], r['ProcEnviron'])
 
     def test_add_path_classification(self):
         '''classification of $PATH.'''
@@ -2115,6 +2139,32 @@ No symbol table info available.
 #7  0x000000000041d703 in _start ()
 '''
         self.assertEqual(pr.crash_signature_addresses(), None)
+
+    def test_missing_uid(self):
+        '''check_ignored() works for removed user'''
+
+        orig_getuid = os.getuid
+        os.getuid = lambda: 123456789
+        try:
+            pr = apport.report.Report()
+            pr['ExecutablePath'] = '/bin/bash'
+            pr.check_ignored()
+        finally:
+            os.getuid = orig_getuid
+
+    def test_suspend_resume(self):
+        pr = apport.report.Report()
+        pr['ProblemType'] = 'KernelOops'
+        pr['Failure'] = 'suspend/resume'
+        pr['MachineType'] = 'Cray XT5'
+        pr['dmi.bios.version'] = 'ABC123 (1.0)'
+        expected = 'suspend/resume:Cray XT5:ABC123 (1.0)'
+        self.assertEqual(expected, pr.crash_signature())
+
+        # There will not always be a BIOS version
+        del pr['dmi.bios.version']
+        expected = 'suspend/resume:Cray XT5'
+        self.assertEqual(expected, pr.crash_signature())
 
 if __name__ == '__main__':
     unittest.main()

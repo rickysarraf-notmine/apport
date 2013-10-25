@@ -7,22 +7,22 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apport\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-01-07 22:54+0100\n"
+"POT-Creation-Date: 2013-10-25 06:19+0200\n"
 "PO-Revision-Date: 2012-08-22 12:49+0000\n"
 "Last-Translator: abuyop <Unknown>\n"
 "Language-Team: Malay <ms@li.org>\n"
+"Language: ms\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2013-01-08 04:40+0000\n"
-"X-Generator: Launchpad (build 16402)\n"
-"Language: ms\n"
+"X-Launchpad-Export-Date: 2013-10-08 05:10+0000\n"
+"X-Generator: Launchpad (build 16799)\n"
 
-#: ../apport/ui.py:122
+#: ../apport/ui.py:124
 msgid "This package does not seem to be installed correctly"
 msgstr "Pakej ini tidak kelihatan dipasang dengan betul"
 
-#: ../apport/ui.py:126
+#: ../apport/ui.py:128
 #, python-format
 msgid ""
 "This is not an official %s package. Please remove any third party package "
@@ -31,7 +31,7 @@ msgstr ""
 "Ini bukanlah pakej %s rasmi. Sila buang sebarang pakej pihak ketiga dan cuba "
 "lagi."
 
-#: ../apport/ui.py:143
+#: ../apport/ui.py:145
 #, python-format
 msgid ""
 "You have some obsolete package versions installed. Please upgrade the "
@@ -44,21 +44,21 @@ msgstr ""
 "\n"
 "%s"
 
-#: ../apport/ui.py:249
+#: ../apport/ui.py:251
 msgid "unknown program"
 msgstr "program tidak diketahui"
 
-#: ../apport/ui.py:250
+#: ../apport/ui.py:252
 #, python-format
 msgid "Sorry, the program \"%s\" closed unexpectedly"
 msgstr "Maaf, program \"%s\" terpaksa ditutup"
 
-#: ../apport/ui.py:252 ../apport/ui.py:1247
+#: ../apport/ui.py:254 ../apport/ui.py:1255
 #, python-format
 msgid "Problem in %s"
 msgstr "Masalah pada %s"
 
-#: ../apport/ui.py:253
+#: ../apport/ui.py:255
 msgid ""
 "Your computer does not have enough free memory to automatically analyze the "
 "problem and send a report to the developers."
@@ -67,67 +67,66 @@ msgstr ""
 "menganalisis masalah dan hantar laporan ke pembangun secara automatik."
 
 #. package does not exist
-#: ../apport/ui.py:268 ../apport/ui.py:274 ../apport/ui.py:280
-#: ../apport/ui.py:318 ../apport/ui.py:326 ../apport/ui.py:455
-#: ../apport/ui.py:458 ../apport/ui.py:659 ../apport/ui.py:1060
-#: ../apport/ui.py:1201 ../apport/ui.py:1205 ../apport/ui.py:1224
-#: ../apport/ui.py:1230
+#: ../apport/ui.py:270 ../apport/ui.py:276 ../apport/ui.py:282
+#: ../apport/ui.py:320 ../apport/ui.py:328 ../apport/ui.py:455
+#: ../apport/ui.py:458 ../apport/ui.py:659 ../apport/ui.py:1086
+#: ../apport/ui.py:1227 ../apport/ui.py:1231
 msgid "Invalid problem report"
 msgstr "Laporan masalah tidak sah"
 
-#: ../apport/ui.py:269 ../apport/ui.py:1207
+#: ../apport/ui.py:271 ../apport/ui.py:1233
 msgid "This problem report is damaged and cannot be processed."
 msgstr "Masalah laporan ini ialah sudah rosak dan tidak boleh diproses."
 
-#: ../apport/ui.py:275
+#: ../apport/ui.py:277
 msgid "The report belongs to a package that is not installed."
 msgstr "Laporan dari pakej yang belum dipasang."
 
-#: ../apport/ui.py:281
+#: ../apport/ui.py:283
 msgid "An error occurred while attempting to process this problem report:"
 msgstr "Ralat berlaku semasa cuba memproses laporan masalah ini:"
 
-#: ../apport/ui.py:319
+#: ../apport/ui.py:321
 msgid "You are not allowed to access this problem report."
 msgstr "Anda tidak dibenarkan mencapai laporan masalah ini."
 
-#: ../apport/ui.py:322
+#: ../apport/ui.py:324
 msgid "Error"
 msgstr "Ralat"
 
-#: ../apport/ui.py:323
+#: ../apport/ui.py:325
 msgid "There is not enough disk space available to process this report."
 msgstr "Ruang cakera tidak mencukupi untuk memproses laporan ini."
 
-#: ../apport/ui.py:407
+#: ../apport/ui.py:409
 msgid "No package specified"
 msgstr "Tiada pakej ditentukan"
 
-#: ../apport/ui.py:408
+#: ../apport/ui.py:410
 msgid ""
 "You need to specify a package or a PID. See --help for more information."
 msgstr ""
 "Anda perlu tentukan pakej atau PID. Rujuk --help untuk maklumat lanjut."
 
-#: ../apport/ui.py:425
-msgid "Invalid PID"
-msgstr "PID tidak sah"
-
-#: ../apport/ui.py:426
-msgid "The specified process ID does not belong to a program."
-msgstr "ID proses yang ditentukan tidak dimiliki oleh program tersebut."
-
-#: ../apport/ui.py:434
+#: ../apport/ui.py:433
 msgid "Permission denied"
 msgstr "Keizinan dinafikan"
 
-#: ../apport/ui.py:435
+#: ../apport/ui.py:434
 msgid ""
 "The specified process does not belong to you. Please run this program as the "
 "process owner or as root."
 msgstr ""
 "Proses tersebut bukan milik anda. Sila jalankan program sebagai pemilik "
 "proses atau root."
+
+#: ../apport/ui.py:436
+msgid "Invalid PID"
+msgstr "PID tidak sah"
+
+#: ../apport/ui.py:437
+msgid "The specified process ID does not belong to a program."
+msgstr "ID proses yang ditentukan tidak dimiliki oleh program tersebut."
 
 #: ../apport/ui.py:456
 #, python-format
@@ -165,8 +164,8 @@ msgid ""
 "bug as a duplicate of another than to move your comments and attachments to "
 "a new bug.\n"
 "\n"
-"Subsequently, we recommend that you file a new bug report using \"apport-"
-"bug\" and make a comment in this bug about the one you file.\n"
+"Subsequently, we recommend that you file a new bug report using \"apport-bug"
+"\" and make a comment in this bug about the one you file.\n"
 "\n"
 "Do you really want to proceed?"
 msgstr ""
@@ -223,10 +222,8 @@ msgstr ""
 "Tambahkan tag tambahan kedalam laporan. Boleh dinyatakan beberapa kali."
 
 #: ../apport/ui.py:725
-msgid ""
-"%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
-msgstr ""
-"%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
+msgid "%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
+msgstr "%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
 
 #: ../apport/ui.py:728
 msgid ""
@@ -299,28 +296,35 @@ msgstr ""
 msgid "Print the Apport version number."
 msgstr "Papar nombor versi Apport."
 
-#: ../apport/ui.py:882
+#: ../apport/ui.py:888
 msgid ""
 "This will launch apport-retrace in a terminal window to examine the crash."
 msgstr ""
 "Ini akan lancarkan apport-retrace didalam tetingkap terminal untuk periksa "
 "kerosakan."
 
-#: ../apport/ui.py:883
+#: ../apport/ui.py:889
 msgid "Run gdb session"
 msgstr "Jalankan sesi gdb"
 
-#: ../apport/ui.py:884
+#: ../apport/ui.py:890
 msgid "Run gdb session without downloading debug symbols"
 msgstr "Jalankan sesi gdb tanpa memuat turun simbol nyahpepijat"
 
 #. TRANSLATORS: %s contains the crash report file name
-#: ../apport/ui.py:886
+#: ../apport/ui.py:892
 #, python-format
 msgid "Update %s with fully symbolic stack trace"
 msgstr "Kemaskini %s dengan jejak tindanan simbolik penuh"
 
-#: ../apport/ui.py:957
+#: ../apport/ui.py:965 ../apport/ui.py:975
+msgid ""
+"This problem report applies to a program which is not installed any more."
+msgstr ""
+"Laporan masalah ini dilaksanakan kepada program yang mana ia tidak dipasang "
+"lagi."
+
+#: ../apport/ui.py:989
 #, python-format
 msgid ""
 "The problem happened with the program %s which changed since the crash "
@@ -329,53 +333,46 @@ msgstr ""
 "Masalah berpunca dari program %s yang mana telah berubah semejak kerosakan "
 "berlaku."
 
-#: ../apport/ui.py:1061
+#: ../apport/ui.py:1087
 msgid "Could not determine the package or source package name."
 msgstr "Tidak dapat mengenalpasti pakej atau nama sumber pakej."
 
-#: ../apport/ui.py:1079
+#: ../apport/ui.py:1105
 msgid "Unable to start web browser"
 msgstr "Tidak boleh mulakan pelayar sesawang"
 
-#: ../apport/ui.py:1080
+#: ../apport/ui.py:1106
 #, python-format
 msgid "Unable to start web browser to open %s."
 msgstr "Tidak boleh mulakan pelayar sesawang untuk membuka %s."
 
-#: ../apport/ui.py:1155
+#: ../apport/ui.py:1181
 #, python-format
 msgid "Please enter your account information for the %s bug tracking system"
 msgstr "Sila masukkan maklumat akaun anda untuk sistem penjejakan pepijat %s"
 
-#: ../apport/ui.py:1167
+#: ../apport/ui.py:1193
 msgid "Network problem"
 msgstr "Masalah rangkaian"
 
-#: ../apport/ui.py:1169
+#: ../apport/ui.py:1195
 msgid ""
 "Cannot connect to crash database, please check your Internet connection."
 msgstr ""
 "Tidak dapat menyambung ke pengkalan data kerosakan, sila semak sambungan "
 "internet anda."
 
-#: ../apport/ui.py:1196
+#: ../apport/ui.py:1222
 msgid "Memory exhaustion"
 msgstr "Kehabisan ingatan"
 
-#: ../apport/ui.py:1197
+#: ../apport/ui.py:1223
 msgid "Your system does not have enough memory to process this crash report."
 msgstr ""
 "Sistem anda tidak mempunyai ingatan yang mencukupi untuk memproses laporan "
 "kerosakan ini."
 
-#: ../apport/ui.py:1220 ../apport/ui.py:1229
-msgid ""
-"This problem report applies to a program which is not installed any more."
-msgstr ""
-"Laporan masalah ini dilaksanakan kepada program yang mana ia tidak dipasang "
-"lagi."
-
-#: ../apport/ui.py:1250
+#: ../apport/ui.py:1258
 #, python-format
 msgid ""
 "The problem cannot be reported:\n"
@@ -386,11 +383,11 @@ msgstr ""
 "\n"
 "%s"
 
-#: ../apport/ui.py:1301 ../apport/ui.py:1308
+#: ../apport/ui.py:1314 ../apport/ui.py:1321
 msgid "Problem already known"
 msgstr "Masalah sudah pun diketahui"
 
-#: ../apport/ui.py:1302
+#: ../apport/ui.py:1315
 msgid ""
 "This problem was already reported in the bug report displayed in the web "
 "browser. Please check if you can add any further information that might be "
@@ -401,7 +398,7 @@ msgstr ""
 "maklumat lanjutan lagi yang dikira boleh dianggap berguna untuk para "
 "pembangun."
 
-#: ../apport/ui.py:1309
+#: ../apport/ui.py:1322
 msgid "This problem was already reported to developers. Thank you!"
 msgstr "Masalah ini sudah dilaporkan kepada pembangun. Terima kasih!"
 
@@ -636,14 +633,12 @@ msgstr ""
 "Bina kekotak pasir sementara dan muat turun/pasang pakej yang perlu dan "
 "nyahpepijat simbol disini; tanpa pilihan ini ia anggap pakej dan simbol "
 "nyahpepijat yang diperlukan sudah dipasang didalam sistem. Argumen merujuk "
-"kepada direktori dasar konfigurasi sistem pakej; jika anda tentukan "
-"\"sistem\", ia akan gunakan fail kkonfigurasi sistem, tetapi hanya boleh "
-"menyurih semula kerosakan yang disebabkan keluaran yang dijalankan semasa "
-"ini."
+"kepada direktori dasar konfigurasi sistem pakej; jika anda tentukan \"sistem"
+"\", ia akan gunakan fail kkonfigurasi sistem, tetapi hanya boleh menyurih "
+"semula kerosakan yang disebabkan keluaran yang dijalankan semasa ini."
 
 #: ../bin/apport-retrace.py:51
-msgid ""
-"Report download/install progress when installing packages into sandbox"
+msgid "Report download/install progress when installing packages into sandbox"
 msgstr ""
 "Lapor kemajuan muat turun/pasang bilang memasang pakej kedalam kekotak pasir"
 
@@ -689,8 +684,7 @@ msgstr ""
 "menghantarnya ke pangkalan data kerosakan."
 
 #: ../bin/apport-retrace.py:65
-msgid ""
-"Path to the duplicate sqlite database (default: no duplicate checking)"
+msgid "Path to the duplicate sqlite database (default: no duplicate checking)"
 msgstr ""
 "Laluan ke pangkalan data sqlite pendua (lalai: tiada pemeriksaan penduaan)"
 
@@ -700,7 +694,7 @@ msgstr "Bilangan argumen tidak betul; guna --help untuk bantuan ringkas"
 
 #: ../bin/apport-retrace.py:76
 msgid "You cannot use -C without -S. Stopping."
-msgstr ""
+msgstr "Anda tidak bleh guna -C tanpa -S. Dihentikan."
 
 #: ../bin/apport-retrace.py:80
 msgid ""
@@ -715,13 +709,13 @@ msgstr ""
 msgid "OK to send these as attachments? [y/n]"
 msgstr "OK untuk menghantar lampiran ini? [y/t]"
 
-#: ../gtk/apport-gtk-mime.desktop.in.h:1 ../kde/apport-kde.desktop.in.h:1
-#: ../kde/apport-kde-mime.desktop.in.h:1 ../gtk/apport-gtk.desktop.in.h:1
+#: ../kde/apport-kde.desktop.in.h:1 ../kde/apport-kde-mime.desktop.in.h:1
+#: ../gtk/apport-gtk.desktop.in.h:1
 msgid "Report a problem..."
 msgstr "Lapor masalah..."
 
-#: ../gtk/apport-gtk-mime.desktop.in.h:2 ../kde/apport-kde.desktop.in.h:2
-#: ../kde/apport-kde-mime.desktop.in.h:2 ../gtk/apport-gtk.desktop.in.h:2
+#: ../kde/apport-kde.desktop.in.h:2 ../kde/apport-kde-mime.desktop.in.h:2
+#: ../gtk/apport-gtk.desktop.in.h:2
 msgid "Report a malfunction to the developers"
 msgstr "Laporkan kerosakan kepada pembangun"
 
@@ -816,45 +810,53 @@ msgstr "Sembunyi Perincian"
 
 #: ../bin/apport-valgrind.py:37
 msgid "See man page for details."
-msgstr ""
+msgstr "Rujuk laman panduan untuk perincian."
 
 #: ../bin/apport-valgrind.py:43
 msgid "specify the log file name produced by valgrind"
-msgstr ""
+msgstr "nyatakan nama fail log yang dihasilkan oleh valgrind"
 
 #: ../bin/apport-valgrind.py:46
 msgid ""
 "reuse a previously created sandbox dir (SDIR) or, if it does not exist, "
 "create it"
 msgstr ""
+"guna semula dir kotak pasir (SDIR) yang digunakan sebelum ini atau, jika ia "
+"tidak wujud, cipta baru"
 
 #: ../bin/apport-valgrind.py:50
 msgid ""
 "do  not  create  or reuse a sandbox directory for additional debug symbols "
 "but rely only on installed debug symbols."
 msgstr ""
+"jangan cipta atau guna semula direktori kotak pasir untuk simbol nyahpepijat "
+"tambahan tetapi hanya bergantung pada simbol nyahpepijat yang dipasang."
 
 #: ../bin/apport-valgrind.py:54
 msgid ""
 "reuse a previously created cache dir (CDIR) or, if it does not exist, create "
 "it"
 msgstr ""
+"guna semula dir cache (CDIR) yang dicipta sebelum ini, jika tidak wujud, "
+"cipta baru"
 
 #: ../bin/apport-valgrind.py:58
-msgid ""
-"report download/install progress when installing packages into sandbox"
+msgid "report download/install progress when installing packages into sandbox"
 msgstr ""
+"lapor kemajuan muat turun/pasang bila memasang pakej ke dalam kotak pasir"
 
 #: ../bin/apport-valgrind.py:62
 msgid ""
 "the executable that is run under valgrind's memcheck tool  for memory leak "
 "detection"
 msgstr ""
+"boleh laku yang berjalan dibawah alat semakan ingatan valgrind untuk "
+"pengesanan kebocoran ingatan"
 
-#: ../bin/apport-valgrind.py:92
+#: ../bin/apport-valgrind.py:97
 #, python-format
 msgid "Error: %s is not an executable. Stopping."
-msgstr ""
+msgstr "Ralar: %s bukanlah boleh laku. Menghentikan."
 
 #: ../kde/apport-kde.py:294
 msgid "Username:"
@@ -903,6 +905,16 @@ msgid ""
 msgstr ""
 "Pengesahihan diperlukan untuk mengutip maklumat sistem bagi laporan masalah "
 "ini"
+
+#: ../apport/com.ubuntu.apport.policy.in.h:3
+msgid "System problem reports"
+msgstr "Laporan masalah sistem"
+
+#: ../apport/com.ubuntu.apport.policy.in.h:4
+msgid "Please enter your password to access problem reports of system programs"
+msgstr ""
+"Sila masukkan kata laluan anda untuk mencapai laporan masalah bagi program "
+"sistem"
 
 #: ../gtk/apport-gtk.ui.h:2
 msgid "Crash report"
@@ -974,10 +986,8 @@ msgstr "Destinasi direktori wujud dan berisi."
 #~ msgid "Package problem"
 #~ msgstr "Masalah pakej"
 
-#, python-format
 #~ msgid "This is not a genuine %s package"
 #~ msgstr "Ini bukanlah pakej %s yang tulen"
 
-#, python-format
 #~ msgid "Sorry, the application %s has closed unexpectedly."
 #~ msgstr "Maaf, aplikasi %s telah ditutup tanpa dijangka."

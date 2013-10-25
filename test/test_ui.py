@@ -70,7 +70,7 @@ databases = {
         self.msg_severity = None  # 'warning' or 'error'
         self.msg_choices = None
 
-    def ui_present_report_details(self, is_update):
+    def ui_present_report_details(self, allowed_to_report=True, modal_for=None):
         self.present_details_shown = True
         return self.present_details_response
 
@@ -257,17 +257,6 @@ class T(unittest.TestCase):
                          self.report['CoreDump'].get_value())
         self.assertEqual(self.ui.msg_title, None)
 
-        # report without Package
-        del self.report['Package']
-        del self.report['SourcePackage']
-        del self.report['ExecutablePath']
-        self.update_report_file()
-        self.ui.load_report(self.report_file.name)
-
-        self.assertTrue(self.ui.report is None)
-        self.assertEqual(self.ui.msg_title, _('Invalid problem report'))
-        self.assertEqual(self.ui.msg_severity, 'info')
-
         self.ui.clear_msg()
 
         # invalid base64 encoding
@@ -322,7 +311,7 @@ bOgUs=
         '''collect_info() on report without information (distro bug)'''
 
         # report without any information (distro bug)
-        self.ui.report = apport.Report()
+        self.ui.report = apport.Report('Bug')
         self.ui.collect_info()
         self.assertTrue(set(['Date', 'Uname', 'DistroRelease', 'ProblemType']).issubset(
             set(self.ui.report.keys())))
@@ -527,7 +516,10 @@ bOgUs=
         # should not crash on nonexisting package
         sys.argv = ['ui-test', '-f', '-p', 'nonexisting_gibberish']
         self.ui = TestSuiteUserInterface()
-        self.ui.run_argv()
+        try:
+            self.ui.run_argv()
+        except SystemExit:
+            pass
 
         self.assertEqual(self.ui.msg_severity, 'error')
 
@@ -1013,6 +1005,8 @@ bOgUs=
         # now pretend to move it to a machine where the package is not
         # installed
         self.ui.report['Package'] = 'uninstalled_pkg 1'
+        self.ui.report['ExecutablePath'] = '/usr/bin/uninstalled_program'
+        self.ui.report['InterpreterPath'] = '/usr/bin/uninstalled_interpreter'
 
         # write crash report
         report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
@@ -1047,7 +1041,7 @@ bOgUs=
                                             'blacklist': False,
                                             'examine': False,
                                             'restart': False}
-        self.ui.run_crash(report_file)
+        self.assertRaises(SystemExit, self.ui.run_crash, report_file)
 
         self.assertEqual(self.ui.msg_title, _('Invalid problem report'))
         self.assertEqual(self.ui.msg_severity, 'error')
@@ -1069,8 +1063,8 @@ bOgUs=
                                             'restart': False}
         self.ui.run_crash(report_file)
 
-        self.assertEqual(self.ui.msg_title, _('Invalid problem report'))
-        self.assertEqual(self.ui.msg_severity, 'info')
+        self.assertEqual(self.ui.msg_title, _('Problem in bash'))
+        self.assertIn('not installed any more', self.ui.msg_text)
 
         # interpreted program got uninstalled between crash and report
         r = apport.Report()
@@ -1080,8 +1074,8 @@ bOgUs=
 
         self.ui.run_crash(report_file)
 
-        self.assertEqual(self.ui.msg_title, _('Invalid problem report'))
-        self.assertEqual(self.ui.msg_severity, 'info')
+        self.assertEqual(self.ui.msg_title, _('Problem in bash'))
+        self.assertIn('not installed any more', self.ui.msg_text)
 
         # interpreter got uninstalled between crash and report
         r = apport.Report()
@@ -1091,8 +1085,8 @@ bOgUs=
 
         self.ui.run_crash(report_file)
 
-        self.assertEqual(self.ui.msg_title, _('Invalid problem report'))
-        self.assertEqual(self.ui.msg_severity, 'info')
+        self.assertEqual(self.ui.msg_title, _('Problem in bash'))
+        self.assertIn('not installed any more', self.ui.msg_text)
 
     def test_run_crash_updated_binary(self):
         '''run_crash() on binary that got updated in the meantime'''
@@ -1332,6 +1326,45 @@ bOgUs=
             self.assertEqual(self.ui.report['ProcInfo3'], 'education')
         finally:
             os.uname = orig_uname
+
+    def test_run_crash_anonymity_escaping(self):
+        '''run_crash() anonymization escapes special chars'''
+
+        # inject GECOS field with regexp control chars
+        orig_getpwuid = pwd.getpwuid
+        orig_getuid = os.getuid
+
+        def fake_getpwuid(uid):
+            r = list(orig_getpwuid(orig_getuid()))
+            r[4] = 'Joe (Hacker,+1 234,,'
+            return r
+
+        pwd.getpwuid = fake_getpwuid
+        os.getuid = lambda: 1234
+
+        try:
+            r = self._gen_test_crash()
+            r['ProcInfo1'] = 'That was Joe (Hacker and friends'
+            r['ProcInfo2'] = 'Call +1 234!'
+            r['ProcInfo3'] = '(Hacker should stay'
+            report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
+            with open(report_file, 'wb') as f:
+                r.write(f)
+
+            self.ui = TestSuiteUserInterface()
+            self.ui.present_details_response = {'report': True,
+                                                'blacklist': False,
+                                                'examine': False,
+                                                'restart': False}
+            self.ui.run_crash(report_file)
+            self.assertEqual(self.ui.msg_severity, None, self.ui.msg_text)
+
+            self.assertEqual(self.ui.report['ProcInfo1'], 'That was User Name and friends')
+            self.assertEqual(self.ui.report['ProcInfo2'], 'Call User Name!')
+            self.assertEqual(self.ui.report['ProcInfo3'], '(Hacker should stay')
+        finally:
+            pwd.getpwuid = orig_getpwuid
+            os.getuid = orig_getuid
 
     def test_run_crash_known(self):
         '''run_crash() for already known problem'''
@@ -1928,6 +1961,9 @@ return 'bash'
               'crash_file': None, 'symptom': None, 'update_report': None,
               'save': None, 'window': False, 'tag': ['foo', 'bar'],
               'hanging': False})
+
+        # mutually exclusive options
+        self.assertRaises(SystemExit, _chk, ['-c', '/tmp/foo.report', '-u', '1234'], {})
 
     def test_can_examine_locally_crash(self):
         '''can_examine_locally() for a crash report'''

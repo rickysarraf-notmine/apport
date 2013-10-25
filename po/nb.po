@@ -7,22 +7,22 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apport\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-01-07 22:54+0100\n"
-"PO-Revision-Date: 2012-03-23 21:41+0000\n"
-"Last-Translator: Daniel Høyer Iversen <dahoiv2@gmail.com>\n"
+"POT-Creation-Date: 2013-10-25 06:19+0200\n"
+"PO-Revision-Date: 2013-06-17 07:52+0000\n"
+"Last-Translator: Åka Sikrom <Unknown>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2013-01-08 04:40+0000\n"
-"X-Generator: Launchpad (build 16402)\n"
-"Language: \n"
+"X-Launchpad-Export-Date: 2013-10-08 05:10+0000\n"
+"X-Generator: Launchpad (build 16799)\n"
 
-#: ../apport/ui.py:122
+#: ../apport/ui.py:124
 msgid "This package does not seem to be installed correctly"
 msgstr "Denne pakken ser ikke ut til å være korrekt installert"
 
-#: ../apport/ui.py:126
+#: ../apport/ui.py:128
 #, python-format
 msgid ""
 "This is not an official %s package. Please remove any third party package "
@@ -31,7 +31,7 @@ msgstr ""
 "Dette er ikke en offisiell %s-pakke. Fjern eventuelle tredjepartsprogrammer "
 "og prøv igjen."
 
-#: ../apport/ui.py:143
+#: ../apport/ui.py:145
 #, python-format
 msgid ""
 "You have some obsolete package versions installed. Please upgrade the "
@@ -44,21 +44,21 @@ msgstr ""
 "\n"
 "%s"
 
-#: ../apport/ui.py:249
+#: ../apport/ui.py:251
 msgid "unknown program"
 msgstr "ukjent program"
 
-#: ../apport/ui.py:250
+#: ../apport/ui.py:252
 #, python-format
 msgid "Sorry, the program \"%s\" closed unexpectedly"
 msgstr "Beklager, programmet \"%s\" ble uventet avsluttet"
 
-#: ../apport/ui.py:252 ../apport/ui.py:1247
+#: ../apport/ui.py:254 ../apport/ui.py:1255
 #, python-format
 msgid "Problem in %s"
 msgstr "Problem i %s"
 
-#: ../apport/ui.py:253
+#: ../apport/ui.py:255
 msgid ""
 "Your computer does not have enough free memory to automatically analyze the "
 "problem and send a report to the developers."
@@ -67,61 +67,51 @@ msgstr ""
 "rapportere problemet automatisk."
 
 #. package does not exist
-#: ../apport/ui.py:268 ../apport/ui.py:274 ../apport/ui.py:280
-#: ../apport/ui.py:318 ../apport/ui.py:326 ../apport/ui.py:455
-#: ../apport/ui.py:458 ../apport/ui.py:659 ../apport/ui.py:1060
-#: ../apport/ui.py:1201 ../apport/ui.py:1205 ../apport/ui.py:1224
-#: ../apport/ui.py:1230
+#: ../apport/ui.py:270 ../apport/ui.py:276 ../apport/ui.py:282
+#: ../apport/ui.py:320 ../apport/ui.py:328 ../apport/ui.py:455
+#: ../apport/ui.py:458 ../apport/ui.py:659 ../apport/ui.py:1086
+#: ../apport/ui.py:1227 ../apport/ui.py:1231
 msgid "Invalid problem report"
 msgstr "Ugyldig problemrapport"
 
-#: ../apport/ui.py:269 ../apport/ui.py:1207
+#: ../apport/ui.py:271 ../apport/ui.py:1233
 msgid "This problem report is damaged and cannot be processed."
 msgstr "Denne feilrapporten er skadet, og kan ikke behandles."
 
-#: ../apport/ui.py:275
+#: ../apport/ui.py:277
 msgid "The report belongs to a package that is not installed."
 msgstr "Rapporten tilhører en pakke som ikke er installert."
 
-#: ../apport/ui.py:281
+#: ../apport/ui.py:283
 msgid "An error occurred while attempting to process this problem report:"
-msgstr ""
+msgstr "En feil oppstod da denne feilrapporten skulle behandles:"
 
-#: ../apport/ui.py:319
+#: ../apport/ui.py:321
 msgid "You are not allowed to access this problem report."
 msgstr "Du har ikke tilgang til denne feilrapporten."
 
-#: ../apport/ui.py:322
+#: ../apport/ui.py:324
 msgid "Error"
 msgstr "Feil"
 
-#: ../apport/ui.py:323
+#: ../apport/ui.py:325
 msgid "There is not enough disk space available to process this report."
 msgstr "Det er ikke nok ledig diskplass til å behandle denne rapporten."
 
-#: ../apport/ui.py:407
+#: ../apport/ui.py:409
 msgid "No package specified"
 msgstr "Ingen pakke er spesifisert"
 
-#: ../apport/ui.py:408
+#: ../apport/ui.py:410
 msgid ""
 "You need to specify a package or a PID. See --help for more information."
-msgstr ""
-"Du må spesifisere en pakke eller PID: Se --hjelp for mer informasjon."
+msgstr "Du må spesifisere en pakke eller PID: Se --hjelp for mer informasjon."
 
-#: ../apport/ui.py:425
-msgid "Invalid PID"
-msgstr "Ugyldig prosess-id (PID)"
-
-#: ../apport/ui.py:426
-msgid "The specified process ID does not belong to a program."
-msgstr "Den valgte prosess-IDen tilhører ikke noe program."
-
-#: ../apport/ui.py:434
+#: ../apport/ui.py:433
 msgid "Permission denied"
 msgstr "Adgang nektet"
 
-#: ../apport/ui.py:435
+#: ../apport/ui.py:434
 msgid ""
 "The specified process does not belong to you. Please run this program as the "
 "process owner or as root."
@@ -129,10 +119,18 @@ msgstr ""
 "Den valgte prosessen tilhører ikke deg. Kjør dette programmet som eieren av "
 "prosessen eller som root."
 
+#: ../apport/ui.py:436
+msgid "Invalid PID"
+msgstr "Ugyldig prosess-id (PID)"
+
+#: ../apport/ui.py:437
+msgid "The specified process ID does not belong to a program."
+msgstr "Den valgte prosess-IDen tilhører ikke noe program."
+
 #: ../apport/ui.py:456
 #, python-format
 msgid "Symptom script %s did not determine an affected package"
-msgstr ""
+msgstr "Symptomskript %s fant ingen berørte pakker"
 
 #: ../apport/ui.py:459
 #, python-format
@@ -154,6 +152,10 @@ msgid ""
 "\n"
 "Please create a new report using \"apport-bug\"."
 msgstr ""
+"Du er ikke en rapportør eller abonnent på denne problemrapporten, eller "
+"rapporten er et duplikat eller allerede lukket.\n"
+"\n"
+"Vennligst lag en ny rapport ved å bruke «apport-bug»."
 
 #: ../apport/ui.py:508
 msgid ""
@@ -161,11 +163,19 @@ msgid ""
 "bug as a duplicate of another than to move your comments and attachments to "
 "a new bug.\n"
 "\n"
-"Subsequently, we recommend that you file a new bug report using \"apport-"
-"bug\" and make a comment in this bug about the one you file.\n"
+"Subsequently, we recommend that you file a new bug report using \"apport-bug"
+"\" and make a comment in this bug about the one you file.\n"
 "\n"
 "Do you really want to proceed?"
 msgstr ""
+"Du er ikke opprinnelig innmelder av denne problemrapporten. Det er enklere å "
+"merke en feil som et duplikat av en annen enn å flytte dine kommentarer og "
+"vedlegg til en ny feil.\n"
+"\n"
+"Vi vil også anbefale deg å rapportere en ny feil ved å bruke «apport-bug» og "
+"lage en kommentar i denne feilen om den du rapporterer.\n"
+"\n"
+"Ønsker du å fortsette?"
 
 #: ../apport/ui.py:545 ../apport/ui.py:562
 msgid "No additional information collected."
@@ -189,14 +199,16 @@ msgid ""
 "After closing this message please click on an application window to report a "
 "problem about it."
 msgstr ""
+"Vennligst klikk på et programvindu etter at du har lukket denne meldingen, "
+"slik at du kan sende en feilrapport om problemet."
 
 #: ../apport/ui.py:672 ../apport/ui.py:677
 msgid "xprop failed to determine process ID of the window"
-msgstr ""
+msgstr "«xprop» fant ikke vinduets prosess-ID"
 
 #: ../apport/ui.py:691
 msgid "%prog <report number>"
-msgstr ""
+msgstr "%prog <report number>"
 
 #: ../apport/ui.py:693
 msgid "Specify package name."
@@ -204,11 +216,10 @@ msgstr "Angi pakkenavn."
 
 #: ../apport/ui.py:695 ../apport/ui.py:746
 msgid "Add an extra tag to the report. Can be specified multiple times."
-msgstr ""
+msgstr "Legg til et ekstra stikkord i rapporten. Kan nevnes flere ganger."
 
 #: ../apport/ui.py:725
-msgid ""
-"%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
+msgid "%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
 msgstr "%prog [valg] [symptom|pid|pakke|programsti|.apport/.crash-fil]"
 
 #: ../apport/ui.py:728
@@ -223,8 +234,7 @@ msgstr ""
 
 #: ../apport/ui.py:730
 msgid "Click a window as a target for filing a problem report."
-msgstr ""
-"Klikk på det aktuelle vinduet for å sende en feilrapport om problemet."
+msgstr "Klikk på det aktuelle vinduet for å sende en feilrapport om problemet."
 
 #: ../apport/ui.py:732
 msgid "Start in bug updating mode. Can take an optional --package."
@@ -252,10 +262,13 @@ msgid ""
 "report will contain more information.  (Implied if pid is given as only "
 "argument.)"
 msgstr ""
+"Spesifiser et kjørende program i «--file-bug»-modus. Hvis dette er "
+"spesifisert, vil feilrapporten inneholde mer informasjon. (Dette er allerede "
+"implisert hvis «pid» oppgis som eneste argument.)"
 
 #: ../apport/ui.py:740
 msgid "The provided pid is a hanging application."
-msgstr ""
+msgstr "Den oppgitte pid-en er en applikasjon som henger."
 
 #: ../apport/ui.py:742
 #, python-format
@@ -272,83 +285,86 @@ msgid ""
 "reporting it. This file can then be reported later on from a different "
 "machine."
 msgstr ""
+"I feilrapporteringsmodus kan du lagre den samlede feilinformasjonen i en fil "
+"i stedet for å rapportere den. Filen kan innrapporteres senere, for eksempel "
+"fra en annen maskin."
 
 #: ../apport/ui.py:748
 msgid "Print the Apport version number."
 msgstr "Skriv ut Apport-versjonsnummeret."
 
-#: ../apport/ui.py:882
+#: ../apport/ui.py:888
 msgid ""
 "This will launch apport-retrace in a terminal window to examine the crash."
 msgstr ""
 "Dette vil starte apport-retrace i et terminalvindu for å undersøke krasjen."
 
-#: ../apport/ui.py:883
+#: ../apport/ui.py:889
 msgid "Run gdb session"
-msgstr ""
+msgstr "Kjør gdb-økt"
 
-#: ../apport/ui.py:884
+#: ../apport/ui.py:890
 msgid "Run gdb session without downloading debug symbols"
-msgstr ""
+msgstr "Kjør gdb-økt uten å laste ned feilrapporteringssymboler"
 
 #. TRANSLATORS: %s contains the crash report file name
-#: ../apport/ui.py:886
+#: ../apport/ui.py:892
 #, python-format
 msgid "Update %s with fully symbolic stack trace"
-msgstr ""
+msgstr "Oppdater %s med symbolsk stabelsporing"
 
-#: ../apport/ui.py:957
-#, python-format
-msgid ""
-"The problem happened with the program %s which changed since the crash "
-"occurred."
-msgstr ""
-
-#: ../apport/ui.py:1061
-msgid "Could not determine the package or source package name."
-msgstr "Kunne ikke bestemme pakken eller kildepakkens navn."
-
-#: ../apport/ui.py:1079
-msgid "Unable to start web browser"
-msgstr "Kunne ikke starte nettleser"
-
-#: ../apport/ui.py:1080
-#, python-format
-msgid "Unable to start web browser to open %s."
-msgstr "Kunne ikke starte nettleseren for å åpne %s."
-
-#: ../apport/ui.py:1155
-#, python-format
-msgid "Please enter your account information for the %s bug tracking system"
-msgstr ""
-"Vennligst skriv inn kontoinformasjonen din for %s-feilsporingssystemet"
-
-#: ../apport/ui.py:1167
-msgid "Network problem"
-msgstr "Nettverksfeil"
-
-#: ../apport/ui.py:1169
-msgid ""
-"Cannot connect to crash database, please check your Internet connection."
-msgstr ""
-"Kan ikke koble til krasjdatabasen, vennligst sjekk internettforbindelsen."
-
-#: ../apport/ui.py:1196
-msgid "Memory exhaustion"
-msgstr "Minne fullt"
-
-#: ../apport/ui.py:1197
-msgid "Your system does not have enough memory to process this crash report."
-msgstr ""
-"Systemet ditt har ikke nok minne til å behandle denne krasjrapporten."
-
-#: ../apport/ui.py:1220 ../apport/ui.py:1229
+#: ../apport/ui.py:965 ../apport/ui.py:975
 msgid ""
 "This problem report applies to a program which is not installed any more."
 msgstr ""
 "Denne problemrapporten gjelder et program som ikke lenger er installert."
 
-#: ../apport/ui.py:1250
+#: ../apport/ui.py:989
+#, python-format
+msgid ""
+"The problem happened with the program %s which changed since the crash "
+"occurred."
+msgstr ""
+"Problemet skjedde med programmet %s, som har endret seg siden kræsjen "
+"oppstod."
+
+#: ../apport/ui.py:1087
+msgid "Could not determine the package or source package name."
+msgstr "Kunne ikke bestemme pakken eller kildepakkens navn."
+
+#: ../apport/ui.py:1105
+msgid "Unable to start web browser"
+msgstr "Kunne ikke starte nettleser"
+
+#: ../apport/ui.py:1106
+#, python-format
+msgid "Unable to start web browser to open %s."
+msgstr "Kunne ikke starte nettleseren for å åpne %s."
+
+#: ../apport/ui.py:1181
+#, python-format
+msgid "Please enter your account information for the %s bug tracking system"
+msgstr "Vennligst skriv inn kontoinformasjonen din for %s-feilsporingssystemet"
+
+#: ../apport/ui.py:1193
+msgid "Network problem"
+msgstr "Nettverksfeil"
+
+#: ../apport/ui.py:1195
+msgid ""
+"Cannot connect to crash database, please check your Internet connection."
+msgstr ""
+"Kan ikke koble til krasjdatabasen, vennligst sjekk internettforbindelsen."
+
+#: ../apport/ui.py:1222
+msgid "Memory exhaustion"
+msgstr "Minne fullt"
+
+#: ../apport/ui.py:1223
+msgid "Your system does not have enough memory to process this crash report."
+msgstr "Systemet ditt har ikke nok minne til å behandle denne krasjrapporten."
+
+#: ../apport/ui.py:1258
 #, python-format
 msgid ""
 "The problem cannot be reported:\n"
@@ -359,11 +375,11 @@ msgstr ""
 "\n"
 "%s"
 
-#: ../apport/ui.py:1301 ../apport/ui.py:1308
+#: ../apport/ui.py:1314 ../apport/ui.py:1321
 msgid "Problem already known"
 msgstr "Problemet er allerede kjent"
 
-#: ../apport/ui.py:1302
+#: ../apport/ui.py:1315
 msgid ""
 "This problem was already reported in the bug report displayed in the web "
 "browser. Please check if you can add any further information that might be "
@@ -373,7 +389,7 @@ msgstr ""
 "nettleseren. Vennligst se om du kan legge til mer informasjon som kan hjelpe "
 "utviklerne."
 
-#: ../apport/ui.py:1309
+#: ../apport/ui.py:1322
 msgid "This problem was already reported to developers. Thank you!"
 msgstr "Dette problemet har allerede blitt rapportert til utviklerne. Takk!"
 
@@ -393,7 +409,7 @@ msgstr "Vennligst velg (%s):"
 #: ../bin/apport-cli.py:145
 #, python-format
 msgid "(%i bytes)"
-msgstr ""
+msgstr "(%i bytes)"
 
 #: ../bin/apport-cli.py:147 ../gtk/apport-gtk.py:138 ../kde/apport-kde.py:338
 msgid "(binary data)"
@@ -499,7 +515,7 @@ msgstr "Filbane (Enter for å avbryte):"
 
 #: ../bin/apport-cli.py:342
 msgid "File does not exist."
-msgstr "Fila finnes ikke."
+msgstr "Filen eksisterer ikke."
 
 #: ../bin/apport-cli.py:344
 msgid "This is a directory."
@@ -555,8 +571,7 @@ msgstr "%prog [alternativer] <apport feilrapport | kræsj ID>"
 
 #: ../bin/apport-retrace.py:33
 msgid "Do not put the new traces into the report, but write them to stdout."
-msgstr ""
-"Legg ikke til flere meldinger i rapporten, skriv de heller til stdout."
+msgstr "Legg ikke til flere meldinger i rapporten, skriv de heller til stdout."
 
 #: ../bin/apport-retrace.py:35
 msgid ""
@@ -604,30 +619,39 @@ msgid ""
 "\"system\", it will use the system configuration files, but will then only "
 "be able to retrace crashes that happened on the currently running release."
 msgstr ""
+"Bygg en midlertidig sandkasse, og last ned/installer nødvendige pakker og "
+"feilsøkingssymboler i den. Uten dette valget, antas de nødvendige pakkene og "
+"feilsøkingssymbolene å være installert i systemet allerede. Argumentet peker "
+"til pakkesystemets grunnmappe. Hvis du spesifiserer «system», blir systemets "
+"konfigurasjonsfiler brukt, men da vil du bare kunne spore en kræsj hvis den "
+"oppstod på utgivelsen som kjører nå."
 
 #: ../bin/apport-retrace.py:51
-msgid ""
-"Report download/install progress when installing packages into sandbox"
+msgid "Report download/install progress when installing packages into sandbox"
 msgstr ""
+"Rapporter nedlastings- og installasjonsfremdrift når pakker blir installert "
+"i sandkassa."
 
 #: ../bin/apport-retrace.py:53
 msgid "Prepend timestamps to log messages, for batch operation"
-msgstr ""
+msgstr "Sett tidsstempler i starten av logg-meldinger, for bunthåndtering"
 
 #: ../bin/apport-retrace.py:55
 msgid "Cache directory for packages downloaded in the sandbox"
-msgstr ""
+msgstr "Legg pakkenedlastinger for sandkassa i hurtiglageret"
 
 #: ../bin/apport-retrace.py:57
 msgid ""
 "Directory for unpacked packages. Future runs will assume that any already "
 "downloaded package is also extracted to this sandbox."
 msgstr ""
+"Mappe for utpakkede pakker. Senere kjøringer vil basere seg på at nedlastede "
+"pakker også har blitt pakket ut til denne sandkassa."
 
 #: ../bin/apport-retrace.py:59 ../bin/apport-valgrind.py:66
 msgid ""
 "Install an extra package into the sandbox (can be specified multiple times)"
-msgstr ""
+msgstr "Installer en ekstrapakke i sandkassa (kan spesifiseres flere ganger)"
 
 #: ../bin/apport-retrace.py:61
 msgid ""
@@ -647,8 +671,7 @@ msgstr ""
 "Vis krasjrapporten og be om bekreftelse før den sendes til krasjdatabasen."
 
 #: ../bin/apport-retrace.py:65
-msgid ""
-"Path to the duplicate sqlite database (default: no duplicate checking)"
+msgid "Path to the duplicate sqlite database (default: no duplicate checking)"
 msgstr "Sti til kopien av sqlite-databasen. (Forvalgt: ikke se etter kopier)"
 
 #: ../bin/apport-retrace.py:70
@@ -657,7 +680,7 @@ msgstr "feil antall argumenter, bruk --help for en kort hjelpedialog"
 
 #: ../bin/apport-retrace.py:76
 msgid "You cannot use -C without -S. Stopping."
-msgstr ""
+msgstr "Du kan ikke bruke -C uten -S. Stopper."
 
 #: ../bin/apport-retrace.py:80
 msgid ""
@@ -672,13 +695,13 @@ msgstr ""
 msgid "OK to send these as attachments? [y/n]"
 msgstr "OK å sende disse som vedlegg? [j/n]"
 
-#: ../gtk/apport-gtk-mime.desktop.in.h:1 ../kde/apport-kde.desktop.in.h:1
-#: ../kde/apport-kde-mime.desktop.in.h:1 ../gtk/apport-gtk.desktop.in.h:1
+#: ../kde/apport-kde.desktop.in.h:1 ../kde/apport-kde-mime.desktop.in.h:1
+#: ../gtk/apport-gtk.desktop.in.h:1
 msgid "Report a problem..."
 msgstr "Rapporter et problem"
 
-#: ../gtk/apport-gtk-mime.desktop.in.h:2 ../kde/apport-kde.desktop.in.h:2
-#: ../kde/apport-kde-mime.desktop.in.h:2 ../gtk/apport-gtk.desktop.in.h:2
+#: ../kde/apport-kde.desktop.in.h:2 ../kde/apport-kde-mime.desktop.in.h:2
+#: ../gtk/apport-gtk.desktop.in.h:2
 msgid "Report a malfunction to the developers"
 msgstr "Rapporter en feil til utviklerne"
 
@@ -689,12 +712,12 @@ msgstr "Systemet ditt kan bli ustabilt nå, og kan måtte startes på nytt."
 #: ../gtk/apport-gtk.py:153
 #, python-format
 msgid "Sorry, the application %s has stopped unexpectedly."
-msgstr ""
+msgstr "Beklager. Programmet %s har fått en uventet stans."
 
 #: ../gtk/apport-gtk.py:156
 #, python-format
 msgid "Sorry, %s has closed unexpectedly."
-msgstr ""
+msgstr "Beklager. %s har lukket seg uventet."
 
 #: ../gtk/apport-gtk.py:161 ../kde/apport-kde.py:176 ../kde/apport-kde.py:217
 #, python-format
@@ -717,7 +740,7 @@ msgstr "Fortsett"
 
 #: ../gtk/apport-gtk.py:224
 msgid "Force Closed"
-msgstr ""
+msgstr "Tving lukking"
 
 #: ../gtk/apport-gtk.py:225 ../gtk/apport-gtk.py:284 ../kde/apport-kde.py:214
 #: ../kde/apport-kde.py:357
@@ -727,12 +750,12 @@ msgstr "Start på nytt"
 #: ../gtk/apport-gtk.py:234
 #, python-format
 msgid "The application %s has stopped responding."
-msgstr ""
+msgstr "Programmet %s svarer ikke."
 
 #: ../gtk/apport-gtk.py:238
 #, python-format
 msgid "The program \"%s\" has stopped responding."
-msgstr ""
+msgstr "Programmet \"%s\" svarer ikke."
 
 #: ../gtk/apport-gtk.py:253 ../kde/apport-kde.py:184
 #, python-format
@@ -741,21 +764,21 @@ msgstr "Pakke: %s"
 
 #: ../gtk/apport-gtk.py:260 ../kde/apport-kde.py:190
 msgid "Sorry, a problem occurred while installing software."
-msgstr ""
+msgstr "Beklager. Et problem oppstod under installasjon av programvare."
 
 #: ../gtk/apport-gtk.py:269 ../gtk/apport-gtk.py:288 ../kde/apport-kde.py:197
 #, python-format
 msgid "The application %s has experienced an internal error."
-msgstr ""
+msgstr "Programmet %s har hatt en intern feil."
 
 #: ../gtk/apport-gtk.py:272 ../kde/apport-kde.py:201
 #, python-format
 msgid "The application %s has closed unexpectedly."
-msgstr ""
+msgstr "Programmet %s lukket seg uventet."
 
 #: ../gtk/apport-gtk.py:283 ../kde/apport-kde.py:213 ../gtk/apport-gtk.ui.h:9
 msgid "Leave Closed"
-msgstr ""
+msgstr "Forbli lukket"
 
 #: ../gtk/apport-gtk.py:296 ../kde/apport-kde.py:220 ../gtk/apport-gtk.ui.h:4
 msgid "If you notice further problems, try restarting the computer."
@@ -771,45 +794,54 @@ msgstr "Skjul detaljer"
 
 #: ../bin/apport-valgrind.py:37
 msgid "See man page for details."
-msgstr ""
+msgstr "Se programmets bruksanvisning («man»-side) for mer informasjon."
 
 #: ../bin/apport-valgrind.py:43
 msgid "specify the log file name produced by valgrind"
-msgstr ""
+msgstr "spesifiser navn på loggfilen som produseres av valgrind"
 
 #: ../bin/apport-valgrind.py:46
 msgid ""
 "reuse a previously created sandbox dir (SDIR) or, if it does not exist, "
 "create it"
 msgstr ""
+"bruk en tidligere opprettet sandkassemappe (SDIR), eller opprett den hvis "
+"den ikke eksisterer"
 
 #: ../bin/apport-valgrind.py:50
 msgid ""
 "do  not  create  or reuse a sandbox directory for additional debug symbols "
 "but rely only on installed debug symbols."
 msgstr ""
+"Bruk kun installerte feilsøkingssymboler, i stedet for å opprette eller "
+"bruke en eksisterende sandkassemappe for flere symboler."
 
 #: ../bin/apport-valgrind.py:54
 msgid ""
 "reuse a previously created cache dir (CDIR) or, if it does not exist, create "
 "it"
 msgstr ""
+"bruk en tidligere opprettet hurtiglagermappe (CDIR), eller opprett en hvis "
+"det ikke eksisterer"
 
 #: ../bin/apport-valgrind.py:58
-msgid ""
-"report download/install progress when installing packages into sandbox"
+msgid "report download/install progress when installing packages into sandbox"
 msgstr ""
+"rapporter nedlastings- og installasjonsfremdrift når pakker installeres i "
+"sandkassa"
 
 #: ../bin/apport-valgrind.py:62
 msgid ""
 "the executable that is run under valgrind's memcheck tool  for memory leak "
 "detection"
 msgstr ""
+"den kjørbare fila som brukes under valgrinds memcheck-verktøy for å se etter "
+"minnelekkasje"
 
-#: ../bin/apport-valgrind.py:92
+#: ../bin/apport-valgrind.py:97
 #, python-format
 msgid "Error: %s is not an executable. Stopping."
-msgstr ""
+msgstr "Feil: %s er ikke et kjørbart program. Stopper."
 
 #: ../kde/apport-kde.py:294
 msgid "Username:"
@@ -821,17 +853,19 @@ msgstr "Passord:"
 
 #: ../kde/apport-kde.py:382
 msgid "Collecting Problem Information"
-msgstr ""
+msgstr "Samler informasjon om feil"
 
 #: ../kde/apport-kde.py:384
 msgid ""
 "The collected information can be sent to the developers to improve the "
 "application. This might take a few minutes."
 msgstr ""
+"Den innsamlede informasjonen kan sendes til utviklerne for å forbedre "
+"programmet. Dette kan ta noen minutter."
 
 #: ../kde/apport-kde.py:410
 msgid "Uploading Problem Information"
-msgstr ""
+msgstr "Laster opp informasjon om feil"
 
 #: ../kde/apport-kde.py:412 ../gtk/apport-gtk.ui.h:15
 msgid ""
@@ -847,13 +881,25 @@ msgstr "Apport"
 
 #: ../apport/com.ubuntu.apport.policy.in.h:1
 msgid "Collect system information"
-msgstr ""
+msgstr "Samle inn informasjon om systemet"
 
 #: ../apport/com.ubuntu.apport.policy.in.h:2
 msgid ""
 "Authentication is required to collect system information for this problem "
 "report"
 msgstr ""
+"Du må autentisere deg for å samle inn systeminformasjon til denne "
+"feilrapporten"
+
+#: ../apport/com.ubuntu.apport.policy.in.h:3
+msgid "System problem reports"
+msgstr "Feilrapporter for system"
+
+#: ../apport/com.ubuntu.apport.policy.in.h:4
+msgid "Please enter your password to access problem reports of system programs"
+msgstr ""
+"Vennligst skriv inn passordet ditt for å få tilgang til systemets "
+"feilrapporter"
 
 #: ../gtk/apport-gtk.ui.h:2
 msgid "Crash report"
@@ -908,13 +954,13 @@ msgstr "Målmappe finnes og er ikke tom."
 #~ msgstr "Program feil"
 
 #~ msgid ""
-#~ "This will remove some large items from the report. These are very useful for "
-#~ "developers to debug the problem, but might be too big for you to upload if "
-#~ "you have a slow internet connection."
+#~ "This will remove some large items from the report. These are very useful "
+#~ "for developers to debug the problem, but might be too big for you to "
+#~ "upload if you have a slow internet connection."
 #~ msgstr ""
-#~ "Dette vil fjerne noen store elementer fra rapporten. Disse er veldig nyttige "
-#~ "for utviklere for å feilsøke problemet, men kan være for store for deg å "
-#~ "laste opp om du har en treg internettforbindelse."
+#~ "Dette vil fjerne noen store elementer fra rapporten. Disse er veldig "
+#~ "nyttige for utviklere for å feilsøke problemet, men kan være for store "
+#~ "for deg å laste opp om du har en treg internettforbindelse."
 
 #~ msgid "Content of the report"
 #~ msgstr "Innhold i rapporten"
@@ -924,7 +970,8 @@ msgstr "Målmappe finnes og er ikke tom."
 
 #~ msgid ""
 #~ "If you were not doing anything confidential (entering passwords or other\n"
-#~ "private information), you can help to improve the application by reporting\n"
+#~ "private information), you can help to improve the application by "
+#~ "reporting\n"
 #~ "the problem."
 #~ msgstr ""
 #~ "Hvis du ikke gjorde noe konfidensielt (skrev inn passord eller annen\n"
@@ -944,19 +991,15 @@ msgstr "Målmappe finnes og er ikke tom."
 #~ msgstr ""
 #~ "Du kan hjelpe utviklerne med å reparere problemet ved å rapportere det."
 
-#, python-format
 #~ msgid "&Send complete report (recommended; %s)"
 #~ msgstr "&Send komplett rapport (anbefalt; %s)"
 
-#, python-format
 #~ msgid "Send &reduced report (slow Internet connection; %s)"
 #~ msgstr "Send &redusert rapport (treg internettforbindelse; %s)"
 
-#, python-format
 #~ msgid "The package \"%s\" failed to install or upgrade."
 #~ msgstr "Pakken \"%s\" ble ikke installert eller oppgradert."
 
-#, no-c-format, python-format
 #~ msgid "Reduced report (slow Internet connection; %s)"
 #~ msgstr "Redusert rapport (treg internettforbindelse; %s)"
 
@@ -974,18 +1017,16 @@ msgstr "Målmappe finnes og er ikke tom."
 
 #~ msgid ""
 #~ "If you were not doing anything confidential (entering passwords or other "
-#~ "private information), you can help to improve the application by reporting "
-#~ "the problem."
+#~ "private information), you can help to improve the application by "
+#~ "reporting the problem."
 #~ msgstr ""
-#~ "Hvis du ikke gjorde noe konfidensielt (skrev inn passord eller annen privat "
-#~ "informasjon), kan du hjelpe til med å forbedre programmet ved å rapportere "
-#~ "problemet."
+#~ "Hvis du ikke gjorde noe konfidensielt (skrev inn passord eller annen "
+#~ "privat informasjon), kan du hjelpe til med å forbedre programmet ved å "
+#~ "rapportere problemet."
 
-#, no-c-format, python-format
 #~ msgid "Complete report (recommended; %s)"
 #~ msgstr "Komplett rapport (anbefalt; %s)"
 
-#, no-c-format
 #~ msgid ""
 #~ "<span weight=\"bold\" size=\"larger\">Sorry, the package \"%s\" failed to "
 #~ "install or upgrade.</span>"
@@ -993,7 +1034,6 @@ msgstr "Målmappe finnes og er ikke tom."
 #~ "<span weight=\"bold\" size=\"larger\">Beklager, pakken\"%s\" kunne ikke "
 #~ "installeres eller oppgraderes.</span>"
 
-#, python-format
 #~ msgid "%s closed unexpectedly on %s at %s."
 #~ msgstr "%s ble lukket uventet på %s på %s."
 
@@ -1005,8 +1045,8 @@ msgstr "Målmappe finnes og er ikke tom."
 #~ msgstr ""
 #~ "<big><b>Sende problemrapport til utviklerne?</b></big>\n"
 #~ "\n"
-#~ "Vennligst fyll ut skjemaet i det automatisk åpnede nettleservinduet etter at "
-#~ "problemrapporten har blitt sendt."
+#~ "Vennligst fyll ut skjemaet i det automatisk åpnede nettleservinduet etter "
+#~ "at problemrapporten har blitt sendt."
 
 #~ msgid "_Report Problem..."
 #~ msgstr "_Rapporter problem"
@@ -1014,6 +1054,5 @@ msgstr "Målmappe finnes og er ikke tom."
 #~ msgid "_Send Report"
 #~ msgstr "_Send rapport"
 
-#, python-format
 #~ msgid "This is not a genuine %s package"
 #~ msgstr "Dette er ikke en gyldig %s-pakke"

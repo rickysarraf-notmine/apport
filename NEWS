@@ -1,6 +1,192 @@
 This file summarizes the major and interesting changes for each release. For a
 detailled list of changes, please see ChangeLog.
 
+2.12.6 (2013-10-25)
+-------------------
+ * SECURITY FIX: For setuid programs which drop their privileges after
+   startup, make the report and core dumps owned by root, to avoid possible
+   data disclosure. Also, change core dump files to permissions "0600".
+   Thanks to Martin Carpenter for discovering this!
+   (CVE-2013-1067, LP: #1242435)
+ * sandboxutils.needed_runtime_packages(): Create cache directory for
+   Contents.gz if missing. (LP: #933199)
+ * apt/dpkg: Recognize options in apt sources.list. (LP: #1238620)
+
+2.12.5 (2013-09-27)
+-------------------
+ * Report.add_os_info(): Do not overwrite already existing data.
+   (LP: #1226776)
+ * kernel_oops hook: Collect uname at the time of invoking the hook, instead of
+   at data collection time. (LP: #1226776)
+ * Replace fixed size icons with PNGs, which are more efficient and avoid
+   rendering artifacts. (LP: #1231763)
+
+2.12.4 (2013-09-19)
+-------------------
+ * Update icons to new design from Vishnoo Charan Reddy, many thanks!
+   (LP: #1079639)
+
+2.12.3 (2013-09-19)
+-------------------
+ * ProblemReport.write_mime(): Adjust MIMEText handling to latest Python 3.3
+   upstream changes which now don't tolerate passing bytes any more.
+   (LP: #1227381)
+ * apport-gtk: Don't use obsolete add_with_viewport() method any more.
+ * Fix ui_present_report_details() "modal_for" keyword for all UI
+   implementations, so that --hanging works for -cli and -kde, too.
+   (LP: #1213790)
+
+2.12.2 (2013-09-17)
+-------------------
+ * fileutils.py, get_{new,all}_reports(): Don't consider reports which are
+   readable, but not writable. (LP: #1098844)
+ * test_ui_kde.py: Cleanly skip the test if PyQt/PyKDE are not installed,
+   instead of failing.
+ * crash-digger: Write pid into lock file. Thanks Steve Langasek.
+ * apport-gtk: When loading a Bug report from a file, properly set up for bug
+   reporting mode. (LP: #1226140)
+ * Move "program is not installed any more" check from report loading into data
+   collection, so that crash reports can be moved and reported on machines
+   without that program installed. (LP: #1226030)
+
+2.12.1 (2013-08-19)
+-------------------
+ * sandboxutils.py, make_sandbox(): Install packages from Package: and
+   Dependencies: fields also if we have a ProcMaps: field and there are any
+   third-party packages. This fixes retracing crashes that use PPAs (as they
+   don't have Contents.gz).
+ * Robustify "progress bar visible" GTK and KDE UI checks for the faster
+   collection due to dropping lsb_release.
+ * Drop apport-noui in favour of whoopsie-upload-all. We don't want to process
+   hooks when run noninteractively, since they may ask questions or determine a
+   report is not due to a bug in Ubuntu. whoopsie-upload-all skips these hooks.
+ * apport/report.py: Gracefully handle being unable to get the source package
+   for a binary package, as when the latter does not exist in the cache.
+   (LP: #1097773)
+
+2.12 (2013-08-02)
+-----------------
+Improvements:
+ * recoverable_problem: Can take the PID as an argument.
+ * Add data/whoopsie-upload-all: Process all pending crashes and mark them for
+   whoopsie upload, but do not upload them to any other crash database. Wait
+   until whoopsie is done uploading.
+ * Eliminate multiple calls to lsb_release by caching the result. On systems
+   which provide /etc/os-release, use that instead of lsb_release.
+   (LP: #1164742)
+
+Bug fixes:
+ * launchpad.py: Show the Python major version in the error message about
+   missing launchpadlib.
+ * ui.py: Check if options for updating and reporting a new bug get used
+   together, and give a proper error message in this case. (LP: #1071905)
+ * apport: Fix "Exectuable" typo, leading to reports not being synced on
+   upstart crashes. Thanks James Hunt. (LP: #1203744)
+ * Rename apport-gtk-mime.desktop to apport-gtk.desktop and drop the
+   old apport-gtk.desktop that wasn't even being installed. With that, the
+   window will be shown as "Report a problem..." instead of "Apport-gtk" in
+   GNOME shell and other DEs. Thanks Jeremy Bicha. (LP: #1207496)
+ * report.py, add_gdb_info(): Fix crash if gdb cannot load the symbol map.
+   (LP: #1171484)
+ * apport-retrace: Fix crash when using --sandbox without --cache.
+   (LP: #1197034)
+ * Fix error message when PID is inaccessible. (LP: #1204718)
+ * doc/data-format.tex: Drop unused "OS" and "OSRelease" fields, replace with
+   "DistroRelease" which is actually being used. (LP: #1018387)
+
+2.11 (2013-07-17)
+-----------------
+Improvements:
+ * data/apport-noui: A noninteractive frontend for automatic error
+   reporting. apport-bug will use this if the /etc/apport/autoreport flag
+   file exists.
+ * hookutils.py, attach_upstart_logs(): Also attach
+   ~/.cache/upstart/application-<desktopname>.log for any *.desktop file
+   shipped by a package.
+
+Bug fixes:
+ * hookutils.py, attach_conffiles(): Fix check for inaccessible or modified
+   conffiles. (LP: #1192899)
+
+2.10.2 (2013-05-22)
+-------------------
+Bug fixes:
+ * Resolve symlinks in file references in Python crash signatures.
+   (LP: #1179979)
+ * Fix endless loop of EOFErrors with broken core dumps. (LP: #1168849)
+ * report.py, add_gdb_info(): Fix crash if gdb did not determine an assertion
+   message. (LP: #1171484)
+ * apt/dpkg: Fix get_file_package()'s "release" field to actually mean
+   DistroRelease:, not a distro code name. This now requires a previous call to
+   install_packages() with a configdir, which needs to have a file
+   <configdir>/<release>/codename with the release's code name in it.
+ * sandboxutils.py: Call get_file_package() with the report's release, so that
+   we actually get files from the target release, not the host release.
+ * test_hookutils.py: Don't assume that /etc/motd exists.
+
+2.10.1 (2013-05-14)
+-------------------
+Bug fixes:
+ * Fix ui.test_run_crash_anonymity_escaping test when running as root.
+ * launchpad.py: Fix crash when trying to adjust a distro-only bug task if the
+   bug also already has a distropackage task.
+ * apt/dpkg: When there is no -dbg package, install all -dbg packages of the
+   corresponding source package, and only then fall back to -dbgsym.
+   (LP: #1003234)
+
+2.10 (2013-04-30):
+------------------
+Improvements:
+ * Support retracing foreign powerpc reports, thanks Steve Langasek.
+ * apport/report.py: Generate a crash signature for suspend/resume failures.
+ * hookutils.py: Add attach_upstart_logs(), thanks Steve Langasek.
+ * hookutils.py, in_session_of_problem(): Port from ConsoleKit to logind.
+
+Bug fixes:
+ * hookutils.attach_conffiles(): Fix IOError crash on inaccessible conffiles;
+   mark them as '[inaccessible: <reason>]' instead. (LP: #1154536)
+ * hookutils.in_session_of_problem(): Fix crash when the current locale is
+   invalid. (LP: #1154896) 
+ * data/gcc_ice_hook: Fix crash with source files that have non-UTF8 data.
+   (LP: #1045283)
+ * apport/report.py: Handle the case where the user has been removed from the
+   system, but one of its still-running binaries crashes (LP: #1163453).
+ * Fix anonymization of user/GECOS fields with regexp control characters like
+   '+'. (LP: #985049)
+ * Run tests under LC_CTYPE=C and unset LANG as well, to discover assumptions
+   about UTF-8 locales. Fix the two failing tests.
+ * Fix UnicodeDecodeError when apport encounters non-ASCII environment
+   variables. (LP: #1172638)
+
+2.9.2 (2013-03-19):
+-------------------
+Improvements:
+ * report.py, add_package_info(): Add "[origin: unknown]" tag to
+   Package/Dependencies fields for non-distro package whose origin cannot be
+   determined. (LP: #1148116)
+ * Adjust kernel_crashdump to the format kdump-tools produces. Thanks Louis
+   Bouchard.
+
+Bug fixes:
+ * Write core dumps on SIGQUIT if ulimit allows. Thanks Graeme Hewson.
+   (LP: #1153662)
+
+2.9.1 (2013-03-07):
+-------------------
+Improvements:
+ * launchpad.py: Add support for filing bugs as private. Document this in
+   doc/crashdb-conf.txt. (LP: #1144647)
+
+Bug fixes:
+ * test_signal_crashes.py: Fix test_crash_apport() when being run under
+   LD_PRELOAD.
+ * Fix crash in error() and warning() if there is no sys.stderr. (LP: #1012445)
+ * Fix Turkish translation to add missing keyboard accelerator. (LP: #648750)
+ * fileutils.py, find_package_desktopfile(): Restrict to autostart and
+   application .desktop files. (LP: #1147528)
+ * apt/dpkg get_modified_files(): Fix crash when encountering non-ASCII file
+   names in an ASCII locale. (LP: #1044014)
+
 2.9 (2013-03-01):
 -----------------
 Improvements:

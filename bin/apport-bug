@@ -30,6 +30,8 @@ find_programs() {
     GTK="$RET"
     find_program "apport-kde"
     KDE="$RET"
+    find_program "whoopsie-upload-all"
+    AUTO="$RET"
 
     # find a terminal emulator
 }
@@ -42,8 +44,11 @@ find_programs
 
 export APPORT_INVOKED_AS="$0"
 
+if [ -n "$AUTO" ] && [ -e /etc/apport/autoreport ] ; then
+    $AUTO "$@"
+
 # check for X
-if [ -z "$DISPLAY" ]; then
+elif [ -z "$DISPLAY" ]; then
     if [ -n "$CLI" ] ; then
         $CLI "$@"
     else
@@ -72,7 +77,7 @@ elif [ -n "$CLI" ]; then
     fi
 
 else
-    echo "Neither apport-gtk, apport-kde or apport-cli are installed. Install either to make this program work." >&2
+    echo "Neither apport-gtk, apport-kde, apport-cli, or whoopsie-upload-all are installed. Install either to make this program work." >&2
     exit 1
 fi
 

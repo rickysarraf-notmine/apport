@@ -48,6 +48,10 @@ def find_package_desktopfile(package):
 
     for line in packaging.get_files(package):
         if line.endswith('.desktop'):
+            # restrict to autostart and applications, see LP#1147528
+            if not line.startswith('/etc/xdg/autostart') and not line.startswith('/usr/share/applications/'):
+                continue
+
             if desktopfile:
                 return None  # more than one
             else:
@@ -166,7 +170,7 @@ def get_all_reports():
     reports = []
     for r in glob.glob(os.path.join(report_dir, '*.crash')):
         try:
-            if os.path.getsize(r) > 0 and os.access(r, os.R_OK):
+            if os.path.getsize(r) > 0 and os.access(r, os.R_OK | os.W_OK):
                 reports.append(r)
         except OSError:
             # race condition, can happen if report disappears between glob and

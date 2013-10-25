@@ -7,29 +7,29 @@ msgid ""
 msgstr ""
 "Project-Id-Version: apport\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-01-07 22:54+0100\n"
+"POT-Creation-Date: 2013-10-25 06:19+0200\n"
 "PO-Revision-Date: 2011-10-07 06:53+0000\n"
 "Last-Translator: Elmaz Yu <Unknown>\n"
 "Language-Team: Chinese (Taiwan) <zh_TW@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2013-01-08 04:40+0000\n"
-"X-Generator: Launchpad (build 16402)\n"
-"Language: \n"
+"X-Launchpad-Export-Date: 2013-10-08 05:10+0000\n"
+"X-Generator: Launchpad (build 16799)\n"
 
-#: ../apport/ui.py:122
+#: ../apport/ui.py:124
 msgid "This package does not seem to be installed correctly"
 msgstr "這個套件似乎尚未正確安裝"
 
-#: ../apport/ui.py:126
+#: ../apport/ui.py:128
 #, python-format
 msgid ""
 "This is not an official %s package. Please remove any third party package "
 "and try again."
 msgstr "這不是官方的 %s 套件。請移除任何第三方套件並重試。"
 
-#: ../apport/ui.py:143
+#: ../apport/ui.py:145
 #, python-format
 msgid ""
 "You have some obsolete package versions installed. Please upgrade the "
@@ -41,85 +41,84 @@ msgstr ""
 "\n"
 "%s"
 
-#: ../apport/ui.py:249
+#: ../apport/ui.py:251
 msgid "unknown program"
 msgstr "未知程式"
 
-#: ../apport/ui.py:250
+#: ../apport/ui.py:252
 #, python-format
 msgid "Sorry, the program \"%s\" closed unexpectedly"
 msgstr "對不起，\"%s\" 程式已不正常關閉"
 
-#: ../apport/ui.py:252 ../apport/ui.py:1247
+#: ../apport/ui.py:254 ../apport/ui.py:1255
 #, python-format
 msgid "Problem in %s"
 msgstr "在 %s 中的問題"
 
-#: ../apport/ui.py:253
+#: ../apport/ui.py:255
 msgid ""
 "Your computer does not have enough free memory to automatically analyze the "
 "problem and send a report to the developers."
 msgstr "您的電腦並沒有足夠的可用記憶體可自動分析問題並傳送給開發者一份報告。"
 
 #. package does not exist
-#: ../apport/ui.py:268 ../apport/ui.py:274 ../apport/ui.py:280
-#: ../apport/ui.py:318 ../apport/ui.py:326 ../apport/ui.py:455
-#: ../apport/ui.py:458 ../apport/ui.py:659 ../apport/ui.py:1060
-#: ../apport/ui.py:1201 ../apport/ui.py:1205 ../apport/ui.py:1224
-#: ../apport/ui.py:1230
+#: ../apport/ui.py:270 ../apport/ui.py:276 ../apport/ui.py:282
+#: ../apport/ui.py:320 ../apport/ui.py:328 ../apport/ui.py:455
+#: ../apport/ui.py:458 ../apport/ui.py:659 ../apport/ui.py:1086
+#: ../apport/ui.py:1227 ../apport/ui.py:1231
 msgid "Invalid problem report"
 msgstr "無效的問題回報"
 
-#: ../apport/ui.py:269 ../apport/ui.py:1207
+#: ../apport/ui.py:271 ../apport/ui.py:1233
 msgid "This problem report is damaged and cannot be processed."
 msgstr "此問題回報已損壞且無法處理。"
 
-#: ../apport/ui.py:275
+#: ../apport/ui.py:277
 msgid "The report belongs to a package that is not installed."
 msgstr "此報告屬於一份未安裝的套件。"
 
-#: ../apport/ui.py:281
+#: ../apport/ui.py:283
 msgid "An error occurred while attempting to process this problem report:"
 msgstr "試圖處理問題回報時遭遇錯誤："
 
-#: ../apport/ui.py:319
+#: ../apport/ui.py:321
 msgid "You are not allowed to access this problem report."
 msgstr "您並不被允許存取此份問題回報。"
 
-#: ../apport/ui.py:322
+#: ../apport/ui.py:324
 msgid "Error"
 msgstr "錯誤"
 
-#: ../apport/ui.py:323
+#: ../apport/ui.py:325
 msgid "There is not enough disk space available to process this report."
 msgstr "沒有足夠的磁碟空間以處理此份報告。"
 
-#: ../apport/ui.py:407
+#: ../apport/ui.py:409
 msgid "No package specified"
 msgstr "未指定套件"
 
-#: ../apport/ui.py:408
+#: ../apport/ui.py:410
 msgid ""
 "You need to specify a package or a PID. See --help for more information."
 msgstr "您需要指定一個套件或一個 PID。更多資訊請參考 --help。"
 
-#: ../apport/ui.py:425
-msgid "Invalid PID"
-msgstr "無效的 PID"
-
-#: ../apport/ui.py:426
-msgid "The specified process ID does not belong to a program."
-msgstr "指定的程序 ID 並不屬於一個程式。"
-
-#: ../apport/ui.py:434
+#: ../apport/ui.py:433
 msgid "Permission denied"
 msgstr "權限不足"
 
-#: ../apport/ui.py:435
+#: ../apport/ui.py:434
 msgid ""
 "The specified process does not belong to you. Please run this program as the "
 "process owner or as root."
 msgstr "指定的程序並不屬於您。請以程序擁有者或是 root 身份執行此程式。"
+
+#: ../apport/ui.py:436
+msgid "Invalid PID"
+msgstr "無效的 PID"
+
+#: ../apport/ui.py:437
+msgid "The specified process ID does not belong to a program."
+msgstr "指定的程序 ID 並不屬於一個程式。"
 
 #: ../apport/ui.py:456
 #, python-format
@@ -153,8 +152,8 @@ msgid ""
 "bug as a duplicate of another than to move your comments and attachments to "
 "a new bug.\n"
 "\n"
-"Subsequently, we recommend that you file a new bug report using \"apport-"
-"bug\" and make a comment in this bug about the one you file.\n"
+"Subsequently, we recommend that you file a new bug report using \"apport-bug"
+"\" and make a comment in this bug about the one you file.\n"
 "\n"
 "Do you really want to proceed?"
 msgstr ""
@@ -199,10 +198,8 @@ msgid "Add an extra tag to the report. Can be specified multiple times."
 msgstr ""
 
 #: ../apport/ui.py:725
-msgid ""
-"%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
-msgstr ""
-"%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
+msgid "%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
+msgstr "%prog [options] [symptom|pid|package|program path|.apport/.crash file]"
 
 #: ../apport/ui.py:728
 msgid ""
@@ -210,8 +207,8 @@ msgid ""
 "a --pid. If neither is given, display a list of known symptoms. (Implied if "
 "a single argument is given.)"
 msgstr ""
-"啟動為錯誤歸檔模式。需要 --packages 和一個可選擇的 --pid，或是只需 --"
-"pid。若兩者都未給予，顯示一份已知症狀的列表。（暗示若只有給予單一參數。）"
+"啟動為錯誤歸檔模式。需要 --packages 和一個可選擇的 --pid，或是只需 --pid。若"
+"兩者都未給予，顯示一份已知症狀的列表。（暗示若只有給予單一參數。）"
 
 #: ../apport/ui.py:730
 msgid "Click a window as a target for filing a problem report."
@@ -231,7 +228,9 @@ msgstr "建立關於症狀的錯誤報告。(暗示是否只要提供症狀名�
 msgid ""
 "Specify package name in --file-bug mode. This is optional if a --pid is "
 "specified. (Implied if package name is given as only argument.)"
-msgstr "在 --file-bug 模式中指定套件名稱。若指定 --pid 則是可選擇的。（暗示若套件名稱是唯一給予的參數。）"
+msgstr ""
+"在 --file-bug 模式中指定套件名稱。若指定 --pid 則是可選擇的。（暗示若套件名稱"
+"是唯一給予的參數。）"
 
 #: ../apport/ui.py:738
 msgid ""
@@ -249,7 +248,9 @@ msgstr "提供的 pid 是懸凍的應用程式。"
 msgid ""
 "Report the crash from given .apport or .crash file instead of the pending "
 "ones in %s. (Implied if file is given as only argument.)"
-msgstr "從特定的 .apport 或 .crash 檔案來回報當掉情形，代替等待中的 %s。（暗示若特定檔案是唯一給予的參數。）"
+msgstr ""
+"從特定的 .apport 或 .crash 檔案來回報當掉情形，代替等待中的 %s。（暗示若特定"
+"檔案是唯一給予的參數。）"
 
 #: ../apport/ui.py:744
 msgid ""
@@ -262,73 +263,73 @@ msgstr ""
 msgid "Print the Apport version number."
 msgstr "列印 Apport 版本號碼。"
 
-#: ../apport/ui.py:882
+#: ../apport/ui.py:888
 msgid ""
 "This will launch apport-retrace in a terminal window to examine the crash."
 msgstr "這會在終端機視窗中啟動 apport-retrace 以檢查程式當掉原因。"
 
-#: ../apport/ui.py:883
+#: ../apport/ui.py:889
 msgid "Run gdb session"
 msgstr "執行 gdb 作業階段"
 
-#: ../apport/ui.py:884
+#: ../apport/ui.py:890
 msgid "Run gdb session without downloading debug symbols"
 msgstr "執行 gdb 作業階段而不下載除錯符號"
 
 #. TRANSLATORS: %s contains the crash report file name
-#: ../apport/ui.py:886
+#: ../apport/ui.py:892
 #, python-format
 msgid "Update %s with fully symbolic stack trace"
 msgstr "以完整的符號堆疊追蹤來更新 %s"
 
-#: ../apport/ui.py:957
+#: ../apport/ui.py:965 ../apport/ui.py:975
+msgid ""
+"This problem report applies to a program which is not installed any more."
+msgstr "此問題報告用於不再安裝的程式。"
+
+#: ../apport/ui.py:989
 #, python-format
 msgid ""
 "The problem happened with the program %s which changed since the crash "
 "occurred."
 msgstr "發生問題的程式 %s 自上次遭遇當掉之後已有變動。"
 
-#: ../apport/ui.py:1061
+#: ../apport/ui.py:1087
 msgid "Could not determine the package or source package name."
 msgstr "無法決定套件或原始碼套件名稱。"
 
-#: ../apport/ui.py:1079
+#: ../apport/ui.py:1105
 msgid "Unable to start web browser"
 msgstr "無法啟動網頁瀏覽器"
 
-#: ../apport/ui.py:1080
+#: ../apport/ui.py:1106
 #, python-format
 msgid "Unable to start web browser to open %s."
 msgstr "無法啟動網頁瀏覽器以開啟 %s。"
 
-#: ../apport/ui.py:1155
+#: ../apport/ui.py:1181
 #, python-format
 msgid "Please enter your account information for the %s bug tracking system"
 msgstr "請輸入您的 %s 錯誤回報系統帳號資訊"
 
-#: ../apport/ui.py:1167
+#: ../apport/ui.py:1193
 msgid "Network problem"
 msgstr "網路問題"
 
-#: ../apport/ui.py:1169
+#: ../apport/ui.py:1195
 msgid ""
 "Cannot connect to crash database, please check your Internet connection."
 msgstr "無法連接到當機資料庫，請檢查您的網路連線。"
 
-#: ../apport/ui.py:1196
+#: ../apport/ui.py:1222
 msgid "Memory exhaustion"
 msgstr "記憶體耗盡"
 
-#: ../apport/ui.py:1197
+#: ../apport/ui.py:1223
 msgid "Your system does not have enough memory to process this crash report."
 msgstr "您的系統沒有足夠的記憶體來處理此份當機報告。"
 
-#: ../apport/ui.py:1220 ../apport/ui.py:1229
-msgid ""
-"This problem report applies to a program which is not installed any more."
-msgstr "此問題報告用於不再安裝的程式。"
-
-#: ../apport/ui.py:1250
+#: ../apport/ui.py:1258
 #, python-format
 msgid ""
 "The problem cannot be reported:\n"
@@ -339,18 +340,20 @@ msgstr ""
 "\n"
 "%s"
 
-#: ../apport/ui.py:1301 ../apport/ui.py:1308
+#: ../apport/ui.py:1314 ../apport/ui.py:1321
 msgid "Problem already known"
 msgstr "已知問題"
 
-#: ../apport/ui.py:1302
+#: ../apport/ui.py:1315
 msgid ""
 "This problem was already reported in the bug report displayed in the web "
 "browser. Please check if you can add any further information that might be "
 "helpful for the developers."
-msgstr "此問題在網路瀏覽器顯示之錯誤報告中已回報。請檢查您是否能新增任何可能對開發者有幫助的進一步資訊。"
+msgstr ""
+"此問題在網路瀏覽器顯示之錯誤報告中已回報。請檢查您是否能新增任何可能對開發者"
+"有幫助的進一步資訊。"
 
-#: ../apport/ui.py:1309
+#: ../apport/ui.py:1322
 msgid "This problem was already reported to developers. Thank you!"
 msgstr "此問題已經回報給開發者。感謝您！"
 
@@ -566,8 +569,7 @@ msgid ""
 msgstr ""
 
 #: ../bin/apport-retrace.py:51
-msgid ""
-"Report download/install progress when installing packages into sandbox"
+msgid "Report download/install progress when installing packages into sandbox"
 msgstr ""
 
 #: ../bin/apport-retrace.py:53
@@ -603,8 +605,7 @@ msgid ""
 msgstr ""
 
 #: ../bin/apport-retrace.py:65
-msgid ""
-"Path to the duplicate sqlite database (default: no duplicate checking)"
+msgid "Path to the duplicate sqlite database (default: no duplicate checking)"
 msgstr "重複的 sqlite 資料庫路徑（預設：無重複檢查）"
 
 #: ../bin/apport-retrace.py:70
@@ -619,20 +620,22 @@ msgstr ""
 msgid ""
 "you either need to do a local operation (-s, -g, -o) or supply an "
 "authentication file (--auth); see --help for a short help"
-msgstr "您需要進行一個本地端作業（-s, -g -o）或是提供一個認證檔（--auth）；參考 --help 以取得簡短的說明"
+msgstr ""
+"您需要進行一個本地端作業（-s, -g -o）或是提供一個認證檔（--auth）；參考 --"
+"help 以取得簡短的說明"
 
 #. translators: don't translate y/n, apport currently only checks for "y"
 #: ../bin/apport-retrace.py:114
 msgid "OK to send these as attachments? [y/n]"
 msgstr "允許傳送這些附件？"
 
-#: ../gtk/apport-gtk-mime.desktop.in.h:1 ../kde/apport-kde.desktop.in.h:1
-#: ../kde/apport-kde-mime.desktop.in.h:1 ../gtk/apport-gtk.desktop.in.h:1
+#: ../kde/apport-kde.desktop.in.h:1 ../kde/apport-kde-mime.desktop.in.h:1
+#: ../gtk/apport-gtk.desktop.in.h:1
 msgid "Report a problem..."
 msgstr "報告問題..."
 
-#: ../gtk/apport-gtk-mime.desktop.in.h:2 ../kde/apport-kde.desktop.in.h:2
-#: ../kde/apport-kde-mime.desktop.in.h:2 ../gtk/apport-gtk.desktop.in.h:2
+#: ../kde/apport-kde.desktop.in.h:2 ../kde/apport-kde-mime.desktop.in.h:2
+#: ../gtk/apport-gtk.desktop.in.h:2
 msgid "Report a malfunction to the developers"
 msgstr "報告問題予開發者"
 
@@ -750,8 +753,7 @@ msgid ""
 msgstr ""
 
 #: ../bin/apport-valgrind.py:58
-msgid ""
-"report download/install progress when installing packages into sandbox"
+msgid "report download/install progress when installing packages into sandbox"
 msgstr ""
 
 #: ../bin/apport-valgrind.py:62
@@ -760,7 +762,7 @@ msgid ""
 "detection"
 msgstr ""
 
-#: ../bin/apport-valgrind.py:92
+#: ../bin/apport-valgrind.py:97
 #, python-format
 msgid "Error: %s is not an executable. Stopping."
 msgstr ""
@@ -806,6 +808,14 @@ msgid ""
 "Authentication is required to collect system information for this problem "
 "report"
 msgstr "若要為此問題回報蒐集系統資訊需先通過身份驗證"
+
+#: ../apport/com.ubuntu.apport.policy.in.h:3
+msgid "System problem reports"
+msgstr ""
+
+#: ../apport/com.ubuntu.apport.policy.in.h:4
+msgid "Please enter your password to access problem reports of system programs"
+msgstr ""
 
 #: ../gtk/apport-gtk.ui.h:2
 msgid "Crash report"
@@ -854,7 +864,6 @@ msgstr "用法：%s <回報檔> <目標目錄>"
 msgid "Destination directory exists and is not empty."
 msgstr "目的目錄存在且不是空的。"
 
-#, no-c-format, python-format
 #~ msgid "Complete report (recommended; %s)"
 #~ msgstr "完整報告（推廌做法；%s）"
 
@@ -877,17 +886,20 @@ msgstr "目的目錄存在且不是空的。"
 #~ msgid "Restart _Program"
 #~ msgstr "重新啟動程式(_P)"
 
-#, no-c-format
 #~ msgid ""
 #~ "<span weight=\"bold\" size=\"larger\">Sorry, the package \"%s\" failed to "
 #~ "install or upgrade.</span>"
-#~ msgstr "<span weight=\"bold\" size=\"larger\">對不起，無法安裝或升級 \"%s\" 套件。</span>"
+#~ msgstr ""
+#~ "<span weight=\"bold\" size=\"larger\">對不起，無法安裝或升級 \"%s\" 套件。"
+#~ "</span>"
 
 #~ msgid ""
-#~ "This will remove some large items from the report. These are very useful for "
-#~ "developers to debug the problem, but might be too big for you to upload if "
-#~ "you have a slow internet connection."
-#~ msgstr "這會從報告中移除某些大型事項。這對開發展偵錯來說非常有幫助，但當你的連線速度較慢時或許對您來說所需上傳的部份會太大。"
+#~ "This will remove some large items from the report. These are very useful "
+#~ "for developers to debug the problem, but might be too big for you to "
+#~ "upload if you have a slow internet connection."
+#~ msgstr ""
+#~ "這會從報告中移除某些大型事項。這對開發展偵錯來說非常有幫助，但當你的連線速"
+#~ "度較慢時或許對您來說所需上傳的部份會太大。"
 
 #~ msgid "_Report Problem..."
 #~ msgstr "報告問題(_R)..."
@@ -914,66 +926,59 @@ msgstr "目的目錄存在且不是空的。"
 #~ msgid "&Report Problem..."
 #~ msgstr "報告問題(&R)..."
 
-#, python-format
 #~ msgid "The package \"%s\" failed to install or upgrade."
 #~ msgstr "\"%s\" 套件無法安裝或升級"
 
-#, python-format
 #~ msgid "This is not a genuine %s package"
 #~ msgstr "這不是一個正版 %s 套件"
 
 #~ msgid ""
 #~ "If you were not doing anything confidential (entering passwords or other\n"
-#~ "private information), you can help to improve the application by reporting\n"
+#~ "private information), you can help to improve the application by "
+#~ "reporting\n"
 #~ "the problem."
 #~ msgstr ""
 #~ "若您沒有做任何機密動作（輸入密碼或其他\n"
 #~ "私人資訊），你可藉由回報此問題來協助應\n"
 #~ "用程式的改進。"
 
-#, python-format
 #~ msgid "%s closed unexpectedly on %s at %s."
 #~ msgstr "%s 未預期的關閉在 %s 於 %s。"
 
-#, python-format
 #~ msgid "&Send complete report (recommended; %s)"
 #~ msgstr "傳送完整報告（建議；%s）(&S)"
 
 #~ msgid "Send this data to the developers?"
 #~ msgstr "是否傳送本資料予開發者？"
 
-#, python-format
 #~ msgid "Sorry, the program \"%s\" closed unexpectedly."
 #~ msgstr "抱歉，「%s」程式不正常關閉。"
 
 #~ msgid "Restart &Program"
 #~ msgstr "重啟程式(&P)"
 
-#, python-format
 #~ msgid "Sorry, %s closed unexpectedly."
 #~ msgstr "抱歉，%s 不正常關閉。"
 
-#, python-format
 #~ msgid "Sorry, the package \"%s\" failed to install or upgrade."
 #~ msgstr "抱歉，「%s」套件無法安裝或升級。"
 
 #~ msgid "Your system encountered a serious kernel problem."
 #~ msgstr "您的系統遭遇到嚴重的內核問題。"
 
-#, python-format
 #~ msgid "Send &reduced report (slow Internet connection; %s)"
 #~ msgstr "傳送簡短報告 (慢速網際網路連線；%s)(&R)"
 
-#, no-c-format, python-format
 #~ msgid "Reduced report (slow Internet connection; %s)"
 #~ msgstr "簡短報告 (慢速網際網路連線；%s)"
 
 #~ msgid ""
 #~ "If you were not doing anything confidential (entering passwords or other "
-#~ "private information), you can help to improve the application by reporting "
-#~ "the problem."
-#~ msgstr "如您正在做的並無涉及機密資料 (例如密碼或其他私人資訊)，您可以回報此問題幫忙改善應用程式。"
+#~ "private information), you can help to improve the application by "
+#~ "reporting the problem."
+#~ msgstr ""
+#~ "如您正在做的並無涉及機密資料 (例如密碼或其他私人資訊)，您可以回報此問題幫"
+#~ "忙改善應用程式。"
 
-#, python-format
 #~ msgid "Sorry, the application %s has closed unexpectedly."
 #~ msgstr "非常抱歉，應用程式 %s 已無預警關閉。"

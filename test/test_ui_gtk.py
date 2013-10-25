@@ -415,6 +415,31 @@ Type=Application''')
         self.assertTrue(self.app.w('details_scrolledwindow').get_property('visible'))
         self.assertTrue(self.app.w('dialog_crash_new').get_resizable())
 
+    def test_apport_bug_package_layout_load_file(self):
+        '''bug layout from a loaded report'''
+
+        self.app.report_file = '/tmp/foo.apport'
+        self.app.report = apport.Report('Bug')
+        self.app.report['Package'] = 'libfoo1'
+        self.app.report['SourcePackage'] = 'foo'
+
+        GLib.idle_add(Gtk.main_quit)
+        self.app.ui_present_report_details(True)
+        self.assertEqual(self.app.w('title_label').get_text(),
+                         _('Send problem report to the developers?'))
+        self.assertFalse(self.app.w('subtitle_label').get_property('visible'))
+        send_error_report = self.app.w('send_error_report')
+        self.assertFalse(send_error_report.get_property('visible'))
+        self.assertTrue(send_error_report.get_active())
+        self.assertFalse(self.app.w('show_details').get_property('visible'))
+        self.assertTrue(self.app.w('continue_button').get_property('visible'))
+        self.assertEqual(self.app.w('continue_button').get_label(),
+                         _('Send'))
+        self.assertFalse(self.app.w('closed_button').get_property('visible'))
+        self.assertTrue(self.app.w('cancel_button').get_property('visible'))
+        self.assertTrue(self.app.w('details_scrolledwindow').get_property('visible'))
+        self.assertTrue(self.app.w('dialog_crash_new').get_resizable())
+
     def test_recoverable_crash_layout(self):
         '''
         +-----------------------------------------------------------------+
@@ -473,7 +498,7 @@ Type=Application''')
             if not self.app.w('continue_button').get_visible():
                 return True
             self.app.w('continue_button').clicked()
-            GLib.timeout_add(500, check_progress)
+            GLib.timeout_add(200, check_progress)
             return False
 
         def check_progress(*args):
@@ -527,7 +552,7 @@ Type=Application''')
 
             self.assertTrue(self.app.w('continue_button').get_visible())
             self.app.w('continue_button').clicked()
-            GLib.timeout_add(500, check_progress)
+            GLib.timeout_add(200, check_progress)
             return False
 
         def check_progress(*args):
@@ -545,7 +570,7 @@ Type=Application''')
         self.assertEqual(r['ExecutablePath'], '/bin/bash')
 
         # we already collected details, do not show the progress dialog again
-        self.assertEqual(self.visible_progress, False)
+        self.assertNotEqual(self.visible_progress, True)
 
         # data was collected
         self.assertTrue(r['Package'].startswith('bash '))
@@ -569,7 +594,7 @@ Type=Application''')
             if not self.app.w('continue_button').get_visible():
                 return True
             self.app.w('continue_button').clicked()
-            GLib.timeout_add(500, check_progress)
+            GLib.timeout_add(200, check_progress)
             return False
 
         def check_progress(*args):
@@ -586,7 +611,7 @@ Type=Application''')
         self.assertEqual(self.app.open_url.call_count, 0)
 
         # no progress dialog for non-accepting DB
-        self.assertEqual(self.visible_progress, False)
+        self.assertNotEqual(self.visible_progress, True)
 
         # data was collected for whoopsie
         r = self.app.report
