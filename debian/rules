@@ -3,10 +3,9 @@
 %:
 	dh "$@" --with python2,python3
 
-override_dh_auto_test:
-ifeq (, $(findstring nocheck, $(DEB_BUILD_OPTIONS)))
-	-env -u LD_PRELOAD -u TMPDIR APPORT_TEST_NOXVFB=1 sh test/run
-endif
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf build
 
 override_dh_auto_build:
 	dh_auto_build
@@ -20,6 +19,11 @@ override_dh_auto_install:
 	set -ex; for python in $(shell py3versions -r); do \
 		$$python setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb; \
         done
+
+override_dh_auto_test:
+ifeq (, $(findstring nocheck, $(DEB_BUILD_OPTIONS)))
+	-env -u LD_PRELOAD -u TMPDIR APPORT_TEST_NOXVFB=1 sh test/run
+endif
 
 override_dh_install:
 	dh_install -X.pyc -X.egg-info --list-missing
