@@ -1,7 +1,10 @@
-apport (2.12.6-1) UNRELEASED; urgency=low
+apport (2.12.6-1) experimental; urgency=low
 
   * [5769987] Add dependency on gir1.2-wnck-3.0 for apport-gtk
-  * [cdf0304] Imported Upstream version 2.12.6
+  * [cdf0304] Imported Upstream version 2.12.6 (Closes: #727661)
+  * [b96b842] Refresh patch
+  * [7aabdc5] update gtk/kde install files
+  * [1f8569b] update Vcs links
 
  -- Ritesh Raj Sarraf <rrs@debian.org>  Fri, 25 Oct 2013 23:06:40 +0530
 
