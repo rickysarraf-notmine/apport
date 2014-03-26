@@ -1,0 +1,15 @@
+Don't sys.exit(1) because then we cannot fallback to lsb
+
+Debian Bug #742707
+Index: apport/apport/packaging.py
+===================================================================
+--- apport.orig/apport/packaging.py	2013-10-31 13:49:00.824495586 +0530
++++ apport/apport/packaging.py	2014-03-26 20:03:25.243476030 +0530
+@@ -269,7 +269,6 @@
+                 return self._os_version
+             else:
+                 sys.stderr.write('invalid /etc/os-release: Does not contain NAMe and VERSION_ID\n')
+-                sys.exit(1)
+ 
+         # fall back to lsb_release
+         p = subprocess.Popen(['lsb_release', '-sir'], stdout=subprocess.PIPE,
