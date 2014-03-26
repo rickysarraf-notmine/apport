@@ -1,3 +1,13 @@
+apport (2.12.6-2) experimental; urgency=medium
+
+  * [dd60cf4] Don't hardcode dpkg-divert path.
+    Thanks to Maximiliano Curia (Closes: #742106)
+  * [e5893c4] Add patch to not fail if apport's traditional OS detection
+    code fails (Closes: #742707)
+  * [71d3829] Log that we are going to fall back to lsb
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Wed, 26 Mar 2014 20:14:27 +0530
+
 apport (2.12.6-1) experimental; urgency=low
 
   * [5769987] Add dependency on gir1.2-wnck-3.0 for apport-gtk
