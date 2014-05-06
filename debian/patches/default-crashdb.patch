@@ -1,13 +1,1 @@
 switch crashdb to debian
-Index: apport/etc/apport/crashdb.conf
-===================================================================
---- apport.orig/etc/apport/crashdb.conf	2012-10-01 22:17:51.312327837 +0530
-+++ apport/etc/apport/crashdb.conf	2012-10-02 02:00:21.532786789 +0530
-@@ -1,6 +1,6 @@
- # map crash database names to CrashDatabase implementations and URLs
- 
--default = 'debug'
-+default = 'debian'
- 
- databases = {
-     'ubuntu': { 

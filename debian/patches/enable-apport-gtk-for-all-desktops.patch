@@ -1,12 +1,1 @@
 Enable apport-gtk for all desktops. We anyways don't have update-notifier for KDE. So this way, apport-gtk will trigger in KDE too.
-Index: apport/gtk/apport-gtk.desktop.in
-===================================================================
---- apport.orig/gtk/apport-gtk.desktop.in	2013-10-25 23:07:50.985513381 +0530
-+++ apport/gtk/apport-gtk.desktop.in	2013-10-25 23:09:23.729510275 +0530
-@@ -6,6 +6,5 @@
- Terminal=false
- Type=Application
- MimeType=text/x-apport;
--Categories=GNOME;GTK;Utility;
- NoDisplay=true
- StartupNotify=true
