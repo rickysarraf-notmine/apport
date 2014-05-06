@@ -70,7 +70,10 @@ class T(unittest.TestCase):
         # permit tests to leave behind test_report, but nothing else
         if os.path.exists(self.test_report):
             apport.fileutils.delete_report(self.test_report)
-        self.assertEqual(apport.fileutils.get_all_reports(), [])
+        unexpected_reports = apport.fileutils.get_all_reports()
+        for r in unexpected_reports:
+            apport.fileutils.delete_report(r)
+        self.assertEqual(unexpected_reports, [])
 
     def test_empty_core_dump(self):
         '''empty core dumps do not generate a report'''
@@ -619,7 +622,19 @@ class T(unittest.TestCase):
         if sleep > 0:
             time.sleep(sleep)
         os.kill(pid, sig)
-        result = os.waitpid(pid, 0)[1]
+        # wait max 5 seconds for the process to die
+        timeout = 50
+        while timeout >= 0:
+            (p, result) = os.waitpid(pid, os.WNOHANG)
+            if p != 0:
+                break
+            time.sleep(0.1)
+            timeout -= 1
+        else:
+            os.kill(pid, signal.SIGKILL)
+            os.waitpid(pid, 0)
+            self.fail('test process does not die on signal %i' % sig)
+
         self.assertFalse(os.WIFEXITED(result), 'test process did not exit normally')
         self.assertTrue(os.WIFSIGNALED(result), 'test process died due to signal')
         self.assertEqual(os.WCOREDUMP(result), expect_coredump)
@@ -658,7 +673,6 @@ class T(unittest.TestCase):
                 self.assertEqual(gdb.returncode, 0)
                 out = out.decode()
                 err = err.decode().strip()
-                self.assertTrue(err == '' or err.startswith('warning'), err)
             finally:
                 os.unlink('/tmp/core')
         else:
@@ -690,6 +704,9 @@ class T(unittest.TestCase):
 #
 # main
 #
+
+# ensure we don't inherit an ignored SIGQUIT
+signal.signal(signal.SIGQUIT, signal.SIG_DFL)
 
 with open('/proc/sys/kernel/core_pattern') as f:
     core_pattern = f.read().strip()

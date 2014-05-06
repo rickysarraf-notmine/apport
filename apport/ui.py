@@ -13,7 +13,7 @@ implementation (like GTK, Qt, or CLI).
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-__version__ = '2.12.6'
+__version__ = '2.14.2'
 
 import glob, sys, os.path, optparse, traceback, locale, gettext, re
 import errno, zlib
@@ -202,6 +202,11 @@ class UserInterface:
 
         Ask the user what to do about them, and offer to file bugs for them.
 
+        Crashes that occurred in a different desktop (logind) session than the
+        one that is currently running are not processed. This skips crashes
+        that happened during logout, which are uninteresting and confusing to
+        see at the next login.
+
         Return True if at least one crash report was processed, False
         otherwise.
         '''
@@ -209,11 +214,24 @@ class UserInterface:
 
         if os.geteuid() == 0:
             reports = apport.fileutils.get_new_system_reports()
+            logind_session = None
         else:
             reports = apport.fileutils.get_new_reports()
+            logind_session = apport.Report.get_logind_session(os.getpid())
+
         for f in reports:
             if not self.load_report(f):
                 continue
+
+            # Skip crashes that happened during logout, which are uninteresting
+            # and confusing to see at the next login. A crash happened and gets
+            # reported in the same session if the logind session paths agree
+            # and the session started before the report's "Date".
+            if logind_session and '_LogindSession' in self.report:
+                if logind_session[0] != self.report['_LogindSession'] or \
+                   logind_session[1] > self.report.get_timestamp():
+                    continue
+
             if self.report['ProblemType'] == 'Hang':
                 self.finish_hang(f)
             else:
@@ -260,30 +278,8 @@ class UserInterface:
             allowed_to_report = apport.fileutils.allowed_to_report()
             response = self.ui_present_report_details(allowed_to_report)
             if response['report'] or response['examine']:
-                try:
-                    if 'Dependencies' not in self.report:
-                        self.collect_info()
-                except (IOError, EOFError, zlib.error) as e:
-                    # can happen with broken core dumps
-                    self.report = None
-                    self.ui_error_message(
-                        _('Invalid problem report'), '%s\n\n%s' % (
-                            _('This problem report is damaged and cannot be processed.'),
-                            repr(e)))
-                    self.ui_shutdown()
-                    return
-                except ValueError:  # package does not exist
-                    self.ui_error_message(_('Invalid problem report'),
-                                          _('The report belongs to a package that is not installed.'))
-                    self.ui_shutdown()
-                    return
-                except Exception as e:
-                    apport.error(repr(e))
-                    self.ui_error_message(_('Invalid problem report'),
-                                          _('An error occurred while attempting to process this'
-                                            ' problem report:') + '\n\n' + str(e))
-                    self.ui_shutdown()
-                    return
+                if 'Dependencies' not in self.report:
+                    self.collect_info()
 
             if self.report is None:
                 # collect() does that on invalid reports
@@ -954,6 +950,7 @@ class UserInterface:
         '''
         # check if we already ran (we might load a processed report), skip if so
         if (self.report.get('ProblemType') == 'Crash' and 'Stacktrace' in self.report) or (self.report.get('ProblemType') != 'Crash' and 'Dependencies' in self.report):
+
             if on_finished:
                 on_finished()
             return
@@ -1023,9 +1020,22 @@ class UserInterface:
                 os.environ.clear()
                 os.environ.update(orig_env)
 
-                icthread.exc_raise()
+                try:
+                    icthread.exc_raise()
+                except (IOError, EOFError, zlib.error) as e:
+                    # can happen with broken core dumps
+                    self.report['UnreportableReason'] = '%s\n\n%s' % (
+                        _('This problem report is damaged and cannot be processed.'),
+                        repr(e))
+                except ValueError:  # package does not exist
+                    self.report['UnreportableReason'] = _('The report belongs to a package that is not installed.')
+                except Exception as e:
+                    apport.error(repr(e))
+                    self.report['UnreportableReason'] = _('An error occurred while attempting to '
+                                                          'process this problem report:') + '\n\n' + str(e)
 
-            if not self.check_report_crashdb():
+            if 'UnreportableReason' in self.report or not self.check_report_crashdb():
+                self.ui_stop_info_collection_progress()
                 if on_finished:
                     on_finished()
                 return
@@ -1043,7 +1053,7 @@ class UserInterface:
                         sys.exit(1)
                 bpthread.exc_raise()
                 if bpthread.return_value():
-                    self.report['KnownReport'] = bpthread.return_value()
+                    self.report['_KnownReport'] = bpthread.return_value()
 
             # check crash database if problem is known
             if self.report['ProblemType'] != 'Bug':
@@ -1060,9 +1070,9 @@ class UserInterface:
                 val = known_thread.return_value()
                 if val is not None:
                     if val is True:
-                        self.report['KnownReport'] = '1'
+                        self.report['_KnownReport'] = '1'
                     else:
-                        self.report['KnownReport'] = val
+                        self.report['_KnownReport'] = val
 
             # anonymize; needs to happen after duplicate checking, otherwise we
             # might damage the stack trace
@@ -1117,11 +1127,30 @@ class UserInterface:
         os.setsid()
         os.close(r)
 
-        # If we are called through sudo, determine the real user id and run the
-        # browser with it to get the user's web browser settings.
+        # If we are called through pkexec/sudo, determine the real user id and
+        # run the browser with it to get the user's web browser settings.
+
         try:
             uid = int(os.getenv('PKEXEC_UID', os.getenv('SUDO_UID')))
             sudo_prefix = ['sudo', '-H', '-u', '#' + str(uid)]
+            # restore some environment for xdg-open; it's incredibly hard, or
+            # alternatively, unsafe to funnel it through pkexec/env/sudo, so
+            # grab it from gvfsd
+            try:
+                out = subprocess.check_output(
+                    ['pgrep', '-a', '-x', '-u', str(uid), 'gvfsd']).decode('UTF-8')
+                pid = out.splitlines()[0].split()[0]
+
+                # find the D-BUS address
+                with open('/proc/%s/environ' % pid, 'rb') as f:
+                    env = f.read().split(b'\0')
+                for e in env:
+                    if e.startswith(b'DBUS_SESSION_BUS_ADDRESS='):
+                        sudo_prefix.append('DBUS_SESSION_BUS_ADDRESS=' + e.split(b'=', 1)[1].decode())
+                        break
+            except (subprocess.CalledProcessError, IOError):
+                pass
+
         except TypeError:
             sudo_prefix = []
 
@@ -1135,6 +1164,7 @@ class UserInterface:
         except Exception as e:
             os.write(w, str(e))
             sys.exit(1)
+        os._exit(0)
 
     def file_report(self):
         '''Upload the current report and guide the user to the reporting web page.'''
@@ -1165,6 +1195,11 @@ class UserInterface:
         def progress_callback(sent, total):
             global __upload_progress
             __upload_progress = float(sent) / total
+
+        # drop internal/uninteresting keys, that start with "_"
+        for k in list(self.report):
+            if k.startswith('_'):
+                del self.report[k]
 
         self.ui_start_upload_progress()
         upthread = apport.REThread.REThread(target=self.crashdb.upload,
@@ -1305,18 +1340,18 @@ class UserInterface:
         '''
         if not self.crashdb.accepts(self.report):
             return False
-        if 'KnownReport' not in self.report:
+        if '_KnownReport' not in self.report:
             return False
 
         # if we have an URL, open it; otherwise this is just a marker that we
         # know about it
-        if self.report['KnownReport'].startswith('http'):
+        if self.report['_KnownReport'].startswith('http'):
             self.ui_info_message(_('Problem already known'),
                                  _('This problem was already reported in the bug report displayed \
 in the web browser. Please check if you can add any further information that \
 might be helpful for the developers.'))
 
-            self.open_url(self.report['KnownReport'])
+            self.open_url(self.report['_KnownReport'])
         else:
             self.ui_info_message(_('Problem already known'),
                                  _('This problem was already reported to developers. Thank you!'))

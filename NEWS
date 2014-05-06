@@ -1,6 +1,120 @@
 This file summarizes the major and interesting changes for each release. For a
 detailled list of changes, please see ChangeLog.
 
+2.14.2 (2014-04-30)
+-------------------
+ * Delay the import of the glob and re modules in the python apport hook,
+   and only import them when needed. Speeds up interpreter startup time
+   by 50%. Thanks Matthias Klose! (LP: #1307684)
+ * Move error handling for invalid .crash files into collect_info(), so that it
+   also applies when using the "Show Details..." button in the UI. Otherwise
+   the UI just hangs eternally at this point when encountering broken core
+   dumps. (LP: #1282349)
+ * apt/dpkg install_packages(): Try to install the requested package version
+   instead of always picking the most recent one. This should improve retracing
+   results for older crash reports. Thanks to Brian Murray for inspiring this.
+ * sandboxutils.py, make_sandbox(): When determining packages to install from
+   ProcMaps, look up and use the package versions from the reporter, to improve
+   retracing results. Thanks Brian Murray for the initial patch!
+ * iwlwifi_error_dump: Make reports private, and subscribe canonical-kernel-team.
+   Thanks Seth Forshee. (LP: #1313818)
+ * signal_crashes test: Time out after 5 seconds if the test process does not
+   terminate on the specified signal, to avoid eternal hangs.
+ * signal_crashes test: Ensure that we don't inherit an ignored SIGQUIT from
+   the caller.
+
+2.14.1 (2014-04-04)
+-------------------
+ * Fix FileNotFoundError from temporary launchpadlib cache dir cleanup.
+   (LP: #1300474)
+ * ui.py, open_url(): Skip any Python cleanup/atexit handlers in the forked
+   xdg-open child, to avoid calling them twice. (Side issue of LP #1300474 and
+   #1282713)
+ * apport-kde: Work around crash in sip by skipping the destructors of SIP
+   objects. Thanks Rohan Garg! (LP: #1282713)
+
+2.14 (2014-03-31)
+-----------------
+ * Add KernelCrash reports when iwlwifi encounters a firmware error (via the
+   "error_dump" uevent and the new iwlwifi_error_dump helper). Thanks Seth
+   Forshee!
+ * launchpad: Really use a temporary launchpadlib cache dir by default. This
+   avoids piling up gigabytes of useless cached data over time, which also
+   tends to break every now and then.
+ * Fix crash in logind session detection. Thanks Dimitri Ledkov! (LP: #1296026)
+
+2.13.3 (2014-03-07)
+-------------------
+ * Fix backend_apt_dpkg.test_get_file_package_uninstalled test that got broken
+   in the previous release.
+ * etc/cron.daily/apport: Cleanup .drkonqi files after 7 days. Thanks Harald
+   Sitter.
+ * ui.py: Try to grab session D-BUS address from user's session when being
+   called through pkexec. (LP: #1287460)
+
+2.13.2 (2014-01-27)
+-------------------
+ * Fix crash if systemd cgroup is unreadable in /sys, such as in containers.
+   (LP: #1270783)
+ * apt/dpkg: Also consider Contents.gz from updates/security/proposed pockets,
+   so that e. g. apport-retrace works for crash reports with files that are new
+   in those. Thanks to Brian Murray for the initial patch. (LP: #1271258)
+ * Only drop internal/private keys (starting with '_') from uploading to the
+   crash DB and from the UI report views, but not already when updating the
+   report. (LP: #1272505)
+ * data/apport: Fix stdout/stderr initialization of the error log, don't close
+   the original fd after dup2'ing as it is usually already fd 1. This makes
+   Apport work with Python 3.4. (LP: #1272355)
+ * Adjust report tests to work with Python 3.4 (LP: #1272355)
+
+2.13.1 (2014-01-10)
+-------------------
+ * Fix report.test_get_timestamp test for running in other time zones.
+ * Fix erroneous "gdb-multiarch not installed" warnings in ui tests.
+ * Fix ui.test_run_crash_older_session test for running as root.
+ * Fix ui.test_run_crash_older_session for different file system file orders.
+
+2.13 (2014-01-10)
+-----------------
+Improvements:
+ * whoopsie-upload-all: Add a -t/--timeout option. In CI environments it is
+   undesirable to block on upload for 30 mins, but it's still a reasonable
+   timeout on less well connected devices.
+ * Do not report keys starting with '_' to the crash database. This can be used
+   for keeping private keys in .crash files between crash and report time, or
+   to store data between hooks etc., without cluttering reports.
+ * UI: In "run all pending crashes" mode, skip reports that happened during
+   logout in a desktop (specifically, logind) session; they are uninteresting
+   and confusing to see at the next login. (LP: #1033932) They can still be
+   reported manually with running the .crash file directly, but this
+   sufficiently reduces the need to explicitly flag whether the report concerns
+   a logout crash. (LP: #1067646)
+ * Add support for PID namespaces (Linux containers): Crashes originating from
+   a container on a system running a >= 3.12 kernel will be automatically
+   redirected to apport inside the container, or ignored if apport is not
+   installed in the container. Thanks to Stéphane Graber!
+
+Bug fixes:
+ * test_signal_crashes: Clean up unexpected reports after every test, to avoid
+   breaking all subsequent tests.
+ * test_signal_crashes: Stop checking that gdb prints nothing on stderr, as
+   latest gdb 7.6.50 now almost always prints some about missing source files.
+ * setup.py: Make updating of hashbangs work when building without Java, and
+   also apply it on bin/.
+ * Print a warning when trying to retrace a report from a foreign architecture
+   and gdb-multiarch is not installed. (LP: #1239395)
+ * etc/init.d/apport: Don't change core_pattern when running in a container, as
+   this influences the host and other containers, too. (LP: #1267728)
+
+2.12.7 (2013-11-19)
+-------------------
+ * Properly fall back to lsb_release if /etc/os-release is invalid.
+ * report.py, add_proc_info(): Add "CurrentDesktop" field with the value of
+   $XDG_CURRENT_DESKTOP, if present. (LP: #1247904)
+ * fileutils.py, get_all_system_reports(): Filter out "guest..." users, they
+   might have a system UID. (LP: #1250679)
+ * apt/dpkg: Don't call dpkg-divert with full path, it moved in Ubuntu 14.04.
+
 2.12.6 (2013-10-25)
 -------------------
  * SECURITY FIX: For setuid programs which drop their privileges after
