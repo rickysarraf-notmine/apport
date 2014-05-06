@@ -337,7 +337,7 @@ class __AptDpkgPackageInfo(PackageInfo):
         instead of the one from the current system.
         '''
         # check if the file is a diversion
-        dpkg = subprocess.Popen(['/usr/sbin/dpkg-divert', '--list', file],
+        dpkg = subprocess.Popen(['dpkg-divert', '--list', file],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out = dpkg.communicate()[0].decode('UTF-8')
         if dpkg.returncode == 0 and out:
@@ -605,15 +605,15 @@ Debug::NoLocking "true";
         else:
             fetchProgress = apt.progress.base.AcquireProgress()
         if not tmp_aptroot:
-            c = self._sandbox_cache(aptroot, apt_sources, fetchProgress)
+            cache = self._sandbox_cache(aptroot, apt_sources, fetchProgress)
         else:
             self._build_apt_sandbox(aptroot, apt_sources)
-            c = apt.Cache(rootdir=os.path.abspath(aptroot))
+            cache = apt.Cache(rootdir=os.path.abspath(aptroot))
             try:
-                c.update(fetchProgress)
+                cache.update(fetchProgress)
             except apt.cache.FetchFailedException as e:
                 raise SystemError(str(e))
-            c.open()
+            cache.open()
 
         obsolete = ''
 
@@ -623,18 +623,20 @@ Debug::NoLocking "true";
         real_pkgs = set()
         for (pkg, ver) in packages:
             try:
-                candidate = c[pkg].candidate
+                cache_pkg = cache[pkg]
             except KeyError:
-                candidate = None
-            if not candidate:
                 m = 'package %s does not exist, ignoring' % pkg.replace('%', '%%')
                 obsolete += m + '\n'
                 apport.warning(m)
                 continue
 
-            if ver and candidate.version != ver:
-                w = '%s version %s required, but %s is available' % (pkg, ver, candidate.version)
-                obsolete += w + '\n'
+            # try to select matching version
+            try:
+                if ver:
+                    cache_pkg.candidate = cache_pkg.versions[ver]
+            except KeyError:
+                obsolete += '%s version %s required, but %s is available\n' % (pkg, ver, cache_pkg.candidate.version)
+            candidate = cache_pkg.candidate
             real_pkgs.add(pkg)
 
             if permanent_rootdir:
@@ -657,7 +659,7 @@ Debug::NoLocking "true";
                     # Replaces/Depends, we can safely choose the first value
                     # here.
                     conflict = conflict[0]
-                    if c.is_virtual_package(conflict[0]):
+                    if cache.is_virtual_package(conflict[0]):
                         try:
                             providers = virtual_mapping[conflict[0]]
                         except KeyError:
@@ -680,32 +682,51 @@ Debug::NoLocking "true";
                                 os.unlink(path)
 
             if candidate.architecture != 'all':
-                if pkg + '-dbg' in c:
+                try:
+                    dbg = cache[pkg + '-dbg']
+                    # try to get the same version as pkg
+                    try:
+                        dbg.candidate = dbg.versions[candidate.version]
+                    except KeyError:
+                        obsolete += 'outdated -dbg package for %s: package version %s -dbg version %s\n' % (
+                            pkg, candidate.version, dbg.candidate.version)
                     real_pkgs.add(pkg + '-dbg')
-                else:
+                except KeyError:
                     # install all -dbg from the source package
                     if src_records.lookup(candidate.source_name):
-                        dbgs = [p for p in src_records.binaries if p.endswith('-dbg') and p in c]
+                        dbgs = [p for p in src_records.binaries if p.endswith('-dbg') and p in cache]
                     else:
                         dbgs = []
                     if dbgs:
                         for p in dbgs:
+                            # try to get the same version as pkg
+                            try:
+                                cache[p].candidate = cache[p].versions[candidate.version]
+                            except KeyError:
+                                # we don't really expect that, but it's possible that
+                                # other binaries have a different version
+                                pass
                             real_pkgs.add(p)
                     else:
-                        if pkg + '-dbgsym' in c:
+                        try:
+                            dbgsym = cache[pkg + '-dbgsym']
                             real_pkgs.add(pkg + '-dbgsym')
-                            if c[pkg + '-dbgsym'].candidate.version != candidate.version:
+                            try:
+                                dbgsym.candidate = dbgsym.versions[candidate.version]
+                            except KeyError:
                                 obsolete += 'outdated debug symbol package for %s: package version %s dbgsym version %s\n' % (
-                                    pkg, candidate.version, c[pkg + '-dbgsym'].candidate.version)
+                                    pkg, candidate.version, dbgsym.candidate.version)
+                        except KeyError:
+                            obsolete += 'no debug symbol package found for %s\n' % pkg
 
         for p in real_pkgs:
-            c[p].mark_install(False, False)
+            cache[p].mark_install(False, False)
 
         last_written = time.time()
         # fetch packages
         fetcher = apt.apt_pkg.Acquire(fetchProgress)
         try:
-            c.fetch_archives(fetcher=fetcher)
+            cache.fetch_archives(fetcher=fetcher)
         except apt.cache.FetchFailedException as e:
             apport.error('Package download error, try again later: %s', str(e))
             sys.exit(99)  # transient error
@@ -836,44 +857,54 @@ Debug::NoLocking "true";
             release = self.get_distro_codename()
         else:
             release = self._distro_release_to_codename(release)
+        for pocket in ['-updates', '-security', '-proposed', '']:
+            map = os.path.join(dir, '%s%s-Contents-%s.gz' % (release, pocket, arch))
 
-        map = os.path.join(dir, '%s-Contents-%s.gz' % (release, arch))
+            # check if map exists and is younger than a day; if not, we need to
+            # refresh it
+            try:
+                st = os.stat(map)
+                age = int(time.time() - st.st_mtime)
+            except OSError:
+                age = None
 
-        # check if map exists and is younger than a day; if not, we need to
-        # refresh it
-        try:
-            st = os.stat(map)
-            age = int(time.time() - st.st_mtime)
-        except OSError:
-            age = None
+            if age is None or age >= 86400:
+                url = '%s/dists/%s%s/Contents-%s.gz' % (self._get_mirror(), release, pocket, arch)
 
-        if age is None or age >= 86400:
-            url = '%s/dists/%s/Contents-%s.gz' % (self._get_mirror(), release, arch)
+                try:
+                    src = urlopen(url)
+                except IOError:
+                    # we ignore non-existing pockets, but we do crash if the
+                    # release pocket doesn't exist
+                    if pocket == '':
+                        raise
+                    else:
+                        continue
 
-            src = urlopen(url)
-            with open(map, 'wb') as f:
-                while True:
-                    data = src.read(1000000)
-                    if not data:
-                        break
-                    f.write(data)
-            src.close()
-            assert os.path.exists(map)
+                with open(map, 'wb') as f:
+                    while True:
+                        data = src.read(1000000)
+                        if not data:
+                            break
+                        f.write(data)
+                src.close()
+                assert os.path.exists(map)
 
-        if file.startswith('/'):
-            file = file[1:]
+            if file.startswith('/'):
+                file = file[1:]
 
-        # zgrep is magnitudes faster than a 'gzip.open/split() loop'
-        package = None
-        zgrep = subprocess.Popen(['zgrep', '-m1', '^%s[[:space:]]' % file, map],
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out = zgrep.communicate()[0].decode('UTF-8')
-        # we do not check the return code, since zgrep -m1 often errors out
-        # with 'stdout: broken pipe'
-        if out:
-            package = out.split()[1].split(',')[0].split('/')[-1]
-
-        return package
+            # zgrep is magnitudes faster than a 'gzip.open/split() loop'
+            package = None
+            zgrep = subprocess.Popen(['zgrep', '-m1', '^%s[[:space:]]' % file, map],
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out = zgrep.communicate()[0].decode('UTF-8')
+            # we do not check the return code, since zgrep -m1 often errors out
+            # with 'stdout: broken pipe'
+            if out:
+                package = out.split()[1].split(',')[0].split('/')[-1]
+            if package:
+                return package
+        return None
 
     @classmethod
     def _build_apt_sandbox(klass, apt_root, apt_sources):

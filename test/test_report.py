@@ -224,6 +224,28 @@ sys.stdin.readline()
         self.assertTrue(lang in r['ProcEnviron'].encode('UTF-8'))
         self.assertTrue('XDG_RUNTIME_DIR=<set>' in r['ProcEnviron'], r['ProcEnviron'])
 
+    def test_add_proc_info_current_desktop(self):
+        '''add_proc_info() CurrentDesktop'''
+
+        p = subprocess.Popen(['cat'], stdin=subprocess.PIPE,
+                             env={'LANG': 'xx_YY.UTF-8'})
+        time.sleep(0.1)
+        r = apport.report.Report()
+        r.add_proc_info(pid=p.pid)
+        p.communicate(b'')
+        self.assertEqual(r['ProcEnviron'], 'LANG=xx_YY.UTF-8')
+        self.assertFalse('CurrentDesktop' in r, r)
+
+        p = subprocess.Popen(['cat'], stdin=subprocess.PIPE,
+                             env={'LANG': 'xx_YY.UTF-8',
+                                  'XDG_CURRENT_DESKTOP': 'Pixel Pusher'})
+        time.sleep(0.1)
+        r = apport.report.Report()
+        r.add_proc_info(pid=p.pid)
+        p.communicate(b'')
+        self.assertEqual(r['ProcEnviron'], 'LANG=xx_YY.UTF-8')
+        self.assertEqual(r['CurrentDesktop'], 'Pixel Pusher')
+
     def test_add_path_classification(self):
         '''classification of $PATH.'''
 
@@ -1168,8 +1190,8 @@ def add_info(report, ui):
 
             # should print the exceptions to stderr
             err = sys.stderr.getvalue()
-            self.assertTrue('ZeroDivisionError:' in err, err)
-            self.assertTrue("global name 'unknown' is not defined" in err, err)
+            self.assertIn('ZeroDivisionError:', err)
+            self.assertIn("name 'unknown' is not defined", err)
 
             # should also add the exceptions to the report
             self.assertTrue('NameError:' in r['HookError_source_foo'],
@@ -2165,6 +2187,37 @@ No symbol table info available.
         del pr['dmi.bios.version']
         expected = 'suspend/resume:Cray XT5'
         self.assertEqual(expected, pr.crash_signature())
+
+    def test_get_logind_session(self):
+        ret = apport.Report.get_logind_session(os.getpid())
+        if ret is None:
+            # ensure that we don't run under logind, and thus the None is
+            # justified
+            with open('/proc/self/cgroup') as f:
+                contents = f.read()
+            sys.stdout.write('[not running under logind] ')
+            sys.stdout.flush()
+            self.assertNotIn('name=systemd:/user/', contents)
+            return
+
+        (session, timestamp) = ret
+        self.assertTrue(session.startswith('/user/'), session)
+        # session start must be >= 2014-01-01 and "now"
+        self.assertLess(timestamp, time.time())
+        self.assertGreater(timestamp,
+                           time.mktime(time.strptime('2014-01-01', '%Y-%m-%d')))
+
+    def test_get_timestamp(self):
+        r = apport.Report()
+        self.assertAlmostEqual(r.get_timestamp(), time.time(), delta=1)
+
+        r['Date'] = 'Thu Jan 9 12:00:00 2014'
+        # delta is ±12 hours, as this depends on the timezone that the test is
+        # run in
+        self.assertAlmostEqual(r.get_timestamp(), 1389265200.0, delta=43200)
+
+        del r['Date']
+        self.assertEqual(r.get_timestamp(), None)
 
 if __name__ == '__main__':
     unittest.main()

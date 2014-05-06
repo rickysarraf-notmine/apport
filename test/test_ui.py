@@ -16,6 +16,8 @@ import problem_report
 import apport.crashdb_impl.memory
 import stat
 
+logind_session = apport.Report.get_logind_session(os.getpid())
+
 
 class TestSuiteUserInterface(apport.ui.UserInterface):
     '''Concrete apport.ui.UserInterface suitable for automatic testing'''
@@ -448,7 +450,7 @@ bOgUs=
         self.assertEqual(self.ui.opened_url, None)
 
         demo_url = 'http://example.com/1'
-        self.report['KnownReport'] = demo_url
+        self.report['_KnownReport'] = demo_url
         self.update_report_file()
         self.ui.load_report(self.report_file.name)
         self.assertEqual(self.ui.handle_duplicate(), True)
@@ -457,7 +459,7 @@ bOgUs=
 
         self.ui.opened_url = None
         demo_url = 'http://example.com/1'
-        self.report['KnownReport'] = '1'
+        self.report['_KnownReport'] = '1'
         self.update_report_file()
         self.ui.load_report(self.report_file.name)
         self.assertEqual(self.ui.handle_duplicate(), True)
@@ -722,6 +724,7 @@ bOgUs=
         r['Signal'] = '11'
         r.add_proc_info(pid)
         r.add_user_info()
+        r.add_os_info()
 
         # generate a core dump
         coredump = os.path.join(apport.fileutils.report_dir, 'core')
@@ -851,7 +854,7 @@ bOgUs=
                                             'examine': False,
                                             'restart': False}
         self.ui.run_crash(report_file)
-        self.assertEqual(self.ui.msg_severity, 'error', self.ui.msg_text)
+        self.assertEqual(self.ui.msg_severity, 'info', self.ui.msg_text)
         self.assertTrue('decompress' in self.ui.msg_text)
         self.assertTrue(self.ui.present_details_shown)
 
@@ -1382,7 +1385,7 @@ bOgUs=
             r.write(f)
         self.ui.crashdb.known = lambda r: True
         self.ui.run_crash(report_file)
-        self.assertEqual(self.ui.report['KnownReport'], '1')
+        self.assertEqual(self.ui.report['_KnownReport'], '1')
         self.assertEqual(self.ui.msg_severity, 'info')
         self.assertEqual(self.ui.opened_url, None)
 
@@ -1396,9 +1399,83 @@ bOgUs=
             r.write(f)
         self.ui.crashdb.known = lambda r: 'http://myreport/1'
         self.ui.run_crash(report_file)
-        self.assertEqual(self.ui.report['KnownReport'], 'http://myreport/1')
+        self.assertEqual(self.ui.report['_KnownReport'], 'http://myreport/1')
         self.assertEqual(self.ui.msg_severity, 'info')
         self.assertEqual(self.ui.opened_url, 'http://myreport/1')
+
+    def test_run_crash_private_keys(self):
+        '''does not upload private keys to crash db'''
+
+        r = self._gen_test_crash()
+        r['_Temp'] = 'boring'
+
+        # write crash report
+        report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
+
+        # report
+        with open(report_file, 'wb') as f:
+            r.write(f)
+        self.ui = TestSuiteUserInterface()
+        self.ui.present_details_response = {'report': True,
+                                            'blacklist': False,
+                                            'examine': False,
+                                            'restart': False}
+        self.ui.run_crash(report_file)
+        self.assertEqual(self.ui.opened_url, 'http://coreutils.bugs.example.com/%i' % self.ui.crashdb.latest_id())
+        # internal key should not be uploaded to the crash db
+        r = self.ui.crashdb.download(self.ui.crashdb.latest_id())
+        self.assertTrue('SourcePackage' in r)
+        self.assertFalse('_Temp' in r)
+
+    @unittest.skipIf(logind_session is None, 'not running in logind session')
+    def test_run_crash_older_session(self):
+        '''run_crashes() skips crashes from older logind sessions'''
+
+        latest_id_before = self.ui.crashdb.latest_id()
+
+        # current crash report
+        r = self._gen_test_crash()
+        cur_date = r['Date']
+        r['Tag'] = 'cur'
+        self.assertEqual(r['_LogindSession'], logind_session[0])
+        with open(os.path.join(apport.fileutils.report_dir, 'cur.crash'), 'wb') as f:
+            r.write(f)
+
+        # old crash report
+        r['Date'] = time.asctime(time.localtime(logind_session[1] - 1))
+        r['Tag'] = 'old'
+        with open(os.path.join(apport.fileutils.report_dir, 'old.crash'), 'wb') as f:
+            r.write(f)
+
+        # old crash report without session
+        del r['_LogindSession']
+        r['Tag'] = 'oldnosession'
+        with open(os.path.join(apport.fileutils.report_dir, 'oldnosession.crash'), 'wb') as f:
+            r.write(f)
+        del r
+
+        self.ui = TestSuiteUserInterface()
+        self.ui.present_details_response = {'report': True,
+                                            'blacklist': False,
+                                            'examine': False,
+                                            'restart': False}
+        self.ui.run_crashes()
+
+        if os.getuid() != 0:
+            # as user: should have reported two reports only
+            self.assertEqual(self.ui.crashdb.latest_id(), latest_id_before + 2)
+            r1 = self.ui.crashdb.download(self.ui.crashdb.latest_id())
+            r2 = self.ui.crashdb.download(self.ui.crashdb.latest_id() - 1)
+            if r1['Tag'] == 'cur':
+                self.assertEqual(r1['Date'], cur_date)
+                self.assertEqual(r2['Tag'], 'oldnosession')
+            else:
+                self.assertEqual(r2['Date'], cur_date)
+                self.assertEqual(r1['Tag'], 'oldnosession')
+                self.assertEqual(r2['Tag'], 'cur')
+        else:
+            # as root: should have reported all reports
+            self.assertEqual(self.ui.crashdb.latest_id(), latest_id_before + 3)
 
     def test_run_update_report_nonexisting_package_from_bug(self):
         '''run_update_report() on a nonexisting package (from bug)'''

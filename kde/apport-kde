@@ -31,6 +31,13 @@ try:
                               KStandardGuiItem)
     import apport.ui
     from apport import unicode_gettext as _
+    import sip
+    ## Work around for LP: 1282713
+    try:
+        sip.setdestroyonexit(False)
+    except AttributeError:
+       pass
+
 except ImportError as e:
     # this can happen while upgrading python packages
     apport.fatal('Could not import module, is a package upgrade in progress?  Error: %s', str(e))
@@ -322,6 +329,10 @@ class MainUserInterface(apport.ui.UserInterface):
             keys = self.report.keys()
         details.clear()
         for key in sorted(keys):
+            # ignore internal keys
+            if key.startswith('_'):
+                continue
+
             keyitem = QTreeWidgetItem([key])
             details.addTopLevelItem(keyitem)
 
