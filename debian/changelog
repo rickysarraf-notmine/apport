@@ -1,3 +1,11 @@
+apport (2.14.2-1) experimental; urgency=medium
+
+  * [e78142c] Imported Upstream version 2.14.2
+  * [480c5be] Drop patches. Applied upstream
+  * [c1843d5] Refresh patches
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Tue, 06 May 2014 19:39:45 +0530
+
 apport (2.12.6-2) experimental; urgency=medium
 
   * [dd60cf4] Don't hardcode dpkg-divert path.
