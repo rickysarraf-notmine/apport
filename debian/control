@@ -56,6 +56,19 @@ Description: automatically generate crash reports for debugging
  handling the crash reports. For desktops, you should consider
  installing the GTK+ or Qt user interface (apport-gtk or apport-kde).
 
+Package: apport-notifyd
+Architecture: any
+Depends: apport,
+ ${misc:Depends},
+ ${python:Depends}
+Suggests: apport-gtk | apport-kde
+Description: automatically generate crash reports for debugging
+ apport automatically collects data from crashed processes and
+ compiles a problem report in /var/crash/. This utilizes the crashdump
+ helper hook provided by the kernel.
+ .
+ This package provides the notification daemon
+
 Package: python-problem-report
 Section: python
 Architecture: all
@@ -149,7 +162,7 @@ Depends: python3,
  apport (>= 0.41), 
  procps,
  ${misc:Depends}
-Recommends: update-notifier, gdb
+Recommends: update-notifier, gdb, apport-notifyd
 Description: GTK+ frontend for the apport crash report system
  apport automatically collects data from crashed processes and
  compiles a problem report in /var/crash/. This utilizes the crashdump
@@ -168,7 +181,7 @@ Depends: python (>= 2.4),
  procps,
  ${misc:Depends},
  ${python:Depends}
-Recommends: update-notifier-kde, gdb
+Recommends: update-notifier-kde, gdb, apport-notifyd
 Description: KDE frontend for the apport crash report system
  apport automatically collects data from crashed processes and
  compiles a problem report in /var/crash/. This utilizes the crashdump
