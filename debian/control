@@ -60,7 +60,8 @@ Package: apport-notify
 Architecture: any
 Depends: apport,
  ${misc:Depends},
- ${python:Depends}
+ ${python:Depends},
+ ${shlibs:Depends}
 Suggests: apport-gtk | apport-kde
 Description: automatically generate crash reports for debugging
  apport automatically collects data from crashed processes and
