@@ -57,7 +57,7 @@ Description: automatically generate crash reports for debugging
  installing the GTK+ or Qt user interface (apport-gtk or apport-kde).
 
 Package: apport-notify
-Architecture: any
+Architecture: linux-any
 Depends: apport,
  ${misc:Depends},
  ${python:Depends},
