@@ -1,0 +1,2 @@
+debian/apport-notifyd	/usr/bin/
+debian/apport-notification.desktop	/etc/xdg/autostart/

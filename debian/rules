@@ -9,10 +9,12 @@ DEB_BUILD_OPTIONS=nocheck
 override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf build
+	rm -f debian/apport-notifyd
 
 override_dh_auto_build:
 	dh_auto_build
 	python3 setup.py build
+	gcc -Wall debian/apport-notifyd.c -o debian/apport-notifyd
 
 override_dh_installinit:
 	dh_installinit --error-handler=true

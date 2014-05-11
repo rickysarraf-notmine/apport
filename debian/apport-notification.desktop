@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Apport Notification Daemon
+Comment=Display Apport notifications
+Exec=/usr/bin/apport-notifyd
+TryExec=/usr/bin/apport-notifyd
+Type=Application
