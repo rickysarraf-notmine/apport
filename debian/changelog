@@ -1,3 +1,9 @@
+apport (2.14.2-2) experimental; urgency=medium
+
+  * [bfc77cc] Add new package apport-notifyd
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sun, 11 May 2014 12:59:27 +0530
+
 apport (2.14.2-1) experimental; urgency=medium
 
   * [e78142c] Imported Upstream version 2.14.2

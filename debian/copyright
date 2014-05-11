@@ -23,6 +23,9 @@ Copyright (C) 2006-2009 Canonical Ltd.
 On Debian systems, the complete text of the GNU General
 Public License can be found in `/usr/share/common-licenses/GPL-2'.
 
+debian/apport-notifyd.c is copyright Ritesh Raj Sarraf <rrs@debian.org> and is
+licensed under the GPL version 3 of the license, or (at your option) any later
+version.
 
 The initial Debian packaging was taken from the work done by the Ubuntu team.
 The Debian packaging is currently maintained by
