@@ -41,7 +41,6 @@ Depends: python3,
  lsb-base (>= 3.0-6),
  python3-gi,
  gir1.2-glib-2.0 (>= 1.29.17),
- sysv-rc (>= 2.86.ds1-14),
  ${misc:Depends},
  ${python:Depends}
 Recommends: policykit-1
