@@ -32,8 +32,9 @@ static void trapCrashFile(struct inotify_event *i)
 
     //if (strncmp(i->name, ".crash", -6) == 0) printf("It's a match");
 
-    if (i->mask & IN_CREATE)        system(cmdStr);
+    if (i->mask & IN_CLOSE_WRITE)        system(cmdStr);
     /*
+    if (i->mask & IN_CREATE)        system(cmdStr);
     if (i->mask & IN_ATTRIB)        printf("IN_ATTRIB ");
     if (i->mask & IN_MODIFY)        printf("IN_MODIFY ");
     */
