@@ -28,11 +28,15 @@ static void trapCrashFile(struct inotify_event *i)
     strcat(cmdStr, PROG);
     strcat(cmdStr, CRASH_PATH);
     strcat(cmdStr, i->name);
-    syslog(LOG_DEBUG, "cmdStr is %s at event %d\n", cmdStr, i->mask);
+    // syslog(LOG_DEBUG, "cmdStr is %s at event %d\n", cmdStr, i->mask);
 
     //if (strncmp(i->name, ".crash", -6) == 0) printf("It's a match");
 
-    if (i->mask & IN_CLOSE_WRITE)        system(cmdStr);
+    if (i->mask & IN_CLOSE_WRITE)
+    {
+	    system(cmdStr);
+	    syslog(LOG_DEBUG, "cmdStr is %s at event %d\n", cmdStr, i->mask);
+    }
     /*
     if (i->mask & IN_CREATE)        system(cmdStr);
     if (i->mask & IN_ATTRIB)        printf("IN_ATTRIB ");
