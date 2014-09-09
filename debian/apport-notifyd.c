@@ -62,10 +62,9 @@ int main()
     if (inotifyFd == -1)
 	syslog(LOG_NOTICE, "inotify_init");
 
-    wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CREATE|IN_ATTRIB|IN_MODIFY); /* We only care when a crash file gets created */
-    /*
+    // wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CREATE|IN_ATTRIB|IN_MODIFY); /* We only care when a crash file gets created */
+    // wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CLOSE_WRITE); /* We only care when a crash file gets created */
     wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_ALL_EVENTS); // We only care when a crash file gets created
-    */
 
     if (wd == -1)	syslog(LOG_NOTICE, "inotify_add_watch");
 
