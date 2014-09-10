@@ -21,6 +21,23 @@
 #define PROG "apport-bug "
 #define CRASH_PATH "/var/crash/"
 
+int checkFileExtn(const char* extn, const char* CRASH_EXTN)
+{
+	#define CRASH_EXTN ".crash"
+	size_t extnLength;
+	size_t apportLength;
+
+	extnLength = strlen(extn);
+	apportLength = strlen(CRASH_EXTN);
+	// syslog(LOG_NOTICE,"extnLength is %d and apportLength is %d\n", extnLength, apportLength);
+
+	if(apportLength > extnLength) return 1;
+
+	/* Check if it is a .crash file */
+	// syslog(LOG_NOTICE,"strcmp length is %s\n", &extn[extnLength - apportLength]);
+	return (strcmp(&extn[extnLength - apportLength], CRASH_EXTN)) == 0;
+}
+
 static void trapCrashFile(struct inotify_event *i)
 {
 
@@ -30,13 +47,16 @@ static void trapCrashFile(struct inotify_event *i)
     strcat(cmdStr, i->name);
     // syslog(LOG_DEBUG, "cmdStr is %s at event %d\n", cmdStr, i->mask);
 
-    //if (strncmp(i->name, ".crash", -6) == 0) printf("It's a match");
+    if (checkFileExtn(i->name, CRASH_EXTN)) {
+	    // syslog(LOG_DEBUG, "File %s has extension %s\n", i->name, CRASH_EXTN);
+	    if (i->mask & IN_CREATE) {
+		    system(cmdStr);
+		    syslog(LOG_NOTICE, "cmdStr is %s at event %d\n", cmdStr, i->mask);
+	    }
+    } /* else {
+	    syslog(LOG_DEBUG, "File %s does not have extension %s\n", i->name, CRASH_EXTN);
+    } */
 
-    if (i->mask & IN_CLOSE_WRITE)
-    {
-	    system(cmdStr);
-	    syslog(LOG_DEBUG, "cmdStr is %s at event %d\n", cmdStr, i->mask);
-    }
     /*
     if (i->mask & IN_CREATE)        system(cmdStr);
     if (i->mask & IN_ATTRIB)        printf("IN_ATTRIB ");
@@ -68,7 +88,7 @@ int main()
 
     // wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CREATE|IN_ATTRIB|IN_MODIFY); /* We only care when a crash file gets created */
     // wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CLOSE_WRITE); /* We only care when a crash file gets created */
-    wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_ALL_EVENTS); // We only care when a crash file gets created
+    wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CREATE); // We only care when a crash file gets created
 
     if (wd == -1)	syslog(LOG_NOTICE, "inotify_add_watch");
 
@@ -87,8 +107,9 @@ int main()
         for (p = buf; p < buf + numRead; ) {
             event = (struct inotify_event *) p;
             trapCrashFile(event);
+	    syslog(LOG_NOTICE, "Got invoked\n");
 
-            p += sizeof(struct inotify_event) + event->len;
+            p += sizeof(struct inotify_event) + event->len + 1;
         }
     }
     closelog();
