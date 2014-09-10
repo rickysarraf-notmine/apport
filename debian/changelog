@@ -1,3 +1,13 @@
+apport (2.14.2-3) experimental; urgency=medium
+
+  * [0be4151] Drop sysv-rc hard dependency
+  * [bd42d8c] Listen on inotify event file close.
+    Thanks to Laurent Bigonville (Closes: #750989)
+  * [edf75a6] Ony honor IN_CREATE. Also act only for .crash files
+  * [e1f282c] Display debug symbol package name
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Wed, 10 Sep 2014 15:42:05 +0530
+
 apport (2.14.2-2) experimental; urgency=medium
 
   * [bfc77cc] Add new package apport-notifyd
