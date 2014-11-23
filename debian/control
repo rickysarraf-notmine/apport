@@ -2,7 +2,7 @@ Source: apport
 Section: utils
 Priority: optional
 Build-Depends: debhelper (>= 7.0.50~),
- gdb,
+ gdb | gdb-minimal,
  python-twisted-core,
  gir1.2-glib-2.0 (>= 1.29.17),
  lsb-release,
@@ -140,7 +140,7 @@ Depends: python (>= 2.4),
  apt,
  binutils,
  dpkg-dev,
- gdb,
+ gdb | gdb-minimal,
  libc6-dbg,
  ${misc:Depends}
 Suggests: gdb-multiarch
@@ -162,7 +162,7 @@ Depends: python3,
  apport (>= 0.41), 
  procps,
  ${misc:Depends}
-Recommends: update-notifier, gdb, apport-notify
+Recommends: update-notifier, gdb | gdb-minimal, apport-notify
 Description: GTK+ frontend for the apport crash report system
  apport automatically collects data from crashed processes and
  compiles a problem report in /var/crash/. This utilizes the crashdump
@@ -181,7 +181,7 @@ Depends: python (>= 2.4),
  procps,
  ${misc:Depends},
  ${python:Depends}
-Recommends: update-notifier-kde, gdb, apport-notify
+Recommends: update-notifier-kde, gdb | gdb-minimal, apport-notify
 Description: KDE frontend for the apport crash report system
  apport automatically collects data from crashed processes and
  compiles a problem report in /var/crash/. This utilizes the crashdump
