@@ -2,7 +2,7 @@ Source: apport
 Section: utils
 Priority: optional
 Build-Depends: debhelper (>= 7.0.50~),
- gdb | gdb-minimal,
+ gdb,
  python-twisted-core,
  gir1.2-glib-2.0 (>= 1.29.17),
  lsb-release,
@@ -14,8 +14,6 @@ Build-Depends-Indep: python-distutils-extra (>= 2.24~),
  python3-distutils-extra (>= 2.24~),
  python-apt (>= 0.7.9),
  python3-apt (>= 0.7.9),
- pep8,
- pyflakes,
  intltool,
  xvfb,
  python-mock,
@@ -23,6 +21,16 @@ Build-Depends-Indep: python-distutils-extra (>= 2.24~),
  procps,
  psmisc,
  gir1.2-gtk-3.0 (>= 3.1.90),
+ gir1.2-wnck-3.0,
+ pep8,
+ pyflakes,
+ xterm,
+ dbus-x11,
+ gvfs-daemons,
+ libglib2.0-dev,
+ libglib2.0-0-dbg,
+ libnih-dev,
+ libc6-dbg | libc-dbg,
  python-gi,
  python3-gi,
  default-jdk | java-sdk
@@ -150,6 +158,28 @@ Description: tools for reprocessing Apport crash reports
  stack traces. This can optionally use a sandbox for installing debug symbol
  packages and doing the processing, so that entire process of retracing crashes
  can happen with normal user privileges without changing the system.
+ .
+ You need to install gdb-multiarch if you want to be able to retrace crash
+ reports which happened on a different architecture than the one you run
+ apport-retrace on.
+
+Package: apport-valgrind
+Section: devel
+Architecture: all
+Depends: python3,
+ python3-apport (>= ${source:Version}),
+ apt,
+ binutils,
+ valgrind (>= 3.8.1),
+ dpkg-dev,
+ libc6-dbg, ${misc:Depends}
+Description: valgrind wrapper that first downloads debug symbols
+ apport-valgrind is a valgrind wrapper that automatically downloads related
+ available debug symbols and provides them to valgrind's memcheck tool, which
+ is executed. The output is a valgrind log file ("valgrind.log") that contains
+ stack traces (with as many symbols resolved as available) and that shows
+ memory leaks.
+
 
 Package: apport-gtk
 Section: gnome
@@ -161,6 +191,7 @@ Depends: python3,
  python3-gi,
  apport (>= 0.41), 
  procps,
+ x-terminal-emulator,
  ${misc:Depends}
 Recommends: update-notifier, gdb | gdb-minimal, apport-notify
 Description: GTK+ frontend for the apport crash report system
@@ -179,6 +210,7 @@ Depends: python (>= 2.4),
  python-kde4,
  apport (>= 0.41),
  procps,
+ x-terminal-emulator,
  ${misc:Depends},
  ${python:Depends}
 Recommends: update-notifier-kde, gdb | gdb-minimal, apport-notify
@@ -203,21 +235,4 @@ Description: debhelper extension for the apport crash report system
  .
  This package provides a debhelper extension to make it easier for other
  packages to include apport hooks.
-
-Package: apport-valgrind
-Section: devel
-Architecture: all
-Depends: python3,
- python3-apport (>= ${source:Version}),
- apt,
- binutils,
- valgrind (>= 3.8.1),
- dpkg-dev,
- libc6-dbg, ${misc:Depends}
-Description: valgrind wrapper that first downloads debug symbols
- apport-valgrind is a valgrind wrapper that automatically downloads related
- available debug symbols and provides them to valgrind's memcheck tool, which
- is executed. The output is a valgrind log file ("valgrind.log") that contains
- stack traces (with as many symbols resolved as available) and that shows
- memory leaks.
 
