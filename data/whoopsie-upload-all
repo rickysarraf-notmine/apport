@@ -44,7 +44,7 @@ def process_report(report):
     except Exception as e:
         sys.stderr.write('ERROR: cannot load %s: %s\n' % (report, str(e)))
         return None
-    if r.get('ProblemType', '') != 'Crash' or 'ExecutablePath' not in r:
+    if r.get('ProblemType', '') != 'Crash' and 'ExecutablePath' not in r:
         print('  skipping, not a crash')
         return None
     if 'Dependencies' in r:
@@ -52,7 +52,18 @@ def process_report(report):
     else:
         print('Collecting info for %s...' % report)
         r.add_os_info()
-        r.add_gdb_info()
+        # add minimal hook information here; whoopsie only considers
+        # ApportVersion, NonfreeKernelModules, SystemImageInfo
+        try:
+            r.add_hooks_info(None)
+        except Exception as e:
+            sys.stderr.write('WARNING: hook failed for processing %s: %s\n' % (report, str(e)))
+
+        try:
+            r.add_gdb_info()
+        except (IOError, EOFError) as e:
+            sys.stderr.write('ERROR: processing %s: %s\n' % (report, str(e)))
+            return None
         try:
             r.add_package_info()
         except (SystemError, ValueError) as e:
@@ -135,7 +146,7 @@ if subprocess.call(['pidof', 'whoopsie'], stdout=subprocess.PIPE) != 0:
     sys.exit(1)
 
 stamps = collect_info()
-#print('stamps:', stamps)
+# print('stamps:', stamps)
 if stamps:
     if not wait_uploaded(stamps, opts.timeout):
         sys.exit(2)

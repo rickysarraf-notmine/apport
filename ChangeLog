@@ -1,3 +1,1215 @@
+=== 2.14.7 ===
+2014-08-29  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2854] release 2.14.7
+
+	* NEWS,
+	* apport/report.py,
+	* bin/apport-retrace,
+	* data/whoopsie-upload-all,
+	* test/test_report.py: [2853] * report.py, add_gdb_info(): Check for
+	truncated core dumps, and set UnreportableReason and raise an IOError
+	on them. Handle this in apport-retrace and whoopsie-upload-all to fail
+	properly instead of silently producing broken Stacktraces. (LP:
+	#1354571)
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/apport.pot,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2852] merge i18n
+
+	* NEWS,
+	* test/test_report.py: [2851] * Fix report.test_add_proc_info test to
+	stop assuming that pid 1 is named "init", as one can specify a
+	different one on the kernel command line.
+
+2014-08-28  Martin Pitt <martin.pitt@canonical.com>
+
+	* etc/apport/crashdb.conf: [2850] etc/apport/crashdb.conf: Fix
+	whitespace
+
+2014-08-27  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/sandboxutils.py: [2849] * sandboxutils.py, make_sandbox():
+	Drop check for already existing files when dynamically resolving
+	libraries and ExecutablePaths; with that, these packages would never
+	get updated in a permanent sandbox. The new version tracking from
+	above now takes care of that. (LP: #1352591)
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py,
+	* test/test_backend_apt_dpkg.py: [2848] * apt/dpkg install_packages():
+	Avoid re-downloading/installing packages which are already installed
+	into a permanent sandbox. Prerequisite for LP #1352591.
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py,
+	* test/test_backend_apt_dpkg.py: [2847] * apt/dpkg install_packages():
+	Write a "packages.txt" into sandbox root directory to keep track of
+	installed packages and their versions. Prerequisite for LP #1352591.
+
+	* NEWS,
+	* apport/ui.py: [2846] * Write report even on UnreportableReasons, so
+	that whoopsie can still upload them. (LP: #1360417)
+
+	* NEWS,
+	* bin/apport-retrace: [2845] * apport-retrace: Don't require
+	specifying an operation; default to updating the given .crash file.
+	(LP: #1361242)
+
+	* NEWS,
+	* data/apport,
+	* test/test_signal_crashes.py: [2844] * Fix interpretation of core
+	dump ulimits: they are in bytes, not kB. (LP: #1346497)
+
+2014-08-22  Launchpad Translations on behalf of apport-hackers
+
+	* po/uk.po: [2843] Launchpad automatic translations update.
+
+2014-08-20  Launchpad Translations on behalf of apport-hackers
+
+	* po/it.po: [2842] Launchpad automatic translations update.
+
+2014-08-19  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/test_backend_apt_dpkg.py: [2841] * Adjust
+	backend_apt_dpkg.test_get_file_package() test: newer util-linux
+	versions do not provide /etc/blkid.tab any more.
+
+2014-08-19  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2840] Launchpad automatic translations update.
+
+=== 2.14.6 ===
+2014-08-18  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2839] release 2.14.6
+
+2014-08-18  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2838] Launchpad automatic translations update.
+
+2014-08-18  Martin Pitt <martin.pitt@canonical.com>
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/apport.pot,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2837] update i18n
+
+	* NEWS,
+	* gtk/apport-gtk,
+	* gtk/apport-gtk.ui,
+	* po/apport.pot: [2836] * apport-gtk: Drop usage of deprecated GTK
+	stock items. (LP: #1348116)
+
+	* gtk/apport-gtk.ui: [2835] apport-gtk.ui: Replace deprecated "stock"
+	property with "icon-name", and drop duplicate prop
+
+2014-08-12  Launchpad Translations on behalf of apport-hackers
+
+	* po/ce.po: Added.
+
+	[2834] Launchpad automatic translations update.
+
+2014-08-05  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* bin/apport-retrace: [2833] * apport-retrace: Declare -s/-g/-o as
+	mutually exclusive, to get proper error messages instead of silent
+	misbehaviour. (LP: #1352450)
+
+	* bin/apport-retrace: [2832] apport-retrace: Port to argparse
+
+	* NEWS,
+	* apport/ui.py: [2831] * collect_info(): Don't assume that reports
+	have a ProblemType. Fixes crashes with apport-collect. (LP: #1325729)
+
+2014-07-31  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2830] Launchpad automatic translations update.
+
+2014-07-30  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* data/general-hooks/generic.py: [2829] * general-hooks/generic.py:
+	Fix hook crash if there are non-distro libraries and no user
+	interface.
+
+=== 2.14.5 ===
+2014-07-29  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2828] release 2.14.5
+
+	* NEWS,
+	* test/test_report.py: [2827] * Fix
+	report.test_check_interpreted_twistd test to skip instead of fail if
+	twisted is not installed.
+
+	* NEWS,
+	* test/test_report.py: [2826] * Adjust report.test_get_logind_session
+	test to work with systemd >= 205.
+
+	* NEWS,
+	* data/whoopsie-upload-all: [2825] * whoopsie-upload-all: Collect
+	hooks information to gather ApportVersion, NonfreeKernelModules, and
+	SystemImageInfo. Do this before collecting package data to minimize
+	hook run time. (LP: #1349579)
+
+	* apport/report.py: [2824] apport.Report.add_os_info(): This does not
+	add NonfreeKernelModules, fix docstring
+
+	* NEWS,
+	* etc/default/apport: [2823] * etc/default/apport: Fix comment to use
+	"service" instead of calling the init.d script directly.
+
+	* data/kernel_oops: [2822] data/kernel_oops: PEP-8 fixes
+
+	* NEWS,
+	* data/whoopsie-upload-all: [2821] * whoopsie-upload-all: Ignore crash
+	reports with incomplete core dumps instead of crashing on them. Thanks
+	Brian Murray. (LP: #1329520)
+
+2014-07-24  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py: [2820] * apt/dpkg
+	install_packages(): Disable fetching apt translation indexes, to save
+	some bandwidth.
+
+2014-07-12  Launchpad Translations on behalf of apport-hackers
+
+	* po/de.po: [2819] Launchpad automatic translations update.
+
+2014-07-11  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* backends/packaging-apt-dpkg.py,
+	* test/test_backend_apt_dpkg.py: [2818] * apt/dpkg get_file_package():
+	If checking for uninstalled packages, don't use package information
+	from the host system, but always look it up in the correct indexes.
+	Otherwise this returns wrong results when files move to a different
+	package between releases. Thanks Brian Murray! (LP: #1336062)
+
+2014-07-10  Martin Pitt <martin.pitt@canonical.com>
+
+	* po/de.po: [2817] Fix duplicate key shortcut in German translation
+
+	* NEWS,
+	* bin/apport-bug: [2816] * apport-bug: Stop checking the autoreport
+	flag and calling whoopsie-upload-all; these two are different tasks,
+	and that breaks bug reporting. (LP: #1339663)
+
+2014-07-10  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2815] Launchpad automatic translations update.
+
+=== 2.14.4 ===
+2014-07-03  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2814] release 2.14.4
+
+	* NEWS,
+	* apport/report.py,
+	* test/test_report.py: [2813] * Report.crash_signature_addresses():
+	Drop kernel architecture from StacktraceAddressSignature field. It
+	isn't useful there (at most the ELF architecture, but we don't really
+	need that either). This makes it easier to regenerate broken
+	signatures from existing reports on different architectures. (LP:
+	#1336565)
+
+2014-07-02  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/report.py: [2812] * Report.crash_signature_addresses(): If
+	the report has an Uname field, use that instead of querying uname.
+	This makes it easier to regenerate broken signatures from existing
+	reports on different architectures. (LP: #1336565)
+
+	* NEWS,
+	* apport/__init__.py,
+	* apport/crashdb_impl/launchpad.py,
+	* apport/report.py,
+	* apport/ui.py,
+	* backends/packaging-apt-dpkg.py,
+	* bin/dupdb-admin,
+	* data/general-hooks/parse_segv.py,
+	* data/kernel_crashdump,
+	* data/whoopsie-upload-all,
+	* test/test_fileutils.py,
+	* test/test_python_crashes.py,
+	* test/test_ui.py: [2811] * Adjust code to match latest pep8 checker.
+
+2014-07-02  Launchpad Translations on behalf of apport-hackers
+
+	* po/az.po: Added.
+
+	[2810] Launchpad automatic translations update.
+
+2014-06-26  Launchpad Translations on behalf of apport-hackers
+
+	* po/de.po,
+	* po/fr.po: [2809] Launchpad automatic translations update.
+
+2014-06-24  Martin Pitt <martin.pitt@canonical.com>
+
+	* po/fr.po: [2808] fix duplicate hotkey in French translation
+
+2014-06-07  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2807] Launchpad automatic translations update.
+
+=== 2.14.3 ===
+2014-05-30  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2806] release 2.14.3
+
+2014-05-22  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2805] Launchpad automatic translations update.
+
+2014-05-19  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* data/apportcheckresume: [2804] Revert dupe sig from
+	apportcheckresume (r2800), moved to linux package hook
+
+2014-05-15  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* data/recoverable_problem,
+	* data/whoopsie-upload-all,
+	* test/test_recoverable_problem.py: [2803] * Use package name in
+	duplicate signature for recoverable problems. Thanks Brian Murray.
+	(LP: #1316763) * Have whoopsie-upload-all upload recoverable problems.
+	Thanks Brian Murray. (LP: #1319099)
+
+2014-05-14  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2802] Launchpad automatic translations update.
+
+2014-05-12  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS: [2801] add bug ref to NEWS
+
+2014-05-10  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* data/apportcheckresume: [2800] * Add a duplicate signature to
+	suspend resume failures. Thanks Brian Murray. (LP: #1316841)
+
+2014-05-06  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/hookutils.py,
+	* data/apportcheckresume,
+	* data/iwlwifi_error_dump,
+	* data/kernel_crashdump,
+	* data/kernel_oops: [2799] * Add kernel package version to the various
+	kernel-related hooks. Thanks Brian Murray.
+
+2014-05-01  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2798] Launchpad automatic translations update.
+
+2014-04-30  Martin Pitt <martin.pitt@canonical.com>
+
+	* test/test_backend_apt_dpkg.py: [2797]
+	backend_apt_dpkg.test_install_packages_versioned: Fix namespacing of
+	ver
+
 === 2.14.2 ===
 2014-04-30  Martin Pitt <martin.pitt@canonical.com>
 

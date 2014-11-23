@@ -13,7 +13,7 @@ implementation (like GTK, Qt, or CLI).
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-__version__ = '2.14.2'
+__version__ = '2.14.7'
 
 import glob, sys, os.path, optparse, traceback, locale, gettext, re
 import errno, zlib
@@ -111,26 +111,26 @@ def thread_collect_info(report, reportfile, package, ui, symptom_script=None,
             raise
     except SystemError as e:
         report['UnreportableReason'] = excstr(e)
-        return
 
-    if report.add_hooks_info(ui):
-        sys.exit(0)
+    if 'UnreportableReason' not in report:
+        if report.add_hooks_info(ui):
+            sys.exit(0)
 
-    # check package origin; we do that after adding hooks, so that hooks have
-    # the chance to set a third-party CrashDB.
-    try:
-        if 'CrashDB' not in report and 'APPORT_DISABLE_DISTRO_CHECK' not in os.environ:
-            if 'Package' not in report:
-                report['UnreportableReason'] = _('This package does not seem to be installed correctly')
-            elif not apport.packaging.is_distro_package(report['Package'].split()[0]):
-                #TRANS: %s is the name of the operating system
-                report['UnreportableReason'] = _(
-                    'This is not an official %s package. Please remove any third party package and try again.') % report['DistroRelease'].split()[0]
-    except ValueError:
-        # this happens if we are collecting information on an uninstalled
-        # package
-        if not ignore_uninstalled:
-            raise
+        # check package origin; we do that after adding hooks, so that hooks have
+        # the chance to set a third-party CrashDB.
+        try:
+            if 'CrashDB' not in report and 'APPORT_DISABLE_DISTRO_CHECK' not in os.environ:
+                if 'Package' not in report:
+                    report['UnreportableReason'] = _('This package does not seem to be installed correctly')
+                elif not apport.packaging.is_distro_package(report['Package'].split()[0]):
+                    # TRANS: %s is the name of the operating system
+                    report['UnreportableReason'] = _(
+                        'This is not an official %s package. Please remove any third party package and try again.') % report['DistroRelease'].split()[0]
+        except ValueError:
+            # this happens if we are collecting information on an uninstalled
+            # package
+            if not ignore_uninstalled:
+                raise
 
     # add title
     if 'Title' not in report:
@@ -139,7 +139,7 @@ def thread_collect_info(report, reportfile, package, ui, symptom_script=None,
             report['Title'] = title
 
     # check obsolete packages
-    if report['ProblemType'] == 'Crash' and 'APPORT_IGNORE_OBSOLETE_PACKAGES' not in os.environ:
+    if report.get('ProblemType') == 'Crash' and 'APPORT_IGNORE_OBSOLETE_PACKAGES' not in os.environ:
         old_pkgs = report.obsolete_packages()
         if old_pkgs:
             report['UnreportableReason'] = _('You have some obsolete package \
@@ -147,8 +147,8 @@ versions installed. Please upgrade the following packages and check if the \
 problem still occurs:\n\n%s') % ', '.join(old_pkgs)
 
     # disabled: if we have a SIGABRT without an assertion message, declare as unreportable
-    #if report.get('Signal') == '6' and 'AssertionMessage' not in report:
-    #    report['UnreportableReason'] = _('The program crashed on an assertion failure, but the message could not be retrieved. Apport does not support reporting these crashes.')
+    # if report.get('Signal') == '6' and 'AssertionMessage' not in report:
+    #     report['UnreportableReason'] = _('The program crashed on an assertion failure, but the message could not be retrieved. Apport does not support reporting these crashes.')
 
     if reportfile:
         try:
@@ -520,7 +520,7 @@ class UserInterface:
 
         info_collected = False
         for p in pkgs:
-            #print('Collecting apport information for source package %s...' % p)
+            # print('Collecting apport information for source package %s...' % p)
             self.cur_package = p
             self.report['SourcePackage'] = p
             self.report['Package'] = p  # no way to find this out
@@ -884,7 +884,7 @@ class UserInterface:
             _('This will launch apport-retrace in a terminal window to examine the crash.'),
             [_('Run gdb session'),
              _('Run gdb session without downloading debug symbols'),
-             #TRANSLATORS: %s contains the crash report file name
+             # TRANSLATORS: %s contains the crash report file name
              _('Update %s with fully symbolic stack trace') % self.report_file,
             ],
             False)
@@ -956,7 +956,7 @@ class UserInterface:
             return
 
         # ensure that the crashed program is still installed:
-        if self.report['ProblemType'] == 'Crash':
+        if self.report.get('ProblemType') == 'Crash':
             exe_path = self.report.get('ExecutablePath', '')
             if not os.path.exists(exe_path):
                 msg = _('This problem report applies to a program which is not installed any more.')
@@ -1041,7 +1041,7 @@ class UserInterface:
                 return
 
             # check bug patterns
-            if self.report['ProblemType'] == 'KernelCrash' or self.report['ProblemType'] == 'KernelOops' or 'Package' in self.report:
+            if self.report.get('ProblemType') == 'KernelCrash' or self.report.get('ProblemType') == 'KernelOops' or 'Package' in self.report:
                 bpthread = apport.REThread.REThread(target=self.report.search_bug_patterns,
                                                     args=(self.crashdb.get_bugpattern_baseurl(),))
                 bpthread.start()
@@ -1056,7 +1056,7 @@ class UserInterface:
                     self.report['_KnownReport'] = bpthread.return_value()
 
             # check crash database if problem is known
-            if self.report['ProblemType'] != 'Bug':
+            if self.report.get('ProblemType') != 'Bug':
                 known_thread = apport.REThread.REThread(target=self.crashdb.known,
                                                         args=(self.report,))
                 known_thread.start()
@@ -1091,7 +1091,7 @@ class UserInterface:
             # check that we were able to determine package names
             if 'UnreportableReason' not in self.report:
                 if (('SourcePackage' not in self.report and 'Dependencies' not in self.report) or
-                    (not self.report['ProblemType'].startswith('Kernel')
+                    (not self.report.get('ProblemType', '').startswith('Kernel')
                      and 'Package' not in self.report)):
                     self.ui_error_message(_('Invalid problem report'),
                                           _('Could not determine the package or source package name.'))

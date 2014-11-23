@@ -18,7 +18,13 @@ vmcore_root = os.path.join(apport.fileutils.report_dir)
 vmcore_path = os.path.join(vmcore_root, 'vmcore')
 
 pr = apport.Report('KernelCrash')
-pr['Package'] = apport.packaging.get_kernel_package()
+package = apport.packaging.get_kernel_package()
+try:
+    package_version = apport.packaging.get_version(package)
+except ValueError as e:
+    if 'does not exist' in e.message:
+        package_version = 'unknown'
+pr['Package'] = '%s %s' % (package, package_version)
 
 pr.add_os_info()
 if os.path.exists(vmcore_path + '.log'):
@@ -32,7 +38,7 @@ if os.path.exists(vmcore_path):
     except IOError as e:
         apport.fatal('Cannot create report: ' + str(e))
 else:
-# kdump-tools has moved vmcore to timestamped dir
+    # kdump-tools has moved vmcore to timestamped dir
     for root, dirs, files in os.walk(vmcore_root):
         for timedir in dirs:
             if re.search('^[0-9]{12}$', timedir):
