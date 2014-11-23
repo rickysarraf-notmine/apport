@@ -167,7 +167,7 @@ class T(unittest.TestCase):
 
         self.assertEqual(impl.get_file_package('/bin/bash'), 'bash')
         self.assertEqual(impl.get_file_package('/bin/cat'), 'coreutils')
-        self.assertEqual(impl.get_file_package('/etc/blkid.tab'), 'libblkid1')
+        self.assertEqual(impl.get_file_package('/etc/pam.conf'), 'libpam-runtime')
         self.assertEqual(impl.get_file_package('/nonexisting'), None)
 
     def test_get_file_package_uninstalled(self):
@@ -187,6 +187,7 @@ FILE                                                    LOCATION
 usr/bin/frobnicate                                      foo/frob
 usr/bin/frob                                            foo/frob-utils
 bo/gu/s                                                 na/mypackage
+bin/true                                                admin/superutils
 ''')
 
             # test Contents.gz for -updates pocket
@@ -226,6 +227,7 @@ lib/libnew.so.5                                         universe/libs/libnew5
 
             # valid cache, should not need to access the mirror
             impl.set_mirror('file:///foo/nonexisting')
+            self.assertEqual(impl.get_file_package('/bin/true', True, cache_dir), 'superutils')
             self.assertEqual(impl.get_file_package('/bo/gu/s', True, cache_dir), 'mypackage')
             self.assertEqual(impl.get_file_package('/lib/libnew.so.5', True, cache_dir), 'libnew5')
 
@@ -510,6 +512,15 @@ deb http://secondary.mirror tuxy extra
         self.assertEqual(sandbox_ver('libc6-dbg'), '2.15-0ubuntu10')
         self.assertGreater(sandbox_ver('tzdata'), '2012b-1')
 
+        with open(os.path.join(self.rootdir, 'packages.txt')) as f:
+            pkglist = f.read().splitlines()
+        self.assertIn('coreutils 8.13-3ubuntu3', pkglist)
+        self.assertIn('coreutils-dbgsym 8.13-3ubuntu3', pkglist)
+        self.assertIn('libc6 2.15-0ubuntu10', pkglist)
+        self.assertIn('libc6-dbg 2.15-0ubuntu10', pkglist)
+        self.assertIn('tzdata ' + sandbox_ver('tzdata'), pkglist)
+        self.assertEqual(len(pkglist), 5, str(pkglist))
+
         # does not clobber config dir
         self.assertEqual(os.listdir(self.configdir), ['Foonux 1.2'])
         self.assertEqual(sorted(os.listdir(os.path.join(self.configdir, 'Foonux 1.2'))),
@@ -524,9 +535,9 @@ deb http://secondary.mirror tuxy extra
         for p in cache:
             try:
                 (name, ver) = p.split('_')[:2]
+                cache_versions[name] = ver
             except ValueError:
                 pass  # not a .deb, ignore
-            cache_versions[name] = ver
         self.assertEqual(cache_versions['coreutils'], '8.13-3ubuntu3')
         self.assertEqual(cache_versions['coreutils-dbgsym'], '8.13-3ubuntu3')
         self.assertIn('tzdata', cache_versions)
@@ -535,6 +546,7 @@ deb http://secondary.mirror tuxy extra
 
         # installs cached packages
         os.unlink(os.path.join(self.rootdir, 'usr/bin/stat'))
+        os.unlink(os.path.join(self.rootdir, 'packages.txt'))
         obsolete = impl.install_packages(self.rootdir, self.configdir,
                                          'Foonux 1.2',
                                          [('coreutils', '8.13-3ubuntu3'),
@@ -572,6 +584,7 @@ deb http://secondary.mirror tuxy extra
 
         # still installs packages after above operations
         os.unlink(os.path.join(self.rootdir, 'usr/bin/stat'))
+        os.unlink(os.path.join(self.rootdir, 'packages.txt'))
         impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
                               [('coreutils', '8.13-3ubuntu3'),
                                ('dpkg', None),
@@ -612,6 +625,14 @@ deb http://secondary.mirror tuxy extra
         # no cache
         self.assertEqual(os.listdir(self.cachedir), [])
 
+        # keeps track of package versions
+        with open(os.path.join(self.rootdir, 'packages.txt')) as f:
+            pkglist = f.read().splitlines()
+        self.assertIn('coreutils 8.13-3ubuntu3', pkglist)
+        self.assertIn('coreutils-dbgsym 8.13-3ubuntu3', pkglist)
+        self.assertIn('tzdata 2012b-1', pkglist)
+        self.assertEqual(len(pkglist), 3, str(pkglist))
+
     @unittest.skipUnless(_has_internet(), 'online test')
     def test_install_packages_system(self):
         '''install_packages() with system configuration'''
@@ -647,6 +668,7 @@ deb http://secondary.mirror tuxy extra
 
         # works with relative paths and existing cache
         os.unlink(os.path.join(self.rootdir, 'usr/bin/stat'))
+        os.unlink(os.path.join(self.rootdir, 'packages.txt'))
         orig_cwd = os.getcwd()
         try:
             os.chdir(self.workdir)
@@ -726,6 +748,19 @@ deb http://secondary.mirror tuxy extra
         impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
                               [('coreutils', None), ('tzdata', None)], False, self.cachedir,
                               permanent_rootdir=True)
+        # even without cached debs, trying to install the same versions should
+        # be a no-op and succeed
+        for f in glob.glob('%s/Foonux 1.2/apt/var/cache/apt/archives/coreutils*' % self.cachedir):
+            os.unlink(f)
+        impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+                              [('coreutils', None)], False, self.cachedir,
+                              permanent_rootdir=True)
+
+        # trying to install another package should fail, though
+        self.assertRaises(SystemExit, impl.install_packages, self.rootdir,
+                          self.configdir, 'Foonux 1.2', [('aspell-doc', None)], False,
+                          self.cachedir, permanent_rootdir=True)
+
         apt_pkg.config.set('Acquire::http::Proxy', '')
 
     @unittest.skipUnless(_has_internet(), 'online test')

@@ -11,6 +11,9 @@ import apport.report
 import problem_report
 import apport.packaging
 
+have_twistd = subprocess.call(['which', 'twistd'], stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE) == 0
+
 
 class T(unittest.TestCase):
     def test_add_package_info(self):
@@ -111,7 +114,7 @@ class T(unittest.TestCase):
             os.setresuid(0, 0, -1)
 
         self.assertEqual(pr.pid, 1)
-        self.assertTrue('init' in pr['ProcStatus'], pr['ProcStatus'])
+        self.assertTrue('Pid:\t1' in pr['ProcStatus'], pr['ProcStatus'])
         self.assertTrue(pr['ProcEnviron'].startswith('Error:'), pr['ProcEnviron'])
         self.assertTrue('InterpreterPath' not in pr)
 
@@ -450,6 +453,7 @@ sys.stdin.readline()
             if restore_root:
                 os.setresuid(0, 0, -1)
 
+    @unittest.skipUnless(have_twistd, 'twisted is not installed')
     def test_check_interpreted_twistd(self):
         '''_check_interpreted() for programs ran through twistd'''
 
@@ -600,6 +604,24 @@ int main() {
         pr.add_gdb_info()
 
         self._validate_gdb_fields(pr)
+
+    def test_add_gdb_info_damaged(self):
+        '''add_gdb_info() with damaged core dump'''
+
+        pr = self._generate_sigsegv_report()
+        del pr['Stacktrace']
+        del pr['StacktraceTop']
+        del pr['ThreadStacktrace']
+        del pr['Disassembly']
+
+        # truncate core file
+        os.truncate(pr['CoreDump'][0], 10000)
+
+        self.assertRaises(IOError, pr.add_gdb_info)
+
+        self.assertNotIn('Stacktrace', pr)
+        self.assertNotIn('StacktraceTop', pr)
+        self.assertIn('core is truncated', pr['UnreportableReason'])
 
     def test_add_zz_parse_segv_details(self):
         '''parse-segv produces sensible results'''
@@ -2106,7 +2128,7 @@ No symbol table info available.
 #6  0x000000000041d703 in _start ()
 '''
         self.assertEqual(pr.crash_signature_addresses(),
-                         '/bin/bash:42:%s:/lib/x86_64-linux-gnu/libc-2.13.so+36687:/bin/bash+3fd51:/bin/bash+2eb76:/bin/bash+324d8:/bin/bash+707e3:/bin/bash+1d703' % os.uname()[4])
+                         '/bin/bash:42:/lib/x86_64-linux-gnu/libc-2.13.so+36687:/bin/bash+3fd51:/bin/bash+2eb76:/bin/bash+324d8:/bin/bash+707e3:/bin/bash+1d703')
 
         # all resolvable, but too short
         pr['Stacktrace'] = '#0  0x00007f491fac5687 in kill () at ../sysdeps/unix/syscall-template.S:82'
@@ -2197,11 +2219,11 @@ No symbol table info available.
                 contents = f.read()
             sys.stdout.write('[not running under logind] ')
             sys.stdout.flush()
-            self.assertNotIn('name=systemd:/user/', contents)
+            self.assertNotIn('name=systemd:/user', contents)
             return
 
         (session, timestamp) = ret
-        self.assertTrue(session.startswith('/user/'), session)
+        self.assertIn('/user', session)
         # session start must be >= 2014-01-01 and "now"
         self.assertLess(timestamp, time.time())
         self.assertGreater(timestamp,

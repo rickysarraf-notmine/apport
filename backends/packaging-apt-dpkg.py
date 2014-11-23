@@ -336,6 +336,9 @@ class __AptDpkgPackageInfo(PackageInfo):
         Also, release and arch can be set to a foreign release/architecture
         instead of the one from the current system.
         '''
+        if uninstalled:
+            return self._search_contents(file, map_cachedir, release, arch)
+
         # check if the file is a diversion
         dpkg = subprocess.Popen(['dpkg-divert', '--list', file],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -364,10 +367,7 @@ class __AptDpkgPackageInfo(PackageInfo):
         if match:
             return os.path.splitext(os.path.basename(match))[0].split(':')[0]
 
-        if uninstalled:
-            return self._search_contents(file, map_cachedir, release, arch)
-        else:
-            return None
+        return None
 
     @classmethod
     def get_system_architecture(klass):
@@ -497,7 +497,7 @@ Debug::NoLocking "true";
         debug_pkgname = 'linux-image-debug-%s' % kver
         c = self._cache()
         if debug_pkgname in c and c[debug_pkgname].isInstalled:
-            #print('kernel ddeb already installed')
+            # print('kernel ddeb already installed')
             return (installed, outdated)
         target_dir = apt.apt_pkg.config.find_dir('Dir::Cache::archives') + '/partial'
         deb = '%s_%s_%s.ddeb' % (debug_pkgname, ver, arch)
@@ -599,6 +599,7 @@ Debug::NoLocking "true";
             apt.apt_pkg.config.set('APT::Architecture', architecture)
         else:
             apt.apt_pkg.config.set('APT::Architecture', self.get_system_architecture())
+        apt.apt_pkg.config.set('Acquire::Languages', 'none')
 
         if verbose:
             fetchProgress = apt.progress.text.AcquireProgress()
@@ -618,6 +619,18 @@ Debug::NoLocking "true";
         obsolete = ''
 
         src_records = apt.apt_pkg.SourceRecords()
+
+        # read original package list
+        pkg_list = os.path.join(rootdir, 'packages.txt')
+        pkg_versions = {}
+        if os.path.exists(pkg_list):
+            with open(pkg_list) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    (p, v) = line.split()
+                    pkg_versions[p] = v
 
         # mark packages for installation
         real_pkgs = set()
@@ -673,6 +686,10 @@ Debug::NoLocking "true";
                                 ver = self._deb_version(path)
                                 if apt.apt_pkg.check_dep(ver, conflict[2], conflict[1]):
                                     os.unlink(path)
+                            try:
+                                del pkg_versions[p]
+                            except KeyError:
+                                pass
                         del providers
                     else:
                         debs = os.path.join(archives, '%s_*.deb' % conflict[0])
@@ -680,6 +697,10 @@ Debug::NoLocking "true";
                             ver = self._deb_version(path)
                             if apt.apt_pkg.check_dep(ver, conflict[2], conflict[1]):
                                 os.unlink(path)
+                        try:
+                            del pkg_versions[conflict[0]]
+                        except KeyError:
+                            pass
 
             if candidate.architecture != 'all':
                 try:
@@ -719,8 +740,13 @@ Debug::NoLocking "true";
                         except KeyError:
                             obsolete += 'no debug symbol package found for %s\n' % pkg
 
-        for p in real_pkgs:
-            cache[p].mark_install(False, False)
+        # unpack packages, weed out the ones that are already installed (for
+        # permanent sandboxes)
+        for p in real_pkgs.copy():
+            if pkg_versions.get(p) != cache[p].candidate.version:
+                cache[p].mark_install(False, False)
+            else:
+                real_pkgs.remove(p)
 
         last_written = time.time()
         # fetch packages
@@ -731,13 +757,25 @@ Debug::NoLocking "true";
             apport.error('Package download error, try again later: %s', str(e))
             sys.exit(99)  # transient error
 
-        # unpack packages
         if verbose:
             print('Extracting downloaded debs...')
         for i in fetcher.items:
             if not permanent_rootdir or os.path.getctime(i.destfile) > last_written:
+                out = subprocess.check_output(['dpkg-deb', '--show', i.destfile]).decode()
+                (p, v) = out.strip().split()
+                pkg_versions[p] = v
                 subprocess.check_call(['dpkg', '-x', i.destfile, rootdir])
             real_pkgs.remove(os.path.basename(i.destfile).split('_', 1)[0])
+
+        # update package list
+        pkgs = list(pkg_versions.keys())
+        pkgs.sort()
+        with open(pkg_list, 'w') as f:
+            for p in pkgs:
+                f.write(p)
+                f.write(' ')
+                f.write(pkg_versions[p])
+                f.write('\n')
 
         if tmp_aptroot:
             shutil.rmtree(aptroot)

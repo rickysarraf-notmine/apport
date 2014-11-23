@@ -59,7 +59,7 @@ def _transitive_dependencies(package, depends_set):
     except ValueError:
         return
     for d in packaging.get_dependencies(package):
-        if not d in depends_set:
+        if d not in depends_set:
             depends_set.add(d)
             _transitive_dependencies(d, depends_set)
 
@@ -274,7 +274,7 @@ class Report(problem_report.ProblemReport):
         '''
         if not package:
             # the kernel does not have a executable path but a package
-            if not 'ExecutablePath' in self and self['ProblemType'] == 'KernelCrash':
+            if 'ExecutablePath' not in self and self['ProblemType'] == 'KernelCrash':
                 package = self['Package']
             else:
                 package = apport.fileutils.find_file_package(self['ExecutablePath'])
@@ -325,8 +325,6 @@ class Report(problem_report.ProblemReport):
           'lsb_release -sir' output
         - Architecture: system architecture in distro specific notation
         - Uname: uname -srm output
-        - NonfreeKernelModules: loaded kernel modules which are not free (if
-            there are none, this field will not be present)
         '''
         if 'DistroRelease' not in self:
             self['DistroRelease'] = '%s %s' % apport.packaging.get_os_version()
@@ -662,6 +660,8 @@ class Report(problem_report.ProblemReport):
         executable, libraries, and debug symbols. This does not require
         chroot() or root privileges, it just instructs gdb to search for the
         files there.
+
+        Raises a IOError if the core dump is invalid/truncated.
         '''
         if 'CoreDump' not in self or 'ExecutablePath' not in self:
             return
@@ -690,6 +690,13 @@ class Report(problem_report.ProblemReport):
             out = _command_output(gdb_cmd).decode('UTF-8', errors='replace')
         except OSError:
             return
+
+        # check for truncated stack trace
+        if 'is truncated: expected core file size' in out:
+            warnings = '\n'.join([l for l in out.splitlines() if 'Warning:' in l])
+            reason = 'Invalid core dump: ' + warnings.strip()
+            self['UnreportableReason'] = reason
+            raise IOError(reason)
 
         # split the output into the various fields
         part_re = re.compile('^\$\d+\s*=\s*-99$', re.MULTILINE)
@@ -1371,7 +1378,7 @@ class Report(problem_report.ProblemReport):
 
         Return None when signature cannot be determined.
         '''
-        if not 'ProcMaps' in self or not 'Stacktrace' in self or not 'Signal' in self:
+        if 'ProcMaps' not in self or 'Stacktrace' not in self or 'Signal' not in self:
             return None
 
         stack = []
@@ -1408,10 +1415,9 @@ class Report(problem_report.ProblemReport):
         if (failed == 0 and len(stack) < 3) or (failed > 0 and len(stack) < 6):
             return None
 
-        return '%s:%s:%s:%s' % (
+        return '%s:%s:%s' % (
             self['ExecutablePath'],
             self['Signal'],
-            os.uname()[4],
             ':'.join(stack))
 
     def anonymize(self):
@@ -1444,7 +1450,7 @@ class Report(problem_report.ProblemReport):
             pass
 
         for k in self:
-            is_proc_field = k.startswith('Proc') and not k in [
+            is_proc_field = k.startswith('Proc') and k not in [
                 'ProcCpuinfo', 'ProcMaps', 'ProcStatus', 'ProcInterrupts', 'ProcModules']
             if is_proc_field or 'Stacktrace' in k or k in ['Traceback', 'PythonArgs', 'Title']:
                 if not hasattr(self[k], 'isspace'):
