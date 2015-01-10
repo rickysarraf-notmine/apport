@@ -1,6 +1,43 @@
 This file summarizes the major and interesting changes for each release. For a
 detailed list of changes, please see ChangeLog.
 
+2.15.1 (2014-12-19)
+-------------------
+ * Robustify report.test_get_timestamp test.
+ * Robustify signal_crashes.test_limit_size test.
+ * Adjust launchpad crashdb testsuite to work against current Launchpad.
+ * apt/dpkg _search_contents(): Check HTTP last-modified header to avoid
+   re-downloading Contents.gz every day unless it actually changed. Thanks
+   Brian Murray!
+ * apport-gtk: Drop properties which are deprecated in GTK 3.14.
+
+2.15 (2014-12-02)
+-----------------
+ * ui.py: Robustify check if apport-retrace is installed. This brings back the
+   "Examine locally" UI option. (LP: #1358734)
+ * recoverable_problem: Handle the parent process going away while we're
+   attempting to read from proc.
+ * apport-retrace: Stop considering a package download error as transient; it
+   can too easily lead to unnoticed eternal retry loops.
+ * whoopsie-upload-all: Refactor to behave more reliably in case of overlapping
+   crash processing. Thanks Steve Langasek and Brian Murray. (LP: #1354318)
+ * whoopsie-upload-all: Remove crash reports that have a core dump which is
+   broken and cannot be processed by gdb. Thanks Brian Murray. (LP: #1376374)
+ * Stop setting $PATH in the init.d script. It breaks assumptions from
+   /lib/lsb/init-functions.d/ which might call other tools which are not in
+   /bin; also, we generally shouldn't meddle with $PATH in individual scripts.
+   (LP: #1372665)
+ * When core size exceeds the limit (3/4 of available memory) and thus the core
+   dump is skipped, log this to /var/log/apport.log. (LP: #1387835)
+ * apport-gtk: Fix jump-to-top on first click of the details treeview. Thanks
+   Marius Gedminas. (LP: #1387328)
+ * apport-retrace: Fix location of cached Contents.gz when using --sandbox-dir.
+   (LP: #1394798)
+ * Fix backend_apt_dpkg.test_install_packages_permanent_sandbox test case with
+   proxy env variables with latest apt.
+ * data/whoopsie-upload-all: confirm that the crash file exists before trying
+   to remove it. (LP: #1384358)
+
 2.14.7 (2014-08-29)
 -------------------
  * Adjust backend_apt_dpkg.test_get_file_package() test: newer util-linux

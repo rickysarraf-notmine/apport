@@ -12,7 +12,7 @@ This is used on Debian and derivatives such as Ubuntu.
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import subprocess, os, glob, stat, sys, tempfile, re, shutil, time
+import subprocess, os, glob, stat, sys, tempfile, shutil, time
 import hashlib
 
 import warnings
@@ -41,8 +41,6 @@ class __AptDpkgPackageInfo(PackageInfo):
         self._contents_dir = None
         self._mirror = None
         self._virtual_mapping_obj = None
-
-        self.configuration = '/etc/default/apport'
 
     def __del__(self):
         try:
@@ -755,7 +753,7 @@ Debug::NoLocking "true";
             cache.fetch_archives(fetcher=fetcher)
         except apt.cache.FetchFailedException as e:
             apport.error('Package download error, try again later: %s', str(e))
-            sys.exit(99)  # transient error
+            sys.exit(1)  # transient error
 
         if verbose:
             print('Extracting downloaded debs...')
@@ -908,25 +906,49 @@ Debug::NoLocking "true";
 
             if age is None or age >= 86400:
                 url = '%s/dists/%s%s/Contents-%s.gz' % (self._get_mirror(), release, pocket, arch)
-
-                try:
-                    src = urlopen(url)
-                except IOError:
-                    # we ignore non-existing pockets, but we do crash if the
-                    # release pocket doesn't exist
-                    if pocket == '':
-                        raise
+                if age:
+                    try:
+                        from httplib import HTTPConnection
+                        from urlparse import urlparse
+                    except ImportError:
+                        # python 3
+                        from http.client import HTTPConnection
+                        from urllib.parse import urlparse
+                    from datetime import datetime
+                    # HTTPConnection requires server name e.g.
+                    # archive.ubuntu.com
+                    server = urlparse(url)[1]
+                    conn = HTTPConnection(server)
+                    conn.request("HEAD", urlparse(url)[2])
+                    res = conn.getresponse()
+                    modified_str = res.getheader('last-modified', None)
+                    if modified_str:
+                        modified = datetime.strptime(modified_str,
+                                                     '%a, %d %b %Y %H:%M:%S %Z')
+                        update = (modified > datetime.fromtimestamp(st.st_mtime))
                     else:
-                        continue
+                        update = True
+                else:
+                    update = True
+                if update:
+                    try:
+                        src = urlopen(url)
+                    except IOError:
+                        # we ignore non-existing pockets, but we do crash if the
+                        # release pocket doesn't exist
+                        if pocket == '':
+                            raise
+                        else:
+                            continue
 
-                with open(map, 'wb') as f:
-                    while True:
-                        data = src.read(1000000)
-                        if not data:
-                            break
-                        f.write(data)
-                src.close()
-                assert os.path.exists(map)
+                    with open(map, 'wb') as f:
+                        while True:
+                            data = src.read(1000000)
+                            if not data:
+                                break
+                            f.write(data)
+                    src.close()
+                    assert os.path.exists(map)
 
             if file.startswith('/'):
                 file = file[1:]
@@ -1002,27 +1024,6 @@ Debug::NoLocking "true";
         Return -1 for ver < ver2, 0 for ver1 == ver2, and 1 for ver1 > ver2.'''
 
         return apt.apt_pkg.version_compare(ver1, ver2)
-
-    def enabled(self):
-        '''Return whether Apport should generate crash reports.
-
-        Signal crashes are controlled by /proc/sys/kernel/core_pattern, but
-        some init script needs to set that value based on a configuration file.
-        This also determines whether Apport generates reports for Python,
-        package, or kernel crashes.
-
-        Implementations should parse the configuration file which controls
-        Apport (such as /etc/default/apport in Debian/Ubuntu).
-        '''
-
-        try:
-            with open(self.configuration) as f:
-                conf = f.read()
-        except IOError:
-            # if the file does not exist, assume it's enabled
-            return True
-
-        return re.search('^\s*enabled\s*=\s*0\s*$', conf, re.M) is None
 
     _distro_codename = None
 
