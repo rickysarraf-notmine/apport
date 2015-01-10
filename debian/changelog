@@ -1,3 +1,19 @@
+apport (2.15.1-1) experimental; urgency=medium
+
+  * [a2df0a6] Imported Upstream version 2.14.7
+  * [cb491e4] Imported Upstream version 2.14.7
+  * [2b23be3] Refresh patches
+  * [8cdb28c] Add gdb-minimal as an alternative to gdb
+  * [9cd6406] Update some install files
+  * [8aa4588] Add dupdb-admin manpage
+  * [6c04938] Add apport-valgrind manpage
+  * [ffc0be2] Juggle the control file to look more close to Ubuntu's
+  * [2f4cca2] Update debhelper
+  * [eb4281b] dubdb manpage is shipped in apport-retrace
+  * [649d4af] Imported Upstream version 2.15.1
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sat, 10 Jan 2015 14:14:13 +0530
+
 apport (2.14.2-3) experimental; urgency=medium
 
   * [0be4151] Drop sysv-rc hard dependency
