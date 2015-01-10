@@ -370,9 +370,8 @@ class T(unittest.TestCase):
                     else:
                         raise
                 totalmb -= 1
-            app.stdin.close()
-            self.assertEqual(app.wait(), 0, app.stderr.read())
-            app.stderr.close()
+            (out, err) = app.communicate()
+            self.assertEqual(app.returncode, 0, err)
             onemb = None
         finally:
             os.kill(test_proc, 9)
@@ -389,6 +388,9 @@ class T(unittest.TestCase):
         self.assertEqual(pr['Signal'], '42')
         self.assertEqual(pr['ExecutablePath'], test_executable)
         self.assertFalse('CoreDump' in pr)
+        # FIXME: sometimes this is empty!?
+        if err:
+            self.assertRegex(err, b'core dump exceeded.*dropped from .*yes\..*\.crash')
 
     def test_ignore(self):
         '''ignoring executables'''

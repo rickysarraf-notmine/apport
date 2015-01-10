@@ -13,7 +13,7 @@ implementation (like GTK, Qt, or CLI).
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-__version__ = '2.14.7'
+__version__ = '2.15.1'
 
 import glob, sys, os.path, optparse, traceback, locale, gettext, re
 import errno, zlib
@@ -854,11 +854,10 @@ class UserInterface:
             return False
 
         try:
-            p = subprocess.Popen(['apport-retrace', '--help'],
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            p.communicate()
-            if p.returncode != 0:
-                return False
+            if subprocess.call(['which', 'apport-retrace'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT) == 0:
+                return True
         except OSError:
             return False
 
