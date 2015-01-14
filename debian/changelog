@@ -1,3 +1,16 @@
+apport (2.15.1-2) experimental; urgency=medium
+
+  * [79091ac] Be more certain on how we determine package name and version
+  * [ae8c208] Add patch to ignore UnicodeDecode Error. Debian BTS #775327
+  * [60c1887] Fix arch-only FTBFS builds.
+    Thanks to Pino Toscano (Closes: #775034)
+  * [24b5dff] Use build flags from dpkg-buildflags.
+    Thanks to Pino Toscano (Closes: #775036)
+  * [c85ed69] Don't ship KDE3 mimetype.
+    Thanks to Pino Toscano (Closes: #775037)
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Wed, 14 Jan 2015 13:48:33 +0530
+
 apport (2.15.1-1) experimental; urgency=medium
 
   * [a2df0a6] Imported Upstream version 2.14.7
