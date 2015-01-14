@@ -34,12 +34,16 @@ override_dh_install:
 	dh_install -X.pyc -X.egg-info --list-missing
 	pod2man -c Debhelper -r "$(DEB_VERSION)" debian/debhelper/dh_apport debian/debhelper/dh_apport.1
 
+ifneq (, $(filter apport-retrace, $(shell dh_listpackages)))
         # apport-retrace needs python-launchpadlib, which is not yet available
         #         # for Python 3; so switch back to Python 2
 	sed -i '1 s/python3.*$$/python/' debian/apport-retrace/usr/bin/apport-retrace
+endif
 
+ifneq (, $(filter apport-kde, $(shell dh_listpackages)))
 	# Same applies for KDE4...
 	sed -i '1 s/python3.*$$/python/' debian/apport-kde/usr/share/apport/apport-kde
+endif
 
 override_dh_python3:
 	dh_python3 --skip-private
