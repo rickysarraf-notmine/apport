@@ -1,0 +1,27 @@
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=775327
+Index: apport/data/apport
+===================================================================
+--- apport.orig/data/apport	2015-01-10 13:59:10.944838671 +0530
++++ apport/data/apport	2015-01-14 13:41:38.657859749 +0530
+@@ -210,14 +210,17 @@
+     away, etc. These crash reports are mostly noise, so should be ignored.
+     '''
+     with open('/proc/%s/environ' % pid) as e:
+-        env = e.read().split('\0')
++        try:
++            env = e.read().split('\0')
++        except UnicodeDecodeError:
++            return False
+     for e in env:
+         if e.startswith('DBUS_SESSION_BUS_ADDRESS='):
+             dbus_addr = e.split('=', 1)[1]
+             break
+-    else:
+-        error_log('is_closing_session(): no DBUS_SESSION_BUS_ADDRESS in environment')
+-        return False
++        else:
++            error_log('is_closing_session(): no DBUS_SESSION_BUS_ADDRESS in environment')
++            return False
+ 
+     orig_uid = os.geteuid()
+     os.setresuid(uid, uid, -1)
