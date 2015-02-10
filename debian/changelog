@@ -1,3 +1,11 @@
+apport (2.15.1-3) experimental; urgency=medium
+
+  * [7b2a70f] Add patch to add support for retrace in KDE env
+  * [ce8647a] Add header to debian/patches/kde-retrace-support.patch
+  * [7274d67] Add patch to disable is_distro_package() on Debian
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Tue, 10 Feb 2015 16:41:28 +0530
+
 apport (2.15.1-2) experimental; urgency=medium
 
   * [79091ac] Be more certain on how we determine package name and version
