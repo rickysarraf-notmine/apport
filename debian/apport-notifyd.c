@@ -49,7 +49,7 @@ static void trapCrashFile(struct inotify_event *i)
 
     if (checkFileExtn(i->name, CRASH_EXTN)) {
 	    // syslog(LOG_DEBUG, "File %s has extension %s\n", i->name, CRASH_EXTN);
-	    if (i->mask & IN_CLOSE) {
+	    if (i->mask & IN_CLOSE_WRITE) {
 		    system(cmdStr);
 		    syslog(LOG_NOTICE, "cmdStr is %s at event %d\n", cmdStr, i->mask);
 	    }
@@ -88,7 +88,7 @@ int main()
 
     // wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CREATE|IN_ATTRIB|IN_MODIFY); /* We only care when a crash file gets created */
     // wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CLOSE_WRITE); /* We only care when a crash file gets created */
-    wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CLOSE); // We only care when a crash file gets created
+    wd = inotify_add_watch(inotifyFd, CRASH_PATH, IN_CLOSE_WRITE); // We only care when a crash file gets created
 
     if (wd == -1)	syslog(LOG_NOTICE, "inotify_add_watch");
 
