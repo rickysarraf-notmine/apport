@@ -1,3 +1,12 @@
+apport (2.15.1-4) experimental; urgency=medium
+
+  * [31d3de2] Add debian/gbp.conf
+  * [feea9b7] Update changelog
+  * [7a489fd] Tap the report once apport is done writing to it.
+    Thanks to Laurent Bigonville (Closes: #750989)
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Tue, 10 Feb 2015 19:54:52 +0530
+
 apport (2.15.1-3) experimental; urgency=medium
 
   * [7b2a70f] Add patch to add support for retrace in KDE env
