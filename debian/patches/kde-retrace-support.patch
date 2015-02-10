@@ -2,19 +2,20 @@ The KDE implementation doesn't have support to spawn of a terminal and run a gdb
 This patch implements it.
 Index: apport/kde/apport-kde
 ===================================================================
---- apport.orig/kde/apport-kde	2015-02-10 16:38:13.291796386 +0530
-+++ apport/kde/apport-kde	2015-02-10 16:38:13.291796386 +0530
-@@ -15,6 +15,9 @@
+--- apport.orig/kde/apport-kde	2015-02-10 16:51:46.331790388 +0530
++++ apport/kde/apport-kde	2015-02-10 16:52:14.903790177 +0530
+@@ -15,6 +15,10 @@
  import sys
  import os
  
 +# temp until I get a native python way, just too lazy
 +from gi.repository import GLib
++import subprocess
 +
  try:
      import apport
      from PyQt4.QtCore import *
-@@ -349,6 +352,21 @@
+@@ -349,6 +353,21 @@
                  QTreeWidgetItem(keyitem, [_('(binary data)')])
  
  
