@@ -1,8 +1,8 @@
 display debug symbol package name
 Index: apport/apport/crashdb_impl/debian.py
 ===================================================================
---- apport.orig/apport/crashdb_impl/debian.py	2015-01-14 15:07:37.505821689 +0530
-+++ apport/apport/crashdb_impl/debian.py	2015-01-14 15:09:05.549821040 +0530
+--- apport.orig/apport/crashdb_impl/debian.py	2015-02-10 16:45:17.755793254 +0530
++++ apport/apport/crashdb_impl/debian.py	2015-02-10 16:45:59.447792947 +0530
 @@ -46,8 +46,14 @@
              report['UnreportableReason'] = 'Please configure sender settings in /etc/apport/crashdb.conf'
  
@@ -15,7 +15,7 @@ Index: apport/apport/crashdb_impl/debian.py
 +
          if 'Stacktrace' in report and not report.has_useful_stacktrace():
 -            report['UnreportableReason'] = 'Incomplete backtrace. Please install the debug symbol packages'
-+            report['UnreportableReason'] = 'Incomplete backtrace. Please install the debug symbols for package %s' % (buggyPackage)
++            report['UnreportableReason'] = 'Incomplete backtrace. Please install the debug symbols, for package %s and its dependencies' % (buggyPackage)
  
          return apport.crashdb.CrashDatabase.accepts(self, report)
  
