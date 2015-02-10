@@ -2,3 +2,4 @@ kde-retrace-support.patch
 default-crashdb.patch
 dispaly-pkg-name.patch
 ignore-unicodeDecode-error.patch
+disto-pkg-detection.patch
