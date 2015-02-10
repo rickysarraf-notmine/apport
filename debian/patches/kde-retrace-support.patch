@@ -1,0 +1,36 @@
+Index: apport/kde/apport-kde
+===================================================================
+--- apport.orig/kde/apport-kde	2014-05-06 20:08:36.037143487 +0530
++++ apport/kde/apport-kde	2015-02-10 15:58:13.671814089 +0530
+@@ -15,6 +15,9 @@
+ import sys
+ import os
+ 
++# temp until I get a native python way, just too lazy
++from gi.repository import GLib
++
+ try:
+     import apport
+     from PyQt4.QtCore import *
+@@ -349,6 +352,21 @@
+                 QTreeWidgetItem(keyitem, [_('(binary data)')])
+ 
+ 
++    def ui_run_terminal(self, command):
++        terminals = ['x-terminal-emulator', 'konsole', 'yakuake']
++
++        program = None
++        for t in terminals:
++            program = GLib.find_program_in_path(t)
++            if program:
++                break
++
++        if not command:
++            # test mode
++            return 'DISPLAY' in os.environ and program is not None
++
++        subprocess.call([program, '-e', command])
++
+     def ui_present_report_details(self, allowed_to_report=True, modal_for=None):
+         desktop_info = self.get_desktop_entry()
+         self.dialog = ReportDialog(self.report, allowed_to_report, self,
