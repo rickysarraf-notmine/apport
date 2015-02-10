@@ -1,7 +1,9 @@
+The KDE implementation doesn't have support to spawn of a terminal and run a gdb retrace session.
+This patch implements it.
 Index: apport/kde/apport-kde
 ===================================================================
---- apport.orig/kde/apport-kde	2014-05-06 20:08:36.037143487 +0530
-+++ apport/kde/apport-kde	2015-02-10 15:58:13.671814089 +0530
+--- apport.orig/kde/apport-kde	2015-02-10 16:38:13.291796386 +0530
++++ apport/kde/apport-kde	2015-02-10 16:38:13.291796386 +0530
 @@ -15,6 +15,9 @@
  import sys
  import os
