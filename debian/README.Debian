@@ -1,3 +1,19 @@
+Crash Notification
+--------------------
+apport-notifyd notification daemon does not have the ability to
+shutdown by itself. Thus if you logout of your desktop session and
+log back in, you will have more than 1 instances of the daemon
+.
+This will result in multiple apport popups when a crash occurs
+.
+To overcome this problem, please ensure that you only have one
+instance of apport-notifyd running. For example, on KDE systems, you
+can create a shell script under ~/.kde/shutdown to
+`pkill apport-notifyd` during logout
+.
+The support to have only 1 invocation per user will be added in a
+later release  
+
 Configuration
 -----------------
 
