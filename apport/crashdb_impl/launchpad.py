@@ -269,20 +269,20 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             m = re.search(r'^--- \r?$[\r\n]*(.*)', b.description, re.M | re.S)
         assert m, 'bug description must contain standard apport format data'
 
-        description = m.group(1).encode('UTF-8').replace('\xc2\xa0', ' ').replace('\r\n', '\n')
+        description = m.group(1).encode('UTF-8').replace(b'\xc2\xa0', b' ').replace(b'\r\n', b'\n')
 
-        if '\n\n' in description:
+        if b'\n\n' in description:
             # this often happens, remove all empty lines between top and
             # 'Uname'
-            if 'Uname:' in description:
+            if b'Uname:' in description:
                 # this will take care of bugs like LP #315728 where stuff
                 # is added after the apport data
-                (part1, part2) = description.split('Uname:', 1)
-                description = part1.replace('\n\n', '\n') + 'Uname:' \
-                    + part2.split('\n\n', 1)[0]
+                (part1, part2) = description.split(b'Uname:', 1)
+                description = part1.replace(b'\n\n', b'\n') + b'Uname:' \
+                    + part2.split(b'\n\n', 1)[0]
             else:
                 # just parse out the Apport block; e. g. LP #269539
-                description = description.split('\n\n', 1)[0]
+                description = description.split(b'\n\n', 1)[0]
 
         report.load(BytesIO(description))
 
@@ -324,6 +324,10 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                 continue
             if ext == '.txt':
                 report[key] = attachment.read()
+                try:
+                    report[key] = report[key].decode('UTF-8')
+                except UnicodeDecodeError:
+                    pass
             elif ext == '.gz':
                 try:
                     report[key] = gzip.GzipFile(fileobj=attachment).read()
@@ -369,16 +373,19 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         report.write_mime(mime, skip_keys=skip_keys)
         mime.flush()
         mime.seek(0)
-        msg = email.message_from_file(mime)
+        if _python2:
+            msg = email.message_from_file(mime)
+        else:
+            msg = email.message_from_binary_file(mime)
         msg_iter = msg.walk()
 
         # first part is the multipart container
-        part = msg_iter.next()
+        part = _python2 and msg_iter.next() or msg_iter.__next__()
         assert part.is_multipart()
 
         # second part should be an inline text/plain attachments with all short
         # fields
-        part = msg_iter.next()
+        part = _python2 and msg_iter.next() or msg_iter.__next__()
         assert not part.is_multipart()
         assert part.get_content_type() == 'text/plain'
 
@@ -395,11 +402,12 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             bug = self.launchpad.bugs[id]  # fresh bug object, LP#336866 workaround
 
         # short text data
+        text = part.get_payload(decode=True).decode('UTF-8', 'replace')
         if change_description:
-            bug.description = bug.description + '\n--- \n' + part.get_payload(decode=True).decode('UTF-8', 'replace')
+            bug.description = bug.description + '\n--- \n' + text
             bug.lp_save()
         else:
-            bug.newMessage(content=part.get_payload(decode=True), subject=comment)
+            bug.newMessage(content=text, subject=comment)
 
         # other parts are the attachments:
         for part in msg_iter:
@@ -409,6 +417,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                               content_type=None,
                               data=part.get_payload(decode=True),
                               filename=part.get_filename(), is_patch=False)
+
+        mime.close()
 
     def update_traces(self, id, report, comment=''):
         '''Update the given report ID for retracing results.
@@ -437,7 +447,11 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                     except HTTPError:
                         pass  # LP#249950 workaround
             try:
-                task = self._get_distro_tasks(bug.bug_tasks).next()
+                task = self._get_distro_tasks(bug.bug_tasks)
+                if _python2:
+                    task = task.next()
+                else:
+                    task = task.__next__()
                 if task.importance == 'Undecided':
                     task.importance = 'Medium'
                     task.lp_save()
@@ -593,12 +607,12 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         if self.distro:
             distro_identifier = '(%s)' % self.distro.lower()
-            fixed_tasks = filter(lambda task: task.status == 'Fix Released' and
-                                 distro_identifier in task.bug_target_display_name.lower(), tasks)
+            fixed_tasks = list(filter(lambda task: task.status == 'Fix Released' and
+                                      distro_identifier in task.bug_target_display_name.lower(), tasks))
 
             if not fixed_tasks:
-                fixed_distro = filter(lambda task: task.status == 'Fix Released' and
-                                      task.bug_target_name.lower() == self.distro.lower(), tasks)
+                fixed_distro = list(filter(lambda task: task.status == 'Fix Released' and
+                                           task.bug_target_name.lower() == self.distro.lower(), tasks))
                 if fixed_distro:
                     # fixed in distro inself (without source package)
                     return ''
@@ -616,21 +630,21 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                     return 'invalid'
             else:
                 # check if there only invalid ones
-                invalid_tasks = filter(lambda task: task.status in ('Invalid', "Won't Fix", 'Expired') and
-                                       distro_identifier in task.bug_target_display_name.lower(), tasks)
+                invalid_tasks = list(filter(lambda task: task.status in ('Invalid', "Won't Fix", 'Expired') and
+                                            distro_identifier in task.bug_target_display_name.lower(), tasks))
                 if invalid_tasks:
-                    non_invalid_tasks = filter(
+                    non_invalid_tasks = list(filter(
                         lambda task: task.status not in ('Invalid', "Won't Fix", 'Expired') and
-                        distro_identifier in task.bug_target_display_name.lower(), tasks)
+                        distro_identifier in task.bug_target_display_name.lower(), tasks))
                     if not non_invalid_tasks:
                         return 'invalid'
         else:
-            fixed_tasks = filter(lambda task: task.status == 'Fix Released', tasks)
+            fixed_tasks = list(filter(lambda task: task.status == 'Fix Released', tasks))
             if fixed_tasks:
                 # TODO: look for current series
                 return ''
             # check if there any invalid ones
-            if filter(lambda task: task.status == 'Invalid', tasks):
+            if list(filter(lambda task: task.status == 'Invalid', tasks)):
                 return 'invalid'
 
         return None
@@ -792,7 +806,11 @@ in a dependent package.' % master,
         bug = self.launchpad.bugs[id]
         if invalid_msg:
             try:
-                task = self._get_distro_tasks(bug.bug_tasks).next()
+                task = self._get_distro_tasks(bug.bug_tasks)
+                if _python2:
+                    task = task.next()
+                else:
+                    task = task.__next__()
             except StopIteration:
                 # no distro task, just use the first one
                 task = bug.bug_tasks[0]
@@ -1227,7 +1245,7 @@ more text
 and more
 '''
             bug = self.crashdb.launchpad.bugs.createBug(
-                title=b'mixed description bug'.encode(),
+                title='mixed description bug',
                 description=desc,
                 target=self.crashdb.lp_distro)
             sys.stderr.write('(Created uncommon description: https://%s/bugs/%i) ' % (self.hostname, bug.id))
@@ -1256,13 +1274,13 @@ and more
             self.assertTrue(r['ExecutablePath'].endswith('/crash'))
             self.assertEqual(r['SourcePackage'], self.test_srcpackage)
             self.assertTrue(r['Package'].startswith(self.test_package + ' '))
-            self.assertTrue('f (x=42)' in r['Stacktrace'])
-            self.assertTrue('f (x=42)' in r['StacktraceTop'])
-            self.assertTrue('f (x=42)' in r['ThreadStacktrace'])
-            self.assertTrue(len(r['CoreDump']) > 1000)
-            self.assertTrue('Dependencies' in r)
-            self.assertTrue('Disassembly' in r)
-            self.assertTrue('Registers' in r)
+            self.assertIn('f (x=42)', r['Stacktrace'])
+            self.assertIn('f (x=42)', r['StacktraceTop'])
+            self.assertIn('f (x=42)', r['ThreadStacktrace'])
+            self.assertGreater(len(r['CoreDump']), 1000)
+            self.assertIn('Dependencies', r)
+            self.assertIn('Disassembly', r)
+            self.assertIn('Registers', r)
 
             # check tags
             r = self.crashdb.download(self.get_python_report())
@@ -1274,12 +1292,12 @@ and more
             '''update_traces()'''
 
             r = self.crashdb.download(self.get_segv_report())
-            self.assertTrue('CoreDump' in r)
-            self.assertTrue('Dependencies' in r)
-            self.assertTrue('Disassembly' in r)
-            self.assertTrue('Registers' in r)
-            self.assertTrue('Stacktrace' in r)
-            self.assertTrue('ThreadStacktrace' in r)
+            self.assertIn('CoreDump', r)
+            self.assertIn('Dependencies', r)
+            self.assertIn('Disassembly', r)
+            self.assertIn('Registers', r)
+            self.assertIn('Stacktrace', r)
+            self.assertIn('ThreadStacktrace', r)
             self.assertEqual(r['Title'], 'crash crashed with SIGSEGV in f()')
 
             # updating with a useless stack trace retains core dump
@@ -1289,18 +1307,18 @@ and more
             r['FooBar'] = 'bogus'
             self.crashdb.update_traces(self.get_segv_report(), r, 'I can has a better retrace?')
             r = self.crashdb.download(self.get_segv_report())
-            self.assertTrue('CoreDump' in r)
-            self.assertTrue('Dependencies' in r)
-            self.assertTrue('Disassembly' in r)
-            self.assertTrue('Registers' in r)
-            self.assertTrue('Stacktrace' in r)  # TODO: ascertain that it's the updated one
-            self.assertTrue('ThreadStacktrace' in r)
-            self.assertFalse('FooBar' in r)
+            self.assertIn('CoreDump', r)
+            self.assertIn('Dependencies', r)
+            self.assertIn('Disassembly', r)
+            self.assertIn('Registers', r)
+            self.assertIn('Stacktrace', r)  # TODO: ascertain that it's the updated one
+            self.assertIn('ThreadStacktrace', r)
+            self.assertNotIn('FooBar', r)
             self.assertEqual(r['Title'], 'crash crashed with SIGSEGV in f()')
 
             tags = self.crashdb.launchpad.bugs[self.get_segv_report()].tags
-            self.assertTrue('apport-crash' in tags)
-            self.assertFalse('apport-collected' in tags)
+            self.assertIn('apport-crash', tags)
+            self.assertNotIn('apport-collected', tags)
 
             # updating with a useful stack trace removes core dump
             r['StacktraceTop'] = 'read () from /lib/libc.6.so\nfoo (i=1) from /usr/lib/libfoo.so'
@@ -1308,13 +1326,13 @@ and more
             r['ThreadStacktrace'] = 'thread\neven longer\ntrace'
             self.crashdb.update_traces(self.get_segv_report(), r, 'good retrace!')
             r = self.crashdb.download(self.get_segv_report())
-            self.assertFalse('CoreDump' in r)
-            self.assertTrue('Dependencies' in r)
-            self.assertTrue('Disassembly' in r)
-            self.assertTrue('Registers' in r)
-            self.assertTrue('Stacktrace' in r)
-            self.assertTrue('ThreadStacktrace' in r)
-            self.assertFalse('FooBar' in r)
+            self.assertNotIn('CoreDump', r)
+            self.assertIn('Dependencies', r)
+            self.assertIn('Disassembly', r)
+            self.assertIn('Registers', r)
+            self.assertIn('Stacktrace', r)
+            self.assertIn('ThreadStacktrace', r)
+            self.assertNotIn('FooBar', r)
 
             # as previous title had standard form, the top function gets
             # updated
@@ -1431,8 +1449,8 @@ and more
 
             r = self.crashdb.download(id)
 
-            self.assertFalse('OneLiner' in r)
-            self.assertFalse('ShortGoo' in r)
+            self.assertNotIn('OneLiner', r)
+            self.assertNotIn('ShortGoo', r)
             self.assertEqual(r['ProblemType'], 'Bug')
             self.assertEqual(r['DpkgTerminalLog'], 'one\ntwo\nthree\nfour\nfive\nsix')
             self.assertEqual(r['VarLogDistupgradeBinGoo'], '\x01' * 1024)
@@ -1465,11 +1483,11 @@ and more
 
             r = self.crashdb.download(id)
 
-            self.assertFalse('OneLiner' in r)
+            self.assertNotIn('OneLiner', r)
             self.assertEqual(r['ShortGoo'], 'lineone\nlinetwo')
             self.assertEqual(r['ProblemType'], 'Bug')
             self.assertEqual(r['DpkgTerminalLog'], 'one\ntwo\nthree\nfour\nfive\nsix')
-            self.assertFalse('VarLogDistupgradeBinGoo' in r)
+            self.assertNotIn('VarLogDistupgradeBinGoo', r)
 
             self.assertEqual(self.crashdb.launchpad.bugs[id].tags, [])
 
@@ -1525,12 +1543,12 @@ and more
             # this should have removed attachments; note that Stacktrace is
             # short, and thus inline
             r = self.crashdb.download(self.get_segv_report())
-            self.assertFalse('CoreDump' in r)
-            self.assertFalse('Disassembly' in r)
-            self.assertFalse('ProcMaps' in r)
-            self.assertFalse('ProcStatus' in r)
-            self.assertFalse('Registers' in r)
-            self.assertFalse('ThreadStacktrace' in r)
+            self.assertNotIn('CoreDump', r)
+            self.assertNotIn('Disassembly', r)
+            self.assertNotIn('ProcMaps', r)
+            self.assertNotIn('ProcStatus', r)
+            self.assertNotIn('Registers', r)
+            self.assertNotIn('ThreadStacktrace', r)
 
             # now try duplicating to a duplicate bug; this should automatically
             # transition to the master bug
@@ -1556,11 +1574,11 @@ and more
 
             # mark_retraced()
             unretraced_before = self.crashdb.get_unretraced()
-            self.assertTrue(self.get_segv_report() in unretraced_before)
-            self.assertFalse(self.get_python_report() in unretraced_before)
+            self.assertIn(self.get_segv_report(), unretraced_before)
+            self.assertNotIn(self.get_python_report(), unretraced_before)
             self.crashdb.mark_retraced(self.get_segv_report())
             unretraced_after = self.crashdb.get_unretraced()
-            self.assertFalse(self.get_segv_report() in unretraced_after)
+            self.assertNotIn(self.get_segv_report(), unretraced_after)
             self.assertEqual(unretraced_before,
                              unretraced_after.union(set([self.get_segv_report()])))
             self.assertEqual(self.crashdb.get_fixed_version(self.get_segv_report()), None)
@@ -1570,7 +1588,7 @@ and more
             self.crashdb.mark_retraced(self.get_segv_report())
             self.crashdb.mark_retrace_failed(self.get_segv_report())
             unretraced_after = self.crashdb.get_unretraced()
-            self.assertFalse(self.get_segv_report() in unretraced_after)
+            self.assertNotIn(self.get_segv_report(), unretraced_after)
             self.assertEqual(unretraced_before,
                              unretraced_after.union(set([self.get_segv_report()])))
             self.assertEqual(self.crashdb.get_fixed_version(self.get_segv_report()), None)
@@ -1580,7 +1598,7 @@ and more
             self.crashdb.mark_retraced(self.get_segv_report())
             self.crashdb.mark_retrace_failed(self.get_segv_report(), "I don't like you")
             unretraced_after = self.crashdb.get_unretraced()
-            self.assertFalse(self.get_segv_report() in unretraced_after)
+            self.assertNotIn(self.get_segv_report(), unretraced_after)
             self.assertEqual(unretraced_before,
                              unretraced_after.union(set([self.get_segv_report()])))
             self.assertEqual(self.crashdb.get_fixed_version(self.get_segv_report()),
@@ -1612,11 +1630,11 @@ and more
 
             # on project_db, we recognize the project bug and can mark it
             unretraced_before = project_db.get_unretraced()
-            self.assertTrue(project_bug.id in unretraced_before)
-            self.assertFalse(distro_bug.id in unretraced_before)
+            self.assertIn(project_bug.id, unretraced_before)
+            self.assertNotIn(distro_bug.id, unretraced_before)
             project_db.mark_retraced(project_bug.id)
             unretraced_after = project_db.get_unretraced()
-            self.assertFalse(project_bug.id in unretraced_after)
+            self.assertNotIn(project_bug.id, unretraced_after)
             self.assertEqual(unretraced_before,
                              unretraced_after.union(set([project_bug.id])))
             self.assertEqual(self.crashdb.get_fixed_version(project_bug.id), None)
@@ -1653,11 +1671,11 @@ and more
             '''processing status markings for interpreter crashes'''
 
             unchecked_before = self.crashdb.get_dup_unchecked()
-            self.assertTrue(self.get_python_report() in unchecked_before)
-            self.assertFalse(self.get_segv_report() in unchecked_before)
+            self.assertIn(self.get_python_report(), unchecked_before)
+            self.assertNotIn(self.get_segv_report(), unchecked_before)
             self.crashdb._mark_dup_checked(self.get_python_report(), self.ref_report)
             unchecked_after = self.crashdb.get_dup_unchecked()
-            self.assertFalse(self.get_python_report() in unchecked_after)
+            self.assertNotIn(self.get_python_report(), unchecked_after)
             self.assertEqual(unchecked_before,
                              unchecked_after.union(set([self.get_python_report()])))
             self.assertEqual(self.crashdb.get_fixed_version(self.get_python_report()), None)
@@ -1681,7 +1699,7 @@ and more
             self.crashdb.update_traces(id, r, 'good retrace!')
 
             r = self.crashdb.download(id)
-            self.assertFalse('CoreDump' in r)
+            self.assertNotIn('CoreDump', r)
 
         @mock.patch.object(CrashDatabase, '_get_source_version')
         def test_get_fixed_version(self, *args):
@@ -1738,17 +1756,20 @@ and more
                 description = 'some description'
 
             mime = self.crashdb._generate_upload_blob(report)
-            msg = email.message_from_file(mime)
+            if _python2:
+                msg = email.message_from_file(mime)
+            else:
+                msg = email.message_from_binary_file(mime)
             mime.close()
             msg_iter = msg.walk()
 
             # first one is the multipart container
-            header = msg_iter.next()
+            header = _python2 and msg_iter.next() or msg_iter.__next__()
             assert header.is_multipart()
 
             # second part should be an inline text/plain attachments with all short
             # fields
-            part = msg_iter.next()
+            part = _python2 and msg_iter.next() or msg_iter.__next__()
             assert not part.is_multipart()
             assert part.get_content_type() == 'text/plain'
             description += '\n\n' + part.get_payload(decode=True).decode('UTF-8', 'replace')
@@ -1819,7 +1840,7 @@ and more
             '''Verify that report ID is marked as regression.'''
 
             bug = self.crashdb.launchpad.bugs[id]
-            self.assertTrue('regression-retracer' in bug.tags)
+            self.assertIn('regression-retracer', bug.tags)
 
         def test_project(self):
             '''reporting crashes against a project instead of a distro'''
@@ -1917,7 +1938,7 @@ NameError: global name 'weird' is not defined'''
 
             self._mark_needs_dupcheck(self.get_python_report())
             unchecked_before = self.crashdb.get_dup_unchecked()
-            self.assertTrue(self.get_python_report() in unchecked_before)
+            self.assertIn(self.get_python_report(), unchecked_before)
 
             # add an upstream task, and remove the package name from the
             # package task; _mark_dup_checked is supposed to restore the
@@ -1935,7 +1956,7 @@ NameError: global name 'weird' is not defined'''
             self.crashdb._mark_dup_checked(self.get_python_report(), r)
 
             unchecked_after = self.crashdb.get_dup_unchecked()
-            self.assertFalse(self.get_python_report() in unchecked_after)
+            self.assertNotIn(self.get_python_report(), unchecked_after)
             self.assertEqual(unchecked_before,
                              unchecked_after.union(set([self.get_python_report()])))
 
