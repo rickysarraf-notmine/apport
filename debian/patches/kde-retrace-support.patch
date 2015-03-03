@@ -2,8 +2,8 @@ The KDE implementation doesn't have support to spawn of a terminal and run a gdb
 This patch implements it.
 Index: apport/kde/apport-kde
 ===================================================================
---- apport.orig/kde/apport-kde	2015-02-10 16:51:46.331790388 +0530
-+++ apport/kde/apport-kde	2015-02-10 16:52:14.903790177 +0530
+--- apport.orig/kde/apport-kde	2015-03-03 16:28:08.411675883 +0530
++++ apport/kde/apport-kde	2015-03-03 16:28:08.407675883 +0530
 @@ -15,6 +15,10 @@
  import sys
  import os
@@ -15,9 +15,9 @@ Index: apport/kde/apport-kde
  try:
      import apport
      from PyQt4.QtCore import *
-@@ -349,6 +353,21 @@
+@@ -347,6 +351,21 @@
+             else:
                  QTreeWidgetItem(keyitem, [_('(binary data)')])
- 
  
 +    def ui_run_terminal(self, command):
 +        terminals = ['x-terminal-emulator', 'konsole', 'yakuake']
