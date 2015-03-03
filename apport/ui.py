@@ -13,7 +13,7 @@ implementation (like GTK, Qt, or CLI).
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-__version__ = '2.15.1'
+__version__ = '2.16.2'
 
 import glob, sys, os.path, optparse, traceback, locale, gettext, re
 import errno, zlib
@@ -856,8 +856,8 @@ class UserInterface:
         try:
             if subprocess.call(['which', 'apport-retrace'],
                                stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT) == 0:
-                return True
+                               stderr=subprocess.STDOUT) != 0:
+                return False
         except OSError:
             return False
 
@@ -995,8 +995,12 @@ class UserInterface:
             # since this might take a while, create separate threads and
             # display a progress dialog.
             self.ui_start_info_collection_progress()
-
-            hookui = HookUI(self)
+            # only use a UI for asking questions if the crash db will accept
+            # the report
+            if self.crashdb.accepts(self.report):
+                hookui = HookUI(self)
+            else:
+                hookui = None
 
             if 'Stacktrace' not in self.report:
                 # save original environment, in case hooks change it
@@ -1008,10 +1012,11 @@ class UserInterface:
                 icthread.start()
                 while icthread.isAlive():
                     self.ui_pulse_info_collection_progress()
-                    try:
-                        hookui.process_event()
-                    except KeyboardInterrupt:
-                        sys.exit(1)
+                    if hookui:
+                        try:
+                            hookui.process_event()
+                        except KeyboardInterrupt:
+                            sys.exit(1)
 
                 icthread.join()
 
@@ -1050,7 +1055,13 @@ class UserInterface:
                         bpthread.join(0.1)
                     except KeyboardInterrupt:
                         sys.exit(1)
-                bpthread.exc_raise()
+                try:
+                    bpthread.exc_raise()
+                except (IOError, EOFError, zlib.error) as e:
+                    # can happen with broken gz values
+                    self.report['UnreportableReason'] = '%s\n\n%s' % (
+                        _('This problem report is damaged and cannot be processed.'),
+                        repr(e))
                 if bpthread.return_value():
                     self.report['_KnownReport'] = bpthread.return_value()
 

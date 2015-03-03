@@ -51,28 +51,20 @@ class T(unittest.TestCase):
         self.assertTrue(bad_ko.name in nonfree)
 
     def test_attach_dmesg(self):
-        '''attach_dmesg() does not overwrite already existing data'''
+        '''attach_dmesg()'''
 
         report = {}
 
         apport.hookutils.attach_dmesg(report)
-        self.assertTrue(report['BootDmesg'].startswith('['))
-        self.assertTrue(len(report['BootDmesg']) > 500)
+        self.assertTrue(len(report['CurrentDmesg']) > 500)
         self.assertTrue(report['CurrentDmesg'].startswith('['))
 
     def test_dmesg_overwrite(self):
         '''attach_dmesg() does not overwrite already existing data'''
 
-        report = {'BootDmesg': 'existingboot'}
+        report = {'CurrentDmesg': 'existingcurrent'}
 
         apport.hookutils.attach_dmesg(report)
-        self.assertEqual(report['BootDmesg'][:50], 'existingboot')
-        self.assertTrue(report['CurrentDmesg'].startswith('['))
-
-        report = {'BootDmesg': 'existingboot', 'CurrentDmesg': 'existingcurrent'}
-
-        apport.hookutils.attach_dmesg(report)
-        self.assertEqual(report['BootDmesg'], 'existingboot')
         self.assertEqual(report['CurrentDmesg'], 'existingcurrent')
 
     def test_attach_file(self):
@@ -150,10 +142,10 @@ class T(unittest.TestCase):
         apport.hookutils.attach_file_if_exists(report, '/nonexisting')
         self.assertEqual(list(report), [])
 
-    def test_recent_logfile(self):
-        '''recent_logfile'''
+    def test_recent_syslog(self):
+        '''recent_syslog'''
 
-        self.assertEqual(apport.hookutils.recent_logfile('/nonexisting', re.compile('.')), '')
+        self.assertEqual(apport.hookutils.recent_syslog(re.compile('.'), path='/nonexisting'), '')
         self.assertEqual(apport.hookutils.recent_syslog(re.compile('ThisCantPossiblyHitAnything')), '')
         self.assertNotEqual(len(apport.hookutils.recent_syslog(re.compile('.'))), 0)
 
@@ -288,8 +280,8 @@ class T(unittest.TestCase):
         apport.hookutils.attach_mac_events(report, '/usr/sbin/cupsd')
         self.assertEqual(report['Tags'], 'apparmor')
 
-    def test_recent_logfile_overflow(self):
-        '''recent_logfile on a huge file'''
+    def test_recent_syslog_overflow(self):
+        '''recent_syslog on a huge file'''
 
         log = os.path.join(self.workdir, 'syslog')
         with open(log, 'w') as f:
@@ -299,7 +291,7 @@ class T(unittest.TestCase):
                 lines -= 1
 
         mem_before = self._get_mem_usage()
-        data = apport.hookutils.recent_logfile(log, re.compile('kernel'))
+        data = apport.hookutils.recent_syslog(re.compile('kernel'), path=log)
         mem_after = self._get_mem_usage()
         delta_kb = mem_after - mem_before
         sys.stderr.write('[Δ %i kB] ' % delta_kb)

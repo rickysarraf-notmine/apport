@@ -205,19 +205,8 @@ def attach_dmesg(report):
 
     This will not overwrite already existing information.
     '''
-    try:
-        if not report.get('BootDmesg', '').strip():
-            with open('/var/log/dmesg') as f:
-                report['BootDmesg'] = f.read()
-    except IOError:
-        pass
     if not report.get('CurrentDmesg', '').strip():
-        dmesg = command_output(['sh', '-c', 'dmesg | comm -13 --nocheck-order /var/log/dmesg -'])
-        # if an initial message was truncated by the ring buffer, skip over it
-        first_newline = dmesg.find('\n[')
-        if first_newline != -1:
-            dmesg = dmesg[first_newline + 1:]
-        report['CurrentDmesg'] = dmesg
+        report['CurrentDmesg'] = command_output(['dmesg'])
 
 
 def attach_dmi(report):
@@ -465,7 +454,7 @@ def attach_root_command_outputs(report, command_map):
         # now read back the individual outputs
         for keyname in command_map:
             try:
-                with open(os.path.join(workdir, keyname)) as f:
+                with open(os.path.join(workdir, keyname), 'rb') as f:
                     buf = f.read().strip()
             except IOError:
                 # this can happen if the user dismisses authorization in
@@ -478,34 +467,37 @@ def attach_root_command_outputs(report, command_map):
         shutil.rmtree(workdir)
 
 
-def recent_syslog(pattern):
-    '''Extract recent messages from syslog which match a regex.
-
-    pattern should be a "re" object.
-    '''
-    return recent_logfile('/var/log/syslog', pattern)
-
-
-def recent_logfile(logfile, pattern, maxlines=10000):
-    '''Extract recent messages from a logfile which match a regex.
-
-    pattern should be a "re" object. By default this catches at most the last
-    10000 lines, but this can be modified with a different maxlines argument.
-    '''
+def __filter_re_process(pattern, process):
     lines = ''
-    try:
-        tail = subprocess.Popen(['tail', '-n', str(maxlines), logfile],
-                                stdout=subprocess.PIPE)
-        while tail.poll() is None:
-            for line in tail.stdout:
-                line = line.decode('UTF-8', errors='replace')
-                if pattern.search(line):
-                    lines += line
-        tail.stdout.close()
-        tail.wait()
-    except IOError:
-        return ''
-    return lines
+    while process.poll() is None:
+        for line in process.stdout:
+            line = line.decode('UTF-8', errors='replace')
+            if pattern.search(line):
+                lines += line
+    process.stdout.close()
+    process.wait()
+    if process.returncode == 0:
+        return lines
+    return ''
+
+
+def recent_syslog(pattern, path=None):
+    '''Extract recent system messages which match a regex.
+
+    pattern should be a "re" object. By default, messages are read from
+    the systemd journal, or /var/log/syslog; but when giving "path", messages
+    are read from there instead.
+    '''
+    if path:
+        p = subprocess.Popen(['tail', '-n', '10000', path],
+                             stdout=subprocess.PIPE)
+    elif os.path.exists('/run/systemd/system'):
+        p = subprocess.Popen(['journalctl', '--system', '--quiet', '-b', '-a'],
+                             stdout=subprocess.PIPE)
+    elif os.access('/var/log/syslog', os.R_OK):
+        p = subprocess.Popen(['tail', '-n', '10000', '/var/log/syslog'],
+                             stdout=subprocess.PIPE)
+    return __filter_re_process(pattern, p)
 
 
 def xsession_errors(pattern=None):
@@ -714,10 +706,8 @@ def attach_mac_events(report, profiles=None):
     aa_re = re.compile(aa_regex, re.IGNORECASE)
 
     if 'KernLog' not in report:
-        if os.path.exists('/var/log/kern.log'):
-            report['KernLog'] = recent_logfile('/var/log/kern.log', mac_re)
-        elif os.path.exists('/var/log/messages'):
-            report['KernLog'] = recent_logfile('/var/log/messages', mac_re)
+        report['KernLog'] = __filter_re_process(
+            mac_re, subprocess.Popen(['dmesg'], stdout=subprocess.PIPE))
 
     if 'AuditLog' not in report and os.path.exists('/var/run/auditd.pid'):
         attach_root_command_outputs(report, {'AuditLog': 'egrep "' + mac_regex + '" /var/log/audit/audit.log'})
@@ -838,14 +828,14 @@ def __drm_con_info(con):
         path = os.path.join(con, f)
         if f == 'uevent' or not os.path.isfile(path):
             continue
-        val = open(path).read().strip()
+        val = open(path, 'rb').read().strip()
         # format some well-known attributes specially
         if f == 'modes':
-            val = val.replace('\n', ' ')
+            val = val.replace(b'\n', b' ')
         if f == 'edid':
             val = base64.b64encode(val)
             f += '-base64'
-        info += '%s: %s\n' % (f, val)
+        info += '%s: %s\n' % (f, val.decode('UTF-8', errors='replace'))
     return info
 
 
@@ -872,6 +862,10 @@ def in_session_of_problem(report):
 
     Return None if this cannot be determined.
     '''
+    session_id = os.environ.get('XDG_SESSION_ID')
+    if not session_id:
+        return None
+
     # report time is in local TZ
     orig_ctime = locale.getlocale(locale.LC_TIME)
     try:
@@ -885,20 +879,11 @@ def in_session_of_problem(report):
     except locale.Error:
         return None
 
-    # determine cgroup
+    # determine session creation time
     try:
-        with open('/proc/self/cgroup') as f:
-            for l in f:
-                if 'name=systemd:' in l:
-                    my_cgroup = l.split('systemd:', 1)[1].strip()
-                    break
-            else:
-                return None
-    except IOError:
+        session_start_time = os.stat('/run/systemd/sessions/' + session_id).st_mtime
+    except (IOError, OSError):
         return None
-
-    # determine cgroup creation time
-    session_start_time = os.stat('/sys/fs/cgroup/systemd/' + my_cgroup).st_mtime
 
     return session_start_time <= report_time
 

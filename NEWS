@@ -1,6 +1,70 @@
 This file summarizes the major and interesting changes for each release. For a
 detailed list of changes, please see ChangeLog.
 
+2.16.2 (2015-03-02)
+-------------------
+ * hookutils.in_session_of_problem(): Check $XDG_SESSION_ID and
+   /run/systemd/sessions instead of the cgroup, as the latter does not work
+   under cgmanager.
+ * ProblemReport: Set a timestamp of 0 in gzip compressed fields; they are
+   meaningless and cause unnecessary jitter in the output.
+ * launchpad backend: Fix unclosed file in upload().
+ * launchpad backend: Fix wrong use of filter() with Python 3.
+ * launchpad backend download(): Try to convert textual values from byte arrays
+   into into strings.
+ * ui.py, collect_info(): Fix crash on bug pattern checking with broken gzipped
+   values. (LP: #1345653)
+ * hookutils, attach_drm_info(): Avoid UnicodeDecodeErrors in Python 3 when
+   reading binary files. Thanks Chad Miller. (LP: #1425254)
+ * apport-gtk: Update legacy icon names to modern GTK ones, to fix icons under
+   GNOME. Thanks Scott Sanbar. (LP: #1422176)
+ * Move backend_apt_dpkg testsuite to use Ubuntu 14.04 LTS.
+ * hookutils, attach_dmesg(): Only attach dmesg as CurrentDmesg, drop BootDmesg
+   as /var/log/dmesg is upstart specific and thus not reliably correct any
+   more.
+ * hookutils, recent_syslog(): Read system logs from the journal when running
+   under systemd, and fall back to /var/log/syslog if not.
+ * hookutils, attach_mac_events(): Read kernel violation messages from dmesg
+   instead of /var/log/kern.log, as that's specific to rsyslog and its
+   configuration.
+
+2.16.1 (2015-02-10)
+-------------------
+ * Set gettext translation domain in setup.cfg, so that tools like
+   dh_translations pick it up and show correct polkit translations.
+   Thanks to Aron Xu! (LP: #1306857)
+ * Report.get_logind_session(): Check $XDG_SESSION_ID and /run/systemd/sessions
+   instead of the cgroup, as the latter does not work under cgmanager.
+
+2.16 (2015-02-06)
+-----------------
+Improvements/behaviour changes:
+ * Add a new method ProblemReport.extract_keys() which writes binary keys
+   (which can be very large) directly to files without loading them all into
+   memory first. Use that in apport-unpack. Thanks Louis Bouchard!
+   (LP: #1307413)
+ * launchpad backend: Work with Python 3, now that launchpadlib exists for
+   Python 3. (LP: #1153671)
+ * apport-bug, apport-gtk: Also check for $WAYLAND_DISPLAY, to use apport-gtk
+   instead of apport-cli under Wayland. Thanks Tim Lunn. (LP: #1418766)
+ * apport-gtk: When running under Wayland, avoid Gdk/Wnck operation for setting
+   crash window modal to the PID of the crashed window; these only work under
+   X11.
+ * Don't install the test suite any more, to save 1 MB of installed space. It
+   can be run out of trunk easily enough, and distributions can install it from
+   tests/ if they desire.
+
+Bug fixes:
+ * hookutils, attach_root_command_outputs(): Fix UnicodeDecodeError crash for
+   non-textual values. (LP: #1370259)
+ * ui.py: Only provide a UI to hooks if the crash db will accept the report.
+   This avoids asking questions if the report is merely sent to whoopsie for
+   Ubuntu stable releases. Thanks Brian Murrary. (LP: #1084979)
+ * whoopsie-upload-all: Add package information to the report before calling
+   package hooks. Thanks Brian Murray.
+ * Fix check for available terminal when checking whether to display the
+   "Examine locally" button.
+
 2.15.1 (2014-12-19)
 -------------------
  * Robustify report.test_get_timestamp test.
