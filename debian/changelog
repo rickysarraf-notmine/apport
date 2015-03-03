@@ -1,3 +1,13 @@
+apport (2.16.2-1) experimental; urgency=medium
+
+  * [b2aa033] Only act on IN_CLOSE_WRITE event
+  * [b618907] Add details about notifyd in README.Debian
+  * [97bde9a] Imported Upstream version 2.16.2
+  * [185d9dc] Refresh patch debian/patches/kde-retrace-support.patch
+  * [17db7dc] Drop testsuite folder
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Tue, 03 Mar 2015 16:53:59 +0530
+
 apport (2.15.1-4) experimental; urgency=medium
 
   * [31d3de2] Add debian/gbp.conf
