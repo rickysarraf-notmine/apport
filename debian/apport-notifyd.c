@@ -31,7 +31,9 @@ int checkFileExtn(const char* extn, const char* CRASH_EXTN)
 	apportLength = strlen(CRASH_EXTN);
 	// syslog(LOG_NOTICE,"extnLength is %d and apportLength is %d\n", extnLength, apportLength);
 
-	if(apportLength > extnLength) return 1;
+    // if a file's name is shorter than ".crash",
+    // apparently it's not a crash dump 
+	if(apportLength > extnLength) return 0;
 
 	/* Check if it is a .crash file */
 	// syslog(LOG_NOTICE,"strcmp length is %s\n", &extn[extnLength - apportLength]);
