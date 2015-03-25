@@ -20,17 +20,17 @@
 #define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))
 #define PROG "apport-bug "
 #define CRASH_PATH "/var/crash/"
+#define CRASH_EXTN ".crash"
 
-int checkFileExtn(const char* extn, const char* CRASH_EXTN)
+int checkFileExtn(const char* extn, const char* crashExtn)
 {
-	#define CRASH_EXTN ".crash"
 	size_t extnLength;
 	size_t apportLength;
 
 	extnLength = strlen(extn);
-	apportLength = strlen(CRASH_EXTN);
-	// syslog(LOG_NOTICE,"extnLength is %d and apportLength is %d\n", extnLength, apportLength);
+	apportLength = strlen(crashExtn);
 
+	// syslog(LOG_NOTICE,"extnLength is %d and apportLength is %d\n", extnLength, apportLength);
 	if(apportLength > extnLength) return 1;
 
 	/* Check if it is a .crash file */
@@ -53,9 +53,9 @@ static void trapCrashFile(struct inotify_event *i)
 		    system(cmdStr);
 		    syslog(LOG_NOTICE, "cmdStr is %s at event %d\n", cmdStr, i->mask);
 	    }
-    } /* else {
+    } else {
 	    syslog(LOG_DEBUG, "File %s does not have extension %s\n", i->name, CRASH_EXTN);
-    } */
+    }
 
     /*
     if (i->mask & IN_CREATE)        system(cmdStr);
