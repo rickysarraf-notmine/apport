@@ -1,3 +1,20 @@
+apport (2.16.2-2) experimental; urgency=medium
+
+  [ Yuru Shao ]
+  * [3152d82] fix typo in filename
+  * [320d2ec] fix patch filename
+  * [2f9a414] fix bug in checkFileExtn
+  * [eb2d88c] adjust indent
+  * [0c8a9bb] only 1 instance per user
+
+  [ Ritesh Raj Sarraf ]
+  * [9cabd8b] Fix #define for CRASH_EXTN
+  * [13e64a1] Fix indentation
+  * [b98ef66] Add patch from Yuru to handle Unicode exceptions.
+    Thanks to Yuru Roy Shao (Closes: 781164)
+
+ -- Yuru Shao <shaoyuru@gmail.com>  Fri, 27 Mar 2015 12:56:31 +0530
+
 apport (2.16.2-1) experimental; urgency=medium
 
   * [b2aa033] Only act on IN_CLOSE_WRITE event
