@@ -32,7 +32,7 @@ int checkFileExtn(const char* extn, const char* crashExtn)
     size_t apportLength;
 
     extnLength = strlen(extn);
-	apportLength = strlen(crashExtn);
+    apportLength = strlen(crashExtn);
 
 	// syslog(LOG_NOTICE,"extnLength is %d and apportLength is %d\n", extnLength, apportLength);
     // apparently it's not a crash dump 
