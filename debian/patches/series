@@ -1,6 +1,5 @@
 kde-retrace-support.patch
 default-crashdb.patch
 display-pkg-name.patch
-ignore-unicodeDecode-error.patch
 disto-pkg-detection.patch
 yuru-unicode-error.patch
