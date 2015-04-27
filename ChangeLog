@@ -1,3 +1,576 @@
+=== 2.17.2 ===
+2015-04-16  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2949] release 2.17.2
+
+	* NEWS,
+	* data/apport: [2948] * SECURITY UPDATE: Disable crash forwarding to
+	containers. The previous fix in 2.17.1 was not sufficient against all
+	attack scenarios. By binding to specially crafted sockes, a normal
+	user program could forge arbitrary entries in /proc/net/unix. We
+	cannot currently rely on a kernel-side solution for this; this feature
+	will be re-enabled once it gets re-done to be secure. (LP: #1444518)
+
+2015-04-15  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* data/recoverable_problem,
+	* test/test_recoverable_problem.py: [2947] * Really create a better
+	duplicate signature for recoverable problems, using ExecutablePath.
+	Thanks Brian Murray. (LP: #1316763)
+
+	* NEWS,
+	* kde/apport-kde: [2946] * apport-kde: Fix crash when showing byte
+	array values. Thanks Jonathan Riddell. (LP: #1443659)
+
+2015-04-14  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* do-release: [2945] * do-release: Force UTC timezone for upstream
+	changelog generation.
+
+=== 2.17.1 ===
+2015-04-14  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2944] release 2.17.1
+
+	* NEWS,
+	* data/apport,
+	* test/test_signal_crashes.py: [2943] SECURITY UPDATE: Fix root
+	privilege escalation through crash forwarding to containers  Version
+	2.13 introduced forwarding a crash to a container's apport. By
+	crafting a specific file system structure, entering it as a namespace
+	("container"), and crashing something in it, a local user could access
+	arbitrary files on the host system with root privileges.  Thanks to
+	St?phane Graber for discovering and fixing this!  CVE-2015-1318 LP:
+	#1438758
+
+2015-04-09  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2942] Launchpad automatic translations update.
+
+2015-04-01  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* data/apport: [2941] * apport: use the proper pid when calling apport
+	in another PID namespace. Thanks Brian Murray. (LP: #1300235)
+
+	* NEWS,
+	* apport/report.py,
+	* data/apport,
+	* test/test_signal_crashes.py: [2940] * Fix UnicodeDecodeError on
+	parsing non-ASCII environment variables.
+
+2015-04-01  Launchpad Translations on behalf of apport-hackers
+
+	* po/hr.po: [2939] Launchpad automatic translations update.
+
+2015-03-31  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/test_ui_kde.py: [2938] * apport-kde tests: Fix imports to make
+	tests work again.
+
+=== 2.17 ===
+2015-03-31  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* apport/ui.py: [2937] release 2.17
+
+	* apport/report.py,
+	* test/test_ui.py: [2936] anonymize JournalErrors field
+
+2015-03-27  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* data/general-hooks/generic.py: [2935] * general-hooks/generic.py:
+	Add systemd journal warnings and errors to the new "JournalErrors"
+	field.
+
+2015-03-27  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2934] Launchpad automatic translations update.
+
+2015-03-26  Dmitry Shachnev <mitya57@ubuntu.com>
+
+	* kde/apport-kde: [2933] Fix syntax error in apport-kde
+
+2015-03-26  Martin Pitt <martin.pitt@canonical.com>
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/apport.pot,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2932] update po
+
+	* NEWS,
+	* kde/apport-kde,
+	* test/test_ui_kde.py: [2931] * apport-kde: Port to Qt5. Thanks Harald
+	Sitter!
+
+2015-03-17  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2930] Launchpad automatic translations update.
+
+2015-03-09  Martin Pitt <martin.pitt@canonical.com>
+
+	* NEWS,
+	* test/test_signal_crashes.py: [2929] * Adjust
+	signal_crashes.test_crash_setuid_{keep,drop} for systemd.
+
+2015-03-05  Launchpad Translations on behalf of apport-hackers
+
+	* po/ace.po,
+	* po/af.po,
+	* po/am.po,
+	* po/an.po,
+	* po/ar.po,
+	* po/ast.po,
+	* po/az.po,
+	* po/be.po,
+	* po/bg.po,
+	* po/bn.po,
+	* po/br.po,
+	* po/bs.po,
+	* po/ca.po,
+	* po/ca@valencia.po,
+	* po/ce.po,
+	* po/cs.po,
+	* po/cv.po,
+	* po/da.po,
+	* po/de.po,
+	* po/el.po,
+	* po/en_AU.po,
+	* po/en_CA.po,
+	* po/en_GB.po,
+	* po/eo.po,
+	* po/es.po,
+	* po/et.po,
+	* po/eu.po,
+	* po/fa.po,
+	* po/fi.po,
+	* po/fr.po,
+	* po/fr_CA.po,
+	* po/ga.po,
+	* po/gd.po,
+	* po/gl.po,
+	* po/gu.po,
+	* po/he.po,
+	* po/hi.po,
+	* po/hr.po,
+	* po/hu.po,
+	* po/hy.po,
+	* po/id.po,
+	* po/is.po,
+	* po/it.po,
+	* po/ja.po,
+	* po/kab.po,
+	* po/kk.po,
+	* po/km.po,
+	* po/kn.po,
+	* po/ko.po,
+	* po/ku.po,
+	* po/lo.po,
+	* po/lt.po,
+	* po/lv.po,
+	* po/mhr.po,
+	* po/mk.po,
+	* po/ml.po,
+	* po/mr.po,
+	* po/ms.po,
+	* po/my.po,
+	* po/nb.po,
+	* po/nds.po,
+	* po/ne.po,
+	* po/nl.po,
+	* po/oc.po,
+	* po/pa.po,
+	* po/pl.po,
+	* po/pt.po,
+	* po/pt_BR.po,
+	* po/ro.po,
+	* po/ru.po,
+	* po/sc.po,
+	* po/se.po,
+	* po/shn.po,
+	* po/si.po,
+	* po/sk.po,
+	* po/sl.po,
+	* po/sq.po,
+	* po/sr.po,
+	* po/sv.po,
+	* po/ta.po,
+	* po/te.po,
+	* po/tg.po,
+	* po/th.po,
+	* po/tr.po,
+	* po/ug.po,
+	* po/uk.po,
+	* po/uz.po,
+	* po/vi.po,
+	* po/zh_CN.po,
+	* po/zh_HK.po,
+	* po/zh_TW.po: [2928] Launchpad automatic translations update.
+
 === 2.16.2 ===
 2015-03-02  Martin Pitt <martin.pitt@canonical.com>
 
@@ -6952,14 +7525,12 @@
 	dpkg.py, install_packages(): Set mirror to the one in the sandbox
 	config.
 
-2012-12-06  Martin Pitt <martin.pitt@canonical.com>
+2012-12-05  Martin Pitt <martin.pitt@canonical.com>
 
 	* apport/report.py,
 	* test/test_python_crashes.py,
 	* test/test_signal_crashes.py: [2550] finish r2545, consistently use
 	ignore file without $HOME
-
-2012-12-05  Martin Pitt <martin.pitt@canonical.com>
 
 	* NEWS,
 	* apport/fileutils.py: [2549] * fileutils.py, mark_report_upload(): Do
@@ -12919,7 +13490,7 @@
 	* po/zh_HK.po,
 	* po/zh_TW.po: [2028] Launchpad automatic translations update.
 
-2011-10-30  Martin Pitt <martin.pitt@canonical.com>
+2011-10-29  Martin Pitt <martin.pitt@canonical.com>
 
 	* TODO: [2027] TODO: add
 
@@ -12930,8 +13501,6 @@
 	* NEWS,
 	* apport/hookutils.py: [2024] hookutils.py: Add
 	attach_upstart_overrides().
-
-2011-10-29  Martin Pitt <martin.pitt@canonical.com>
 
 	* test/python: [2023] test/python: Run verbosely
 
@@ -14355,7 +14924,7 @@
 
 	* NEWS: [1815] add NEWS entry for Matt's commit
 
-2010-12-29  Matt Zimmerman <mdz@ubuntu.com>
+2010-12-28  Matt Zimmerman <mdz@ubuntu.com>
 
 	* apport/hookutils.py: [1814] Make hookutils.package_versions a bit
 	more readable
@@ -15039,7 +15608,7 @@
 	'escalation_subscription' and 'escalation_tag' for handling bugs with
 	more than 10 duplicates.
 
-2009-12-29  Martin Pitt <martin.pitt@canonical.com>
+2009-12-28  Martin Pitt <martin.pitt@canonical.com>
 
 	* NEWS,
 	* apport/crashdb_impl/launchpad.py: [1691] launchpad.py, download():
@@ -15047,8 +15616,6 @@
 
 	* apport/crashdb_impl/launchpad.py: [1690] launchpad.py, upload():
 	Clean up tag/privacy handling
-
-2009-12-28  Martin Pitt <martin.pitt@canonical.com>
 
 	* NEWS,
 	* apport/crashdb_impl/launchpad.py: [1689] launchpad.py: Drop
@@ -15145,7 +15712,7 @@
 	consistently format them.
 
 === 1.10.1 ===
-2009-12-23  Martin Pitt <martin.pitt@canonical.com>
+2009-12-22  Martin Pitt <martin.pitt@canonical.com>
 
 	* NEWS,
 	* apport/ui.py: [1678] release 1.10.1
@@ -15157,7 +15724,7 @@
 	* bin/apport-bug: [1676] bin/apport-bug: Remove leftover unused
 	variable
 
-2009-12-23  Martin Pitt <martin.pitt@canonical.com>
+2009-12-22  Martin Pitt <martin.pitt@canonical.com>
 
 	* po/am.po,
 	* po/ast.po,
@@ -15516,7 +16083,7 @@
 
 	* NEWS: [1625] update NEWS
 
-2009-10-14  Kees Cook <kees.cook@canonical.com>
+2009-10-13  Kees Cook <kees.cook@canonical.com>
 
 	* NEWS,
 	* apport/hookutils.py: [1624] hookutils.py: fix error codes from
@@ -15584,7 +16151,7 @@
 	* man/apport-bug.1: [1611] man/apport-bug.1: Document
 	APPORT_IGNORE_OBSOLETE_PACKAGES
 
-2009-09-24  Martin Pitt <martin.pitt@canonical.com>
+2009-09-23  Martin Pitt <martin.pitt@canonical.com>
 
 	* NEWS,
 	* bin/apport-cli: [1610] apport-cli: Print the URL and ask whether to
@@ -15592,8 +16159,6 @@
 
 	* apport/crashdb_impl/launchpad.py: [1609] launchpad.py: Consistently
 	respect $APPORT_STAGING. (LP: #435112)
-
-2009-09-23  Martin Pitt <martin.pitt@canonical.com>
 
 	* kde/bugreport.ui: [1608] kde/bugreport.ui: Select "complete report"
 	option by default, to actually be able to file bugs if the options are
@@ -15619,6 +16184,8 @@
 
 	* data/general-hooks/parse_segv.py: [1602] data/general-
 	hooks/parse_segv.py: allow "*" to start a register argument
+
+2009-09-16  Kees Cook <kees.cook@canonical.com>
 
 	* NEWS,
 	* data/general-hooks/parse_segv.py: [1601] data/general-
@@ -16629,7 +17196,7 @@
 	* backends/packaging-apt-dpkg.py: [1427] packaging-apt-dpkg.py:
 	Replace deprecated python-apt properties with current ones (>= 0.7.9)
 
-2009-05-05  Martin Pitt <martin.pitt@canonical.com>
+2009-05-04  Martin Pitt <martin.pitt@canonical.com>
 
 	* apport/crashdb_impl/launchpad.py: [1426] launchpad: fix exception
 	class name
@@ -16665,14 +17232,12 @@
 	* apport/crashdb_impl/launchpad.py: [1420] launchpad.py: consider
 	socket errors when connecting as transient
 
-2009-04-24  Martin Pitt <martin.pitt@canonical.com>
+2009-04-23  Martin Pitt <martin.pitt@canonical.com>
 
 	* apport/report.py: [1419] report.py, test_add_gdb_info_script(): More
 	robust method of generating core dump, fixes test suite
 
 	* apport/report.py: [1418] report.py: Fix test suite for r1416
-
-2009-04-23  Martin Pitt <martin.pitt@canonical.com>
 
 	* apport/report.py: [1417] report.py, add_hooks_info(): Always run
 	common hooks, and run source package hooks if we do not have a binary
@@ -16910,7 +17475,7 @@
 	* apport/hookutils.py: [1375] hookutils.py: Drop attach_conffiles(),
 	it is dpkg specific
 
-2009-04-07  Martin Pitt <martin.pitt@canonical.com>
+2009-04-06  Martin Pitt <martin.pitt@canonical.com>
 
 	* do-release: Added.
 
@@ -16918,7 +17483,7 @@
 	branches, since it is only useful for upstream.
 
 === 1.0 ===
-2009-04-07  Martin Pitt <martin.pitt@canonical.com>
+2009-04-06  Martin Pitt <martin.pitt@canonical.com>
 
 	* setup.py: [1373] release 1.0
 
@@ -16926,7 +17491,7 @@
 
 	* setup.py: [1371] setup.py: add version
 
-2009-04-07  Martin Pitt <martin.pitt@canonical.com>
+2009-04-06  Martin Pitt <martin.pitt@canonical.com>
 
 	* apport.init.fedora,
 	* apport.init.opensuse,
@@ -16979,7 +17544,7 @@
 	revert the deletion of the files you need!
 
 === 0.149 ===
-2009-04-07  Martin Pitt <martin.pitt@canonical.com>
+2009-04-06  Martin Pitt <martin.pitt@canonical.com>
 
 	* debian/changelog: [1369] releasing version 0.149
 
@@ -16993,8 +17558,6 @@
 	* debian/local/apport-chroot: [1366] debian/local/apport-chroot: If
 	multiple distro IDs point to the same chroot, do not upgrade them more
 	than once with "upgrade all".
-
-2009-04-06  Martin Pitt <martin.pitt@canonical.com>
 
 	* debian/changelog,
 	* debian/local/setup-apport-retracer: [1365] setup-apport-retracer:
@@ -17973,11 +18536,9 @@
 
 	* debian/changelog: [1199] releasing version 0.121
 
-2008-12-02  Martin Pitt <martin.pitt@canonical.com>
+2008-12-01  Martin Pitt <martin.pitt@canonical.com>
 
 	* debian/changelog: [1198] fix changelog
-
-2008-12-01  Martin Pitt <martin.pitt@canonical.com>
 
 	* apport/report.py,
 	* debian/changelog,
@@ -18196,7 +18757,7 @@
 
 	* debian/changelog: [1162] add bug # to changelog
 
-2008-09-19  Matt Zimmerman <mdz@canonical.com>
+2008-09-18  Matt Zimmerman <mdz@canonical.com>
 
 	* debian/changelog,
 	* general-hooks/automatix.py: [1161] Fix automatix.py to not crash
@@ -18213,7 +18774,7 @@
 	* debian/changelog: [1158] Change kernel crash report type to
 	KernelCrash
 
-2008-09-19  Matt Zimmerman <mdz@canonical.com>
+2008-09-18  Matt Zimmerman <mdz@canonical.com>
 
 	* debian/apport.init,
 	* debian/changelog,
@@ -18225,7 +18786,7 @@
 	[1157] Rename kernel_hook to kernel_crashdump (there are other kernel
 	hooks)
 
-2008-09-19  Matt Zimmerman <mdz@canonical.com>
+2008-09-18  Matt Zimmerman <mdz@canonical.com>
 
 	* package-hooks/source_linux.py: [1156] Simplify test for Uname
 
@@ -18957,7 +19518,7 @@
 	and mandate   calling with <pid> <signal> <core ulimit>. Drop the now
 	obsolete   apport/elfcore.py. Adapt test-apport accordingly.
 
-2007-12-21  martin@piware.de
+2007-12-20  martin@piware.de
 
 	* apport/ui.py,
 	* debian/changelog: [1033] * apport/ui.py: Sleep for 0.5 seconds after
@@ -19023,11 +19584,9 @@
 	logging to a file, and   --pidfile/--stop for daemonization. Add test
 	cases to test-crash-digger.
 
-2007-10-29  martin@piware.de
+2007-10-28  martin@piware.de
 
 	* debian/changelog: [1024] release as 0.99 to hardy
-
-2007-10-28  martin@piware.de
 
 	* run-tests: [1023] run-tests: only check crash-digger in local mode
 
@@ -19649,7 +20208,7 @@
 
 	* TODO: [917] TODO item
 
-2007-07-11  martin@piware.de
+2007-07-10  martin@piware.de
 
 	* apport.init.fedora,
 	* apport.spec,
@@ -20085,7 +20644,7 @@
 	* debian/changelog: [840] apport/crashdb.py: add get_dup_unchecked()
 	and mark_dup_checked(), and implement it for launchpad
 
-2007-06-14  martin@piware.de
+2007-06-13  martin@piware.de
 
 	* apport/crashdb.py,
 	* apport/crashdb_impl/launchpad.py,
@@ -20517,11 +21076,11 @@
 	* debian/control: [771] * debian/control: Use code.lp.net instead of
 	bazaar.lp.net VCS URL.
 
+2007-05-09  martin@piware.de
+
 	* backends/packaging-apt-dpkg.py,
 	* debian/changelog: [770] * backends/packaging-apt-dpkg.py: Formally
 	make this a subclass of   apport.packaging.PackageInfo.
-
-2007-05-09  martin@piware.de
 
 	* apport/report.py,
 	* debian/changelog: [769] * apport/report.py: Change example URLs in
@@ -21169,6 +21728,8 @@
 
 	* debian/changelog: [666] release as 0.68 to feisty
 
+2007-03-14  Martin Pitt <martin.pitt@ubuntu.com>
+
 	* bin/apport-chroot,
 	* debian/changelog: [665] * apport-chroot: Add option --confirm-
 	attach; if given, call apport-retrace   with --confirm.
@@ -21178,8 +21739,6 @@
 	--confirm to display the retraced stack traces   and ask for
 	confirmation before uploading them as LP bug attachments.   (LP:
 	#91878)
-
-2007-03-14  Martin Pitt <martin.pitt@ubuntu.com>
 
 	* debian/changelog,
 	* qt4/apport-qt,
@@ -23247,6 +23806,8 @@
 	as unhandled exception (only   useful for command line debugging,
 	though).
 
+2006-09-28  martin@piware.de
+
 	* TODO,
 	* apport,
 	* debian/changelog: [293] * apport: Do not collect static information.
@@ -23272,8 +23833,6 @@
 	* debian/changelog: [290] * Move InformationCollector._get_gdb() from
 	apport to apport_utils.py   report_add_gdb_info(), and add a test case
 	for it.
-
-2006-09-28  martin@piware.de
 
 	* apport,
 	* debian/changelog: [289] * apport: Remove _copy_shrink_corefile():
@@ -23390,6 +23949,8 @@
 
 	* TODO: [267] TODO items
 
+2006-09-12  martin@piware.de
+
 	* debian/apport.default,
 	* debian/changelog: [266] * debian/apport.default: Increase maximum
 	core size to 200 MB, to also catch   Firefox and Evolution core dumps.
@@ -23403,8 +23964,6 @@
 	* apport,
 	* debian/changelog: [263] * apport: Add the executable path to the
 	first line of logging.
-
-2006-09-12  martin@piware.de
 
 	* apport,
 	* debian/changelog: [262] * apport: Keep a partially written report
@@ -23420,13 +23979,13 @@
 
 	* debian/changelog: [259] changelog grammar fix
 
+2006-09-10  martin@piware.de
+
 	* apport,
 	* debian/changelog: [258] * apport: Install a signal handler for all
 	'crashy' signals, which just logs   the signal and stack info and
 	exits. This should avoid a crashing apport   examining itself,
 	possibly in an endless loop. Closes: LP#58873
-
-2006-09-10  martin@piware.de
 
 	* debian/changelog,
 	* test-apport: [257] * test-apport: Fix WCOREDUMP() and pidof checks
@@ -23834,14 +24393,14 @@
 	* preloadlib/libapport.c: [183] * preloadlib/libapport.c: Write core
 	dump into cwd instead of /tmp to act   like the current kernel.
 
+2006-08-17  martin@piware.de
+
 	* debian/changelog: [182] release as 0.13 to edgy
 
 	* debian/changelog,
 	* debian/control,
 	* debian/rules: [181] * Do not run the test suite on build since on
 	the buildds modifying   file atimes does not work.
-
-2006-08-17  martin@piware.de
 
 	* debian/changelog: [180] release as 0.12 to edgy
 
@@ -24281,13 +24840,13 @@
 	* gtk/apport-gtk: [87] * apport-gtk: Only display reports that the
 	user can actually read.
 
+2006-07-30  martin@piware.de
+
 	* debian/changelog,
 	* gtk/apport-gtk,
 	* gtk/apport-gtk.glade: [86] * apport-gtk: Add button to remove the
 	current report (by truncating the   file to zero bytes; a user cannot
 	unlink files in /var/crash).
-
-2006-07-30  martin@piware.de
 
 	* debian/changelog,
 	* gtk/apport-gtk: [85] * apport-gtk: Ignore 0-sized reports.
@@ -24310,10 +24869,10 @@
 
 	* po/de.po: [80] fixed typo in de.po
 
+2006-07-27  martin@piware.de
+
 	* debian/changelog,
 	* debian/rules: [79] * debian/rules clean: Also clean po/.
-
-2006-07-27  martin@piware.de
 
 	* debian/changelog: [78] release as 0.2 to edgy
 
@@ -24584,11 +25143,9 @@
 
 	[16] add initial packaging
 
-2006-07-11  martin@piware.de
+2006-07-10  martin@piware.de
 
 	* crash-reporter: [15] write report into file when running as root
-
-2006-07-10  martin@piware.de
 
 	* crash-reporter: [14] redirect gdb stderr to /dev/null
 

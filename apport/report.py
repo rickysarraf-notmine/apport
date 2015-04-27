@@ -1452,7 +1452,7 @@ class Report(problem_report.ProblemReport):
         for k in self:
             is_proc_field = k.startswith('Proc') and k not in [
                 'ProcCpuinfo', 'ProcMaps', 'ProcStatus', 'ProcInterrupts', 'ProcModules']
-            if is_proc_field or 'Stacktrace' in k or k in ['Traceback', 'PythonArgs', 'Title']:
+            if is_proc_field or 'Stacktrace' in k or k in ['Traceback', 'PythonArgs', 'Title', 'JournalErrors']:
                 if not hasattr(self[k], 'isspace'):
                     continue
                 for (pattern, repl) in replacements:
@@ -1591,10 +1591,10 @@ class Report(problem_report.ProblemReport):
         '''
         # determine cgroup
         try:
-            with open('/proc/%s/environ' % pid) as f:
-                for l in f.read().split('\0'):
-                    if l.startswith('XDG_SESSION_ID='):
-                        my_session = l.split('=', 1)[1].strip()
+            with open('/proc/%s/environ' % pid, 'rb') as f:
+                for l in f.read().split(b'\0'):
+                    if l.startswith(b'XDG_SESSION_ID='):
+                        my_session = l.split(b'=', 1)[1].strip().decode()
                         break
                 else:
                     return None
