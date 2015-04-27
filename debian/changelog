@@ -1,3 +1,13 @@
+apport (2.17.2-1) experimental; urgency=medium
+
+  * [dd0fea1] Imported Upstream version 2.17.2
+  * [a81e6d1] Refresh patch debian/patches/kde-retrace-support.patch
+  * [1b5fb9d] Drop patch ignore-unicodeDecode-error.patch. Available upstream
+  * [cefa5f4] Fix last occurrence of dh_installapport in dh_apport's POD.
+    Thanks to Axel Beckert (Closes: #782854)
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Mon, 27 Apr 2015 22:48:46 +0530
+
 apport (2.16.2-2) experimental; urgency=medium
 
   [ Yuru Shao ]
