@@ -1,10 +1,8 @@
 The KDE implementation doesn't have support to spawn of a terminal and run a gdb retrace session.
 This patch implements it.
-Index: apport/kde/apport-kde
-===================================================================
---- apport.orig/kde/apport-kde	2015-03-03 16:28:08.411675883 +0530
-+++ apport/kde/apport-kde	2015-03-03 16:28:08.407675883 +0530
-@@ -15,6 +15,10 @@
+--- a/kde/apport-kde
++++ b/kde/apport-kde
+@@ -16,6 +16,10 @@
  import sys
  import os
  
@@ -14,8 +12,8 @@ Index: apport/kde/apport-kde
 +
  try:
      import apport
-     from PyQt4.QtCore import *
-@@ -347,6 +351,21 @@
+     from PyQt5.QtCore import (QByteArray,
+@@ -361,6 +365,21 @@
              else:
                  QTreeWidgetItem(keyitem, [_('(binary data)')])
  
