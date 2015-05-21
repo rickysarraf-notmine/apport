@@ -1,3 +1,10 @@
+apport (2.17.3-1) experimental; urgency=medium
+
+  * [10887e7] Imported Upstream version 2.17.3
+    Fixes CVE-2015-1324, CVE-2015-1325
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Thu, 21 May 2015 23:03:25 +0530
+
 apport (2.17.2-1) experimental; urgency=medium
 
   * [dd0fea1] Imported Upstream version 2.17.2
