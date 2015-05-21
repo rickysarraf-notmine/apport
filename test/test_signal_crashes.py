@@ -32,6 +32,15 @@ ifpath = os.path.expanduser(apport.report._ignore_file)
 if orig_home is not None:
     os.environ['HOME'] = orig_home
 
+# did we enable suid_dumpable?
+suid_dumpable = False
+try:
+    with open('/proc/sys/fs/suid_dumpable') as f:
+        if f.read().strip() != '0':
+            suid_dumpable = True
+except IOError:
+    pass
+
 
 class T(unittest.TestCase):
     def setUp(self):
@@ -280,16 +289,59 @@ class T(unittest.TestCase):
         self.assertGreater(count, 1, 'gets at least 2 repeated crashes')
         self.assertLess(count, 7, 'stops flooding after less than 7 repeated crashes')
 
+    @unittest.skipIf(os.access('/run', os.W_OK), 'this test needs to be run as user')
     def test_nonwritable_cwd(self):
         '''core dump works for non-writable cwd'''
 
-        os.chdir('/')
+        os.chdir('/run')
+        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
         self.do_crash()
         pr = apport.Report()
         self.assertTrue(os.path.exists(self.test_report))
+        self.assertFalse(os.path.exists('/run/core'))
         with open(self.test_report, 'rb') as f:
             pr.load(f)
         assert set(required_fields).issubset(set(pr.keys()))
+
+    @unittest.skipIf(os.access('/run', os.W_OK), 'this test needs to be run as user')
+    def test_nonwritable_cwd_nonreadable_exe(self):
+        '''no core file for non-readable exe in non-writable cwd'''
+
+        # CVE-2015-1324: if a user cannot read an executable, it behaves much
+        # like a suid root binary in terms of writing a core dump
+
+        # create a non-readable executable in a path we can modify which apport
+        # regards as likely packaged
+        (fd, myexe) = tempfile.mkstemp(dir='/var/tmp')
+        self.addCleanup(os.unlink, myexe)
+        with open(test_executable, 'rb') as f:
+            os.write(fd, f.read())
+        os.close(fd)
+        os.chmod(myexe, 0o111)
+
+        os.chdir('/run')
+        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
+
+        if suid_dumpable:
+            self.do_crash(True, command=myexe, expect_corefile=False)
+
+            # check crash report
+            reports = apport.fileutils.get_new_system_reports()
+            self.assertEqual(len(reports), 1)
+            report = reports[0]
+            st = os.stat(report)
+            # FIXME: we would like to clean up this, but don't have privileges for that
+            # os.unlink(report)
+            self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
+            # this must be owned by root as it is an unreadable binary
+            self.assertEqual(st.st_uid, 0, 'report has correct owner')
+
+            # no user reports
+            self.assertEqual(apport.fileutils.get_all_reports(), [])
+        else:
+            # no cores/dump if suid_dumpable == 0
+            self.do_crash(False, command=myexe, expect_corefile=False)
+            self.assertEqual(apport.fileutils.get_all_reports(), [])
 
     def test_core_dump_packaged(self):
         '''packaged executables create core dumps on proper ulimits'''
@@ -336,6 +388,49 @@ class T(unittest.TestCase):
                               command=local_exe,
                               sig=sig)
                 self.assertEqual(apport.fileutils.get_all_reports(), [])
+
+    def test_core_file_injection(self):
+        '''cannot inject core file'''
+
+        # CVE-2015-1325: ensure that apport does not re-open its .crash report,
+        # as that allows us to intercept and replace the report and tinker with
+        # the core dump
+
+        with open(self.test_report + '.inject', 'w') as f:
+            # \x01pwned
+            f.write('''ProblemType: Crash
+CoreDump: base64
+ H4sICAAAAAAC/0NvcmVEdW1wAA==
+ Yywoz0tNAQBl1rhlBgAAAA==
+''')
+
+        # crash our test process and let it write a core file
+        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
+        pid = self.create_test_process()
+        os.kill(pid, signal.SIGSEGV)
+
+        # replace report with the crafted one above as soon as it exists and
+        # becomes deletable for us; this is a busy loop, we need to be really
+        # fast to intercept
+        while True:
+            try:
+                os.unlink(self.test_report)
+                break
+            except OSError:
+                pass
+        os.rename(self.test_report + '.inject', self.test_report)
+
+        os.waitpid(pid, 0)
+        time.sleep(0.5)
+        os.sync()
+
+        # verify that we get the original core, not the injected one
+        with open('core', 'rb') as f:
+            core = f.read()
+        self.assertNotIn(b'pwned', core)
+        self.assertGreater(len(core), 10000)
+
+        os.unlink('core')
 
     def test_limit_size(self):
         '''core dumps are capped on available memory size'''
@@ -520,7 +615,7 @@ class T(unittest.TestCase):
 
     @unittest.skipIf(os.geteuid() != 0, 'this test needs to be run as root')
     def test_crash_setuid_keep(self):
-        '''report generation and core dump for setuid program which stays root'''
+        '''report generation for setuid program which stays root'''
 
         # create suid root executable in a path we can modify which apport
         # regards as likely packaged
@@ -534,55 +629,112 @@ class T(unittest.TestCase):
         # run test program as user "mail"
         resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
 
-        if os.path.isdir('/run/systemd/system'):
-            # FIXME: no core file/apport dump at all under systemd
+        if suid_dumpable:
+            # if a user can crash a suid root binary, it should not create core files
+            self.do_crash(command=myexe, uid=8)
+
+            # check crash report
+            reports = apport.fileutils.get_all_reports()
+            self.assertEqual(len(reports), 1)
+            report = reports[0]
+            st = os.stat(report)
+            os.unlink(report)
+            self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
+            # this must be owned by root as it is a setuid binary
+            self.assertEqual(st.st_uid, 0, 'report has correct owner')
+        else:
+            # no cores/dump if suid_dumpable == 0
             self.do_crash(False, command=myexe, expect_corefile=False, uid=8)
             self.assertEqual(apport.fileutils.get_all_reports(), [])
-            return
-
-        # expect the core file to be owned by root
-        self.do_crash(command=myexe, expect_corefile=True, uid=8,
-                      expect_corefile_owner=0)
-
-        # check crash report
-        reports = apport.fileutils.get_all_reports()
-        self.assertEqual(len(reports), 1)
-        report = reports[0]
-        st = os.stat(report)
-        os.unlink(report)
-        self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
-        # this must not be owned by root as it is a setuid binary
-        self.assertEqual(st.st_uid, 0, 'report has correct owner')
 
     @unittest.skipUnless(os.path.exists('/bin/ping'), 'this test needs /bin/ping')
     @unittest.skipIf(os.geteuid() != 0, 'this test needs to be run as root')
     def test_crash_setuid_drop(self):
-        '''report generation and core dump for setuid program which drops root'''
+        '''report generation for setuid program which drops root'''
 
         # run ping as user "mail"
         resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
 
-        if os.path.isdir('/run/systemd/system'):
-            # FIXME: no core file/apport dump at all under systemd
+        if suid_dumpable:
+            # if a user can crash a suid root binary, it should not create core files
+            self.do_crash(command='/bin/ping', args=['127.0.0.1'], uid=8)
+
+            # check crash report
+            reports = apport.fileutils.get_all_reports()
+            self.assertEqual(len(reports), 1)
+            report = reports[0]
+            st = os.stat(report)
+            os.unlink(report)
+            self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
+            # this must be owned by root as it is a setuid binary
+            self.assertEqual(st.st_uid, 0, 'report has correct owner')
+        else:
+            # no cores/dump if suid_dumpable == 0
             self.do_crash(False, command='/bin/ping', args=['127.0.0.1'],
                           uid=8)
             self.assertEqual(apport.fileutils.get_all_reports(), [])
-            return
 
-        # expect the core file to be owned by root
-        self.do_crash(command='/bin/ping', args=['127.0.0.1'],
-                      expect_corefile=True, uid=8,
-                      expect_corefile_owner=0)
+    @unittest.skipIf(os.geteuid() != 0, 'this test needs to be run as root')
+    def test_crash_setuid_unpackaged(self):
+        '''report generation for unpackaged setuid program'''
 
-        # check crash report
-        reports = apport.fileutils.get_all_reports()
-        self.assertEqual(len(reports), 1)
-        report = reports[0]
-        st = os.stat(report)
-        os.unlink(report)
-        self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
-        # this must not be owned by root as it is a setuid binary
-        self.assertEqual(st.st_uid, 0, 'report has correct owner')
+        # create suid root executable in a path we can modify which apport
+        # regards as not packaged
+        (fd, myexe) = tempfile.mkstemp(dir='/tmp')
+        self.addCleanup(os.unlink, myexe)
+        with open(test_executable, 'rb') as f:
+            os.write(fd, f.read())
+        os.close(fd)
+        os.chmod(myexe, 0o4755)
+
+        # run test program as user "mail"
+        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
+
+        if suid_dumpable:
+            # if a user can crash a suid root binary, it should not create core files
+            self.do_crash(command=myexe, expect_corefile=False, uid=8)
+        else:
+            # no cores/dump if suid_dumpable == 0
+            self.do_crash(False, command=myexe, expect_corefile=False, uid=8)
+
+        # there should not be a crash report
+        self.assertEqual(apport.fileutils.get_all_reports(), [])
+
+    @unittest.skipIf(os.geteuid() != 0, 'this test needs to be run as root')
+    def test_crash_setuid_nonwritable_cwd(self):
+        '''report generation and core dump for setuid program, non-writable cwd'''
+
+        # create suid root executable in a path we can modify which apport
+        # regards as likely packaged
+        (fd, myexe) = tempfile.mkstemp(dir='/var/tmp')
+        self.addCleanup(os.unlink, myexe)
+        with open(test_executable, 'rb') as f:
+            os.write(fd, f.read())
+        os.close(fd)
+        os.chmod(myexe, 0o4755)
+
+        # run test program as user "mail" in /run (which should only be
+        # writable to root)
+        os.chdir('/run')
+        resource.setrlimit(resource.RLIMIT_CORE, (-1, -1))
+
+        if suid_dumpable:
+            # we expect a report, but no core file
+            self.do_crash(command=myexe, expect_corefile=False, uid=8)
+
+            # check crash report
+            reports = apport.fileutils.get_all_reports()
+            self.assertEqual(len(reports), 1)
+            report = reports[0]
+            st = os.stat(report)
+            os.unlink(report)
+            self.assertEqual(stat.S_IMODE(st.st_mode), 0o640, 'report has correct permissions')
+            # this must be owned by root as it is a setuid binary
+            self.assertEqual(st.st_uid, 0, 'report has correct owner')
+        else:
+            # no core/report if suid_dumpable == 0
+            self.do_crash(False, command=myexe, expect_corefile=False, uid=8)
+            self.assertEqual(apport.fileutils.get_all_reports(), [])
 
     @unittest.skipUnless(os.path.exists('/usr/bin/lxc-usernsexec'), 'this test needs lxc')
     @unittest.skipUnless(os.path.exists('/bin/busybox'), 'this test needs busybox')
@@ -671,7 +823,7 @@ fi
                  expect_corefile_owner=None, args=[]):
         '''Generate a test crash.
 
-        This runs command (by default test_executable) in /tmp, lets it crash,
+        This runs command (by default test_executable) in cwd, lets it crash,
         and checks that it exits with the expected return code, leaving a core
         file behind if expect_corefile is set, and generating a crash report if
         expect_coredump is set.
@@ -679,7 +831,7 @@ fi
         If check_running is set (default), this will abort if test_process is
         already running.
         '''
-        self.assertFalse(os.path.exists('core'), '/tmp/core already exists, please clean up first')
+        self.assertFalse(os.path.exists('core'), '%s/core already exists, please clean up first' % os.getcwd())
         pid = self.create_test_process(check_running, command, uid=uid, args=args)
         if sleep > 0:
             time.sleep(sleep)
@@ -718,17 +870,17 @@ fi
                              'no running test executable processes')
 
         if expect_corefile:
-            self.assertTrue(os.path.exists('/tmp/core'), 'leaves wanted core file')
+            self.assertTrue(os.path.exists('core'), 'leaves wanted core file')
             try:
                 # check core file permissions
-                st = os.stat('/tmp/core')
+                st = os.stat('core')
                 self.assertEqual(stat.S_IMODE(st.st_mode), 0o600, 'core file has correct permissions')
                 if expect_corefile_owner is not None:
                     self.assertEqual(st.st_uid, expect_corefile_owner, 'core file has correct owner')
 
                 # check that core file is valid
                 gdb = subprocess.Popen(['gdb', '--batch', '--ex', 'bt',
-                                        command, '/tmp/core'],
+                                        command, 'core'],
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
                 (out, err) = gdb.communicate()
@@ -736,10 +888,16 @@ fi
                 out = out.decode()
                 err = err.decode().strip()
             finally:
-                os.unlink('/tmp/core')
+                os.unlink('core')
         else:
-            if os.path.exists('/tmp/core'):
-                os.unlink('/tmp/core')
+            if os.path.exists('core'):
+                try:
+                    os.unlink('core')
+                except OSError as e:
+                    sys.stderr.write(
+                        'WARNING: cannot clean up core file %s/core: %s\n' %
+                        (os.getcwd(), str(e)))
+
                 self.fail('leaves unexpected core file behind')
 
     def get_temp_all_reports(self):
