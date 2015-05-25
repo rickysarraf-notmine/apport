@@ -399,6 +399,39 @@ class GTKUserInterface(apport.ui.UserInterface):
         self.md = None
         return result
 
+
+    def ui_unreportable_message(self, title, text):
+        '''
+        This message dialog is little different from others
+        '''
+        self.umd = Gtk.MessageDialog(type = Gtk.MessageType.ERROR, \
+                buttons = Gtk.ButtonsType.OK_CANCEL)
+
+        if 'http://' in text or 'https://' in text:
+            if type(text) != type(b''):
+                text = text.encode('UTF-8')
+            text = GLib.markup_escape_text(text)
+            text = re.sub(r'(https?://[a-zA-Z0-9._-]+(?:[a-zA-Z0-9_#?%/-])*)',
+                          r'<a href="\1">\1</a>', text)
+            self.umd.set_markup(text)
+        else:
+            self.umd.set_property('text', text)
+        self.umd.set_title(title)
+
+        btnbox = self.umd.vbox.get_children()[1]
+        btn_cancel = btnbox.get_children()[0].get_children()[0]
+        btn_ok = btnbox.get_children()[0].get_children()[1]
+
+        btn_cancel.set_label('Cancel')
+        btn_ok.set_label('Install')
+
+        response = self.umd.run()
+        if response == Gtk.ResponseType.OK:
+            self.umd.destroy()
+            self.examine()
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+
     def ui_info_message(self, title, text):
         self._ui_message_dialog(title, text, Gtk.MessageType.INFO)
 

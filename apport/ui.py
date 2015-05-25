@@ -1303,7 +1303,9 @@ class UserInterface:
                 title = _('Problem in %s') % self.report['Package'].split()[0]
             else:
                 title = ''
-            self.ui_info_message(title, _('The problem cannot be reported:\n\n%s') %
+            #self.ui_info_message(title, _('The problem cannot be reported:\n\n%s') %
+            #                     self.report['UnreportableReason'])
+            self.ui_unreportable_message(title, _('The problem cannot be reported:\n\n%s') %
                                  self.report['UnreportableReason'])
             return True
         return False
