@@ -1,5 +1,5 @@
-kde-retrace-support.patch
-default-crashdb.patch
-display-pkg-name.patch
-disto-pkg-detection.patch
-yuru-unicode-error.patch
+#kde-retrace-support.patch
+#default-crashdb.patch
+#display-pkg-name.patch
+#disto-pkg-detection.patch
+#yuru-unicode-error.patch

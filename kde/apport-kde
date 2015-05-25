@@ -16,6 +16,10 @@ import os.path
 import sys
 import os
 
+# temp until I get a native python way, just too lazy
+from gi.repository import GLib
+import subprocess
+
 try:
     import apport
     from PyQt5.QtCore import (QByteArray,
@@ -360,6 +364,21 @@ class MainUserInterface(apport.ui.UserInterface):
                     keyitem.setExpanded(True)
             else:
                 QTreeWidgetItem(keyitem, [_('(binary data)')])
+
+    def ui_run_terminal(self, command):
+        terminals = ['x-terminal-emulator', 'konsole', 'yakuake']
+
+        program = None
+        for t in terminals:
+            program = GLib.find_program_in_path(t)
+            if program:
+                break
+
+        if not command:
+            # test mode
+            return 'DISPLAY' in os.environ and program is not None
+
+        subprocess.call([program, '-e', command])
 
     def ui_present_report_details(self, allowed_to_report=True, modal_for=None):
         desktop_info = self.get_desktop_entry()

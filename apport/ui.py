@@ -124,8 +124,11 @@ def thread_collect_info(report, reportfile, package, ui, symptom_script=None,
                     report['UnreportableReason'] = _('This package does not seem to be installed correctly')
                 elif not apport.packaging.is_distro_package(report['Package'].split()[0]):
                     # TRANS: %s is the name of the operating system
-                    report['UnreportableReason'] = _(
-                        'This is not an official %s package. Please remove any third party package and try again.') % report['DistroRelease'].split()[0]
+                    #report['UnreportableReason'] = _(
+                    #    'This is not an official %s package. Please remove any third party package and try again.') % report['DistroRelease'].split()[0]
+                    pass
+                    # See Debian Bug #777590
+
         except ValueError:
             # this happens if we are collecting information on an uninstalled
             # package

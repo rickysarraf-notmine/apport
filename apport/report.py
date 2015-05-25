@@ -1600,7 +1600,7 @@ class Report(problem_report.ProblemReport):
                     return None
             # determine session creation time
             session_start_time = os.stat('/run/systemd/sessions/' + my_session).st_mtime
-        except (IOError, OSError):
+        except (IOError, OSError, UnicodeDecodeError):
             return None
 
         return (my_session, session_start_time)
