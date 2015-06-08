@@ -592,7 +592,14 @@ class GTKUserInterface(apport.ui.UserInterface):
             # test mode
             return have_display and program is not None
 
-        subprocess.call([program, '-e', command])
+        if program == 'xfce4-terminal' or program == 'xterm':
+            subprocess.call([program, '-e', command])
+        else:
+            cmds = [program, '-x']
+            for s in command.split():
+                cmds.append(s.strip("'"))
+
+            subprocess.call(cmds)
 
     #
     # Event handlers
