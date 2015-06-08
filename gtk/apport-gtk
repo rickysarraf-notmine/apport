@@ -424,6 +424,7 @@ class GTKUserInterface(apport.ui.UserInterface):
 
         btn_cancel.set_label('Cancel')
         btn_ok.set_label('Install')
+        btn_ok.set_tooltip_text('Click this to install required debugging symbols')
 
         response = self.umd.run()
         if response == Gtk.ResponseType.OK:
