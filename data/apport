@@ -243,7 +243,7 @@ def is_closing_session(pid, uid):
     '''
     with open('/proc/%s/environ' % pid, 'rb') as e:
         try:
-            env = e.read().split('\0')
+            env = e.read().split(b'\0')
         except UnicodeDecodeError:
             return False
     for e in env:

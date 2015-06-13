@@ -750,10 +750,10 @@ Debug::NoLocking "true";
 
             return debs
 
-        def makeLink(src, tgt):
+        def makeCopy(src, tgt):
             # if tgt has been created we don't need to create it again
             if not os.path.exists(tgt):
-                os.symlink(src, tgt)
+                shutil.copy(src, tgt)
 
         # unpack packages, weed out the ones that are already installed (for
         # permanent sandboxes)
@@ -768,7 +768,7 @@ Debug::NoLocking "true";
                 if debfile in sysCacheDebs():
                     src = aptPkgDir + debfile
                     tgt = aptroot + aptPkgDir + debfile
-                    makeLink(src, tgt)
+                    makeCopy(src, tgt)
                     real_pkgs.remove(p)
                 else:
                     cache[p].mark_install(False, False)
