@@ -42,11 +42,40 @@ class BugReportDetails(Gtk.Window):
     def __init__(self, report):
         Gtk.Window.__init__(self, title=("%s: bug # %s" % (report.package, report.bug_num)))
         self.report = report
+        self.set_border_width(10)
         self.set_size_request(500, 400)
+        
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_border_width(0)
+        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled_window.show()
+        outerBox = Gtk.Box(spacing=0)
+        outerBox.pack_start(scrolled_window, True, True, 0)
+        self.add(outerBox)
+        
+        innerBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        scrolled_window.add_with_viewport(innerBox)
+
+        # TODO:
+        # now we only show subject and severity, could add more here
+        l_sub = Gtk.Label("", xalign=0)
+        l_sub.set_markup("<b>Title:</b> %s" % self.report.subject)
+        l_severity = Gtk.Label("", xalign=0)
+        l_severity.set_markup("<b>Severity:</b> %s" % self.report.severity)
+
+        innerBox.add(l_sub)
+        innerBox.add(l_severity)
+
         logs = debianbts.get_bug_log(self.report.bug_num)
         for l in logs:
-            print("msg # %s" % l['msg_num'])
-            print(l['body'])
+            l_msgnum = Gtk.Label("", xalign=0)
+            l_msgnum.set_markup("<b>Message #:</b> %s" % l['msg_num'])
+
+            l_msgbody = Gtk.Label(l['body'], xalign=0)
+            l_msgbody.set_line_wrap(True)
+
+            innerBox.add(l_msgnum)
+            innerBox.add(l_msgbody)
 
 
 class BugReportListWindow(Gtk.Window):
@@ -54,14 +83,29 @@ class BugReportListWindow(Gtk.Window):
     def __init__(self, pkg):
         Gtk.Window.__init__(self, title=("Bug Reports of %s" % pkg))
         self.set_border_width(10)
+        self.set_size_request(600, 400)
         self.pkg = pkg
         
-        # add ListBox to panel
-        hbox = Gtk.Box(spacing=6)
+        # create a new scrolled window.
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_border_width(0)
+        # Gtk.PolicyType.AUTOMATIC wll automatically decide whether we need
+        # scrollbars. The first one is the horizontal scrollbar, the second, the
+        # vertical.
+        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled_window.show()
+
+        # create a box for displaying the scrolled window
+        # and add this box into the main window
+        hbox = Gtk.Box(spacing=0)
+        hbox.pack_start(scrolled_window, True, True, 0)
         self.add(hbox)
+
+
+        # put a listbox into the scrolled window
         listbox = Gtk.ListBox()
         listbox.set_selection_mode(Gtk.SelectionMode.NONE)
-        hbox.pack_start(listbox, True, True, 0)
+        scrolled_window.add_with_viewport(listbox)
 
         self.addRows(listbox)
 
@@ -74,7 +118,7 @@ class BugReportListWindow(Gtk.Window):
 
 
 if __name__ == '__main__':
-    win = BugReportListWindow('apport-gtk')
+    win = BugReportListWindow('python-debianbts')
     win.connect("delete-event", Gtk.main_quit)
     win.show_all()
     Gtk.main()
