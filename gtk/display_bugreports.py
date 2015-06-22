@@ -118,7 +118,10 @@ class BugReportListWindow(Gtk.Window):
 
 
 if __name__ == '__main__':
-    win = BugReportListWindow('python-debianbts')
+    import platform
+    print(platform.python_version())
+    import sys
+    win = BugReportListWindow(sys.argv[1])
     win.connect("delete-event", Gtk.main_quit)
     win.show_all()
     Gtk.main()
