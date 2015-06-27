@@ -288,6 +288,9 @@ class UserInterface:
                 # collect() does that on invalid reports
                 return
 
+            if response['existing_reports']:
+                self.existing_reports()
+                return
             if response['examine']:
                 self.examine()
                 return
@@ -878,6 +881,11 @@ class UserInterface:
             os.setsid()
             os.execlp('sh', 'sh', '-c', self.report.get('RespawnCommand', self.report['ProcCmdline']))
             sys.exit(1)
+
+    def existing_reports(self):
+        pkg = self.report['Package']
+        #print(pkg)
+        self.ui_display_existing_reports(pkg)
 
     def examine(self):
         '''Locally examine crash report.'''

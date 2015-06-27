@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 '''GTK Apport user interface.'''
 
@@ -13,6 +13,7 @@
 
 import os.path, sys, subprocess, os, re
 
+from display_bugreports import BugReportListWindow
 from gi.repository import GLib, Wnck, GdkX11, Gdk
 Gdk  # pyflakes; needed for GdkX11
 try:
@@ -351,7 +352,8 @@ class GTKUserInterface(apport.ui.UserInterface):
             d.set_focus_on_map(False)
 
         return_value = {'report': False, 'blacklist': False,
-                        'restart': False, 'examine': False}
+                        'restart': False, 'examine': False,
+                        'existing_reports': False}
 
         def dialog_crash_dismissed(widget):
             self.w('dialog_crash_new').hide()
@@ -360,6 +362,10 @@ class GTKUserInterface(apport.ui.UserInterface):
                 return
             elif widget is self.w('examine'):
                 return_value['examine'] = True
+                Gtk.main_quit()
+                return
+            elif widget is self.w('existing_reports'):
+                return_value['existing_reports'] = True
                 Gtk.main_quit()
                 return
 
@@ -374,6 +380,7 @@ class GTKUserInterface(apport.ui.UserInterface):
         self.w('dialog_crash_new').connect('destroy', dialog_crash_dismissed)
         self.w('continue_button').connect('clicked', dialog_crash_dismissed)
         self.w('closed_button').connect('clicked', dialog_crash_dismissed)
+        self.w('existing_reports').connect('clicked', dialog_crash_dismissed)
         self.w('examine').connect('clicked', dialog_crash_dismissed)
         Gtk.main()
         return return_value
@@ -601,6 +608,11 @@ class GTKUserInterface(apport.ui.UserInterface):
                 cmds.append(s.strip("'"))
 
             subprocess.call(cmds)
+
+    def ui_display_existing_reports(self, pkg):
+        win = BugReportListWindow(pkg.split(' ')[0])
+        win.show_all()
+        Gtk.main()
 
     #
     # Event handlers

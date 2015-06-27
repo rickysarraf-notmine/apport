@@ -1,7 +1,21 @@
-#/usr/bin/python
+#/usr/bin/python3
 
-import debianbts
 from gi.repository import Gtk
+import btsconn 
+import platform
+import sys
+
+class BugReport():
+    '''
+    A simplified version of the BugReport class in python-debianbts
+    '''
+
+    def __init__(self, r):
+        self.subject = r['subject']
+        self.severity = r['severity']
+        self.bug_num = r['bug_num']
+        self.package = r['package']
+
 
 class BugReportListBoxRow(Gtk.ListBoxRow):
     def __init__(self, report):
@@ -29,7 +43,7 @@ class BugReportListBoxRow(Gtk.ListBoxRow):
 
     def callbacks(self, obj):
         if obj == self.btnViewBug:
-            print("To view bug # %s" % self.report.bug_num)
+            #print("To view bug # %s" % self.report.bug_num)
             bugWin = BugReportDetails(self.report)
             bugWin.show_all()
         
@@ -66,7 +80,7 @@ class BugReportDetails(Gtk.Window):
         innerBox.add(l_sub)
         innerBox.add(l_severity)
 
-        logs = debianbts.get_bug_log(self.report.bug_num)
+        logs = btsconn.get_bug_log(self.report.bug_num)
         for l in logs:
             l_msgnum = Gtk.Label("", xalign=0)
             l_msgnum.set_markup("<b>Message #:</b> %s" % l['msg_num'])
@@ -86,6 +100,8 @@ class BugReportListWindow(Gtk.Window):
         self.set_size_request(600, 400)
         self.pkg = pkg
         
+        self.connect("delete-event", Gtk.main_quit)
+
         # create a new scrolled window.
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_border_width(0)
@@ -101,7 +117,6 @@ class BugReportListWindow(Gtk.Window):
         hbox.pack_start(scrolled_window, True, True, 0)
         self.add(hbox)
 
-
         # put a listbox into the scrolled window
         listbox = Gtk.ListBox()
         listbox.set_selection_mode(Gtk.SelectionMode.NONE)
@@ -110,18 +125,15 @@ class BugReportListWindow(Gtk.Window):
         self.addRows(listbox)
 
     def addRows(self, listbox):
-        bugNumList = debianbts.get_bugs('package', self.pkg)
-        reportList = debianbts.get_status(bugNumList)
+        reportList = btsconn.get_status(self.pkg)
         
         for r in reportList:
-            listbox.add(BugReportListBoxRow(r))
+            listbox.add(BugReportListBoxRow(BugReport(r)))
 
-
-if __name__ == '__main__':
-    import platform
-    print(platform.python_version())
-    import sys
-    win = BugReportListWindow(sys.argv[1])
-    win.connect("delete-event", Gtk.main_quit)
+def main(pkg):
+    win = BugReportListWindow(pkg)
     win.show_all()
     Gtk.main()
+
+if __name__ == '__main__':
+    main(sys.argv[1])
