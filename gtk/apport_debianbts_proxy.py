@@ -23,8 +23,11 @@ def execute(cmd, sock):
     GET_STATUS:<package>
     GET_BUG_LOG:<bug num>
     '''
+
     action = cmd['action']
     arg = cmd['arg']
+
+    print('Executing command `%s` with args: %s' % (action, arg))
 
     if action == 'GET_BUGS':
         bug_nums = debianbts.get_bugs('package', arg)
@@ -66,6 +69,7 @@ def main():
     server_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     server_sock.bind(sockfile)
     server_sock.listen(2)
+    print('Listening connections on %s' % sockfile)
     
     while True:
         client_sock, client_addr = server_sock.accept()
