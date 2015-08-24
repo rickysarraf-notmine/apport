@@ -3,6 +3,13 @@
 from gi.repository import Gtk
 import sys
 import btsconn
+import reportbug
+import subprocess
+
+#
+# Global variables
+#
+package = ''
 
 class SimpleBugReport():
     def __init__(self, r):
@@ -72,6 +79,9 @@ class ExistingReportsPage(Page):
         treeView = self.build_treeview()
         scrolled.add_with_viewport(treeView)  
         
+        # update label 
+        label.set_text('%d reports found in Debian BTS' % self.n_reports)
+
         return mainbox
 
     def build_treeview(self):
@@ -93,9 +103,11 @@ class ExistingReportsPage(Page):
 
     def fetch_reports(self):
         reports = []
-        reportList = btsconn.get_status('vim')
+        reportList = btsconn.get_status(package)
         for r in reportList:
             reports.append([str(r['bug_num']), r['severity'], r['subject']])
+
+        self.n_reports = len(reports)
         return reports
 
 #
@@ -201,27 +213,63 @@ class DraftPage(Page):
 
         subjectBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         label = Gtk.Label(label="Subject:")
-        subject = Gtk.Entry()
+        self.subject = Gtk.Entry()
         subjectBox.pack_start(label, False, False, 5)
-        subjectBox.pack_start(subject, True, True, 0)
+        subjectBox.pack_start(self.subject, True, True, 0)
 
         mainbox.pack_start(subjectBox, False, True, 5)
 
         self.editor = self.create_editor()
         mainbox.pack_start(self.editor, True, True, 0)
         
+        # System information
+        # TODO: apport's crash data in /var/crash/
         expander = Gtk.Expander(label="System information")
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_border_width(0)
         scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled.show()
+        infoview = Gtk.TextView()
+        infoview.set_border_width(1)
+        infoview.get_buffer().set_text(self.bugscript_info())
+
+        scrolled.add(infoview)
         expander.add(scrolled) 
 
         mainbox.pack_start(expander, False, True, 0)
 
         return mainbox
 
+    def set_subject(self, s):
+        self.subject.set_text(s)
+
+    def get_pkginfo(self):
+        return self.pkginfo
+
+    def bugscript_info(self):
+        script = '/usr/share/bug/%s/script' % package
+        tmpout = '/tmp/.apport-reportbug'
+
+        print('executing script: %s' % script)
+        # TODO: what if cannot find script?
+        p = subprocess.Popen(['/usr/share/reportbug/handle_bugscript', script, tmpout], 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE)
+
+        out, err = p.communicate()
+        info = ''
+        for l in open(tmpout).readlines():
+            info += l
+
+        # TODO: add apport info
+        self.pkginfo = info
+
+        return info
+    
     def create_editor(self):
+        '''
+        Create email draft editor
+        '''
         scrollable = Gtk.ScrolledWindow()
         scrollable.set_border_width(0)
         scrollable.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
@@ -229,7 +277,7 @@ class DraftPage(Page):
 
         textview = Gtk.TextView()
         textview.set_border_width(2)
-        textview.get_buffer().set_text('this is a textview')
+        textview.get_buffer().set_text('Dear maintainer,\n')
 
         scrollable.add_with_viewport(textview)
 
@@ -246,6 +294,7 @@ class ReportbugAssistant(Gtk.Assistant):
         self.connect("apply", self.apply_button_clicked)
 
         self.set_size_request(700, 500)
+        
 
     def add_intro_page(self, page):
         self.introPage = page
@@ -263,16 +312,28 @@ class ReportbugAssistant(Gtk.Assistant):
         self.severityPage = page
         self.add_page(page, Gtk.AssistantPageType.CONTENT)
 
+    def add_draft_page(self, page):
+        self.draftPage = page
+        self.add_page(page, Gtk.AssistantPageType.CONFIRM)
+
     def add_page(self, page, ptype):
         self.append_page(page.widget)
         self.set_page_type(page.widget, ptype)
         self.set_page_title(page.widget, page.title)
         self.set_page_complete(page.widget, True)
 
+
     def apply_button_clicked(self, asst):
-        print("The 'Apply' button has been clicked")
-        print(self.descPage.get_desc())
-        print(self.severityPage.get_severity())
+        print('package:', package)
+        print('subject:', self.descPage.get_desc())
+        print('severity:', self.severityPage.get_severity())
+        print('pkginfo:', self.draftPage.get_pkginfo())
+
+        # TODO: send bug report out using reportbug
+        # but cannot import reportbug.submit
+        # ImportError: cannot import name 'sumit'
+        # from reportbug import sumit 
+
     
     def close_button_clicked(self, asst):
         print("The 'Close' button has been clicked")
@@ -284,6 +345,9 @@ class ReportbugAssistant(Gtk.Assistant):
 
 
 def main():
+    global package
+    package = sys.argv[1]
+
     assistant = ReportbugAssistant()
     
     def get_buttons_hbox(assistant):
@@ -313,9 +377,20 @@ def main():
     assistant.add_severity_page(severityPage)
 
     draftPage = DraftPage()
-    assistant.add_page(draftPage, Gtk.AssistantPageType.CONFIRM)
+    assistant.add_draft_page(draftPage)
 
     assistant.show_all()
+
+    def page_forward(page):
+        if page == 3:
+            # Page 3 is severity selection page
+            # the next page is email drafting
+            draftPage.set_subject(descPage.get_desc())
+
+        return page + 1
+
+    assistant.set_forward_page_func(page_forward)
+
     Gtk.main()
 
 
