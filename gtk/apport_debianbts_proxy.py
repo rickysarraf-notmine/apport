@@ -31,13 +31,14 @@ def execute(cmd, sock):
 
     if action == 'GET_BUGS':
         bug_nums = debianbts.get_bugs('package', arg)
+        print("bug nums:", bug_nums)
         data = json.dumps(bug_nums)
         sock.sendall(data)
 
     elif action == 'GET_STATUS':
         bug_nums = debianbts.get_bugs('package', arg)
         reports = debianbts.get_status(bug_nums)
-        
+
         simple_reports = []
         for r in reports:
             sr = {}
@@ -65,19 +66,19 @@ def execute(cmd, sock):
 def main():
     if os.path.exists(sockfile):
         os.remove(sockfile)
-    
+
     server_sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     server_sock.bind(sockfile)
     server_sock.listen(2)
     print('Listening connections on %s' % sockfile)
-    
+
     while True:
         client_sock, client_addr = server_sock.accept()
 
         data = client_sock.recv(1024)
         cmd = json.loads(data)
         execute(cmd, client_sock)
-    
+
     server_sock.close()
     os.remove(sockfile)
 
