@@ -350,8 +350,7 @@ class ReportbugAssistant(Gtk.Assistant):
                 self.descPage.get_subject(),
                 self.draftPage.get_email_body(),
                 self.draftPage.get_pkginfo(),
-#                utils.user_email(),
-                'shaoyuru@gmail.com',
+                utils.user_email(),
                 'submit@bugs.debian.org')
     
     def close_button_clicked(self, asst):
