@@ -3,21 +3,12 @@
 from gi.repository import Gtk
 import sys
 import btsconn
-import reportbug
 import subprocess
 
 #
 # Global variables
 #
 package = ''
-
-class SimpleBugReport():
-    def __init__(self, r):
-        self.subject = r['subject']
-        self.severity = r['severity']
-        self.bug_num = r['bug_num']
-        self.package = r['package']
-
 
 class Page():
     def __init__(self):
@@ -68,16 +59,16 @@ class ExistingReportsPage(Page):
         filterBox.pack_start(textFilter, True, True, 0)
         mainbox.pack_start(filterBox, False, False, 5) 
 
-        # Show existing reports
-        scrolled = Gtk.ScrolledWindow()
-        scrolled.set_border_width(0)
-        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        scrolled.show()
-        mainbox.pack_start(scrolled, True, True, 0)
+        # Show existing reports inside a scrolled window 
+        scrolledWindow = Gtk.ScrolledWindow()
+        scrolledWindow.set_border_width(0)
+        scrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolledWindow.show()
+        mainbox.pack_start(scrolledWindow, True, True, 0)
 
         # create widget inside scrolled window
-        treeView = self.build_treeview()
-        scrolled.add_with_viewport(treeView)  
+        reportsTreeView = self.build_treeview()
+        scrolledWindow.add_with_viewport(reportsTreeView)
         
         # update label 
         label.set_text('%d reports found in Debian BTS' % self.n_reports)
@@ -86,15 +77,18 @@ class ExistingReportsPage(Page):
 
     def build_treeview(self):
         '''
-        TODO: implement filter
+        TODO: 
+        1) implement filter
         http://python-gtk-3-tutorial.readthedocs.org/en/latest/treeview.html#filtering
+
+        2) double click to browse details
         '''
         reportStore = Gtk.ListStore(str, str, str)
         for r in self.fetch_reports():
             reportStore.append(r)
 
         treeview = Gtk.TreeView(reportStore)
-        for i, colTitle in enumerate(['ID', 'Severity', 'Title']):
+        for i, colTitle in enumerate(['ID', 'Severity', 'Subject']):
             render = Gtk.CellRendererText()
             col = Gtk.TreeViewColumn(colTitle, render, text=i)
             treeview.append_column(col)
@@ -131,15 +125,18 @@ class DescPage(Page):
         label.set_justify(Gtk.Justification.CENTER)
         box.pack_start(label, False, True, 5)
 
-        self.descTextView = Gtk.Entry()
-        box.pack_start(self.descTextView, False, True, 0) 
+        self.descEntry = Gtk.Entry()
+        box.pack_start(self.descEntry, False, True, 0) 
 
         mainbox.pack_start(box, True, True, 0)
 
         return mainbox
 
     def get_desc(self):
-        return self.descTextView.get_text()
+        return self.descEntry.get_text()
+
+    def get_subject(self):
+        return self.get_desc()
 
 
 #
@@ -174,6 +171,7 @@ class SeverityPage(Page):
 
         #
         # add radio buttons
+        # TODO: add more severity options, e.g., minor
         #
         criticalRadioBtn = Gtk.RadioButton(label="Critical. Makes unrelated applications on the system break")
         criticalRadioBtn.connect("toggled", radiobutton_toggled)
@@ -223,7 +221,7 @@ class DraftPage(Page):
         mainbox.pack_start(self.editor, True, True, 0)
         
         # System information
-        # TODO: apport's crash data in /var/crash/
+        # TODO: include apport's crash data in /var/crash/
         expander = Gtk.Expander(label="System information")
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_border_width(0)
@@ -244,7 +242,17 @@ class DraftPage(Page):
         self.subject.set_text(s)
 
     def get_pkginfo(self):
+        '''
+        system info collected by this package's reportbug script
+        '''
         return self.pkginfo
+
+    def get_email_body(self):
+        buffer = self.textview.get_buffer()
+        start_iter = buffer.get_start_iter()
+        end_iter = buffer.get_end_iter()
+
+        return buffer.get_text(start_iter, end_iter, True)
 
     def bugscript_info(self):
         script = '/usr/share/bug/%s/script' % package
@@ -275,11 +283,11 @@ class DraftPage(Page):
         scrollable.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrollable.show()
 
-        textview = Gtk.TextView()
-        textview.set_border_width(2)
-        textview.get_buffer().set_text('Dear maintainer,\n')
+        self.textview = Gtk.TextView()
+        self.textview.set_border_width(2)
+        self.textview.get_buffer().set_text('Dear maintainer,\n')
 
-        scrollable.add_with_viewport(textview)
+        scrollable.add_with_viewport(self.textview)
 
         return scrollable
 
@@ -322,18 +330,29 @@ class ReportbugAssistant(Gtk.Assistant):
         self.set_page_title(page.widget, page.title)
         self.set_page_complete(page.widget, True)
 
-
     def apply_button_clicked(self, asst):
         print('package:', package)
         print('subject:', self.descPage.get_desc())
         print('severity:', self.severityPage.get_severity())
         print('pkginfo:', self.draftPage.get_pkginfo())
+        print('emailbody:', self.draftPage.get_email_body())
+        import utils
+        print('version:', utils.installed_version(package))
 
         # TODO: send bug report out using reportbug
         # but cannot import reportbug.submit
         # ImportError: cannot import name 'sumit'
         # from reportbug import sumit 
-
+        btsconn.send_report(package, 
+                utils.installed_version(package),
+                self.severityPage.get_severity(),
+                'apport',
+                self.descPage.get_subject(),
+                self.draftPage.get_email_body(),
+                self.draftPage.get_pkginfo(),
+#                utils.user_email(),
+                'shaoyuru@gmail.com',
+                'submit@bugs.debian.org')
     
     def close_button_clicked(self, asst):
         print("The 'Close' button has been clicked")
@@ -364,6 +383,7 @@ def main():
         if label == '_Apply':
             child.set_label('Send')
 
+    # instantiate pages and add them to assistant
     introPage = IntroPage()
     assistant.add_intro_page(introPage)
 
@@ -379,17 +399,17 @@ def main():
     draftPage = DraftPage()
     assistant.add_draft_page(draftPage)
 
-    assistant.show_all()
 
-    def page_forward(page):
-        if page == 3:
+    def page_forward(pageid):
+        if pageid == 3:
             # Page 3 is severity selection page
             # the next page is email drafting
             draftPage.set_subject(descPage.get_desc())
 
-        return page + 1
+        return pageid + 1
 
     assistant.set_forward_page_func(page_forward)
+    assistant.show_all()
 
     Gtk.main()
 

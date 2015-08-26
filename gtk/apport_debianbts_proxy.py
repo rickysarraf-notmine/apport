@@ -22,6 +22,7 @@ def execute(cmd, sock):
     GET_BUGS:<package>
     GET_STATUS:<package>
     GET_BUG_LOG:<bug num>
+    SEND_REPORT:<data>
     '''
 
     action = cmd['action']
@@ -61,6 +62,25 @@ def execute(cmd, sock):
             simple_buglogs.append(sl)
 
         data = json.dumps(simple_buglogs)
+        sock.sendall(data)
+
+    elif action == 'SEND_REPORT':
+        print(arg)
+
+        import submit
+        submit.prepare_and_send(
+                arg['package'],
+                arg['version'],
+                arg['severity'],
+                arg['tag'],
+                arg['subject'],
+                arg['body'],
+                arg['sysinfo'],
+                arg['fromaddr'],
+                arg['sendto'])
+
+
+        data = json.dumps('succ')
         sock.sendall(data)
 
 def main():

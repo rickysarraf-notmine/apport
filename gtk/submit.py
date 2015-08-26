@@ -5,7 +5,6 @@
 import sys
 import os
 import re
-import commands
 from subprocess import Popen, STDOUT, PIPE
 import rfc822
 import smtplib
@@ -65,8 +64,8 @@ def rfc2047_encode_header(header, charset, mua=None):
     return encode_if_needed(header, charset)
 
 def send_report(body, fromaddr, sendto, ccaddr, bccaddr,
-                headers, package='x', charset="us-ascii", mailing=True,
-                sysinfo=None,
+                headers, package, sysinfo=None,
+                charset="us-ascii", mailing=True,
                 rtype='debbugs',
                 mta='/usr/bin/sendmail',
                 smtphost='reportbug.debian.org'):
@@ -194,3 +193,13 @@ def send_report(body, fromaddr, sendto, ccaddr, bccaddr,
                             'saved to %s\n', msgname)
 
     return
+
+def prepare_and_send(pkg, version, severity, tag, subject, body,
+        sysinfo, fromaddr, sendto, ccaddr=None, bccaddr=None):
+    tmp = 'Package: %s\nVersion: %s\nSeverity: %s\nTags: %s\n\n%s' %\
+            (pkg, version, severity, tag, body)
+    body = tmp
+    
+    headers = [('X-Debbugs-CC', fromaddr), ('Subject', subject)]
+
+    send_report(body, fromaddr, sendto, None, None, headers, tag, 'UTF-8', True)

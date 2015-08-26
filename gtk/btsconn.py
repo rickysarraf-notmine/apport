@@ -39,7 +39,7 @@ class BtsConn:
         json_data = json.dumps(cmd)
         self.client.sendall(bytes(json_data, 'UTF-8'))
         
-        data = self.client.recv(1024000)
+        data = self.client.recv(102400000)
         return json.loads(data.decode('UTF-8'))
 
 
@@ -71,6 +71,26 @@ def get_status(pkg):
     bts = BtsConn()
     ret = bts.sendcmd('GET_STATUS', pkg)
     bts.close()
+    return ret
+
+def send_report(pkg, version, severity, tag, subject, body,
+        sysinfo, fromaddr, sendto, ccaddr=None, bccaddr=None):
+
+    data = dict()
+    data['package'] = pkg
+    data['version'] = version
+    data['severity'] = severity
+    data['tag'] = tag
+    data['subject'] = subject
+    data['body'] = body
+    data['sysinfo'] = sysinfo
+    data['fromaddr'] = fromaddr
+    data['sendto'] = sendto
+
+    bts = BtsConn()
+    ret = bts.sendcmd('SEND_REPORT', data)
+    bts.close()
+
     return ret
 
 if __name__ == '__main__':
