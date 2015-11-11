@@ -55,6 +55,9 @@ Depends: python3,
 Recommends: policykit-1
 Suggests: apport-gtk | apport-kde
 Breaks: python-apport (<< 2.6.1-1)
+Conflicts: core-dump-handler
+Replaces: core-dump-handler
+Provides: core-dump-handler
 Description: automatically generate crash reports for debugging
  apport automatically collects data from crashed processes and
  compiles a problem report in /var/crash/. This utilizes the crashdump
