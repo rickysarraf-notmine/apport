@@ -51,8 +51,7 @@ class T(unittest.TestCase):
             r.load(f)
 
         self.assertEqual(r['ProblemType'], 'Package')
-        self.assertEqual(r['Package'], 'bash')
-        self.assertEqual(r['SourcePackage'], 'bash')
+        self.assertEqual(r['Package'], 'bash ' + apport.packaging.get_version('bash'))
         self.assertEqual(r['ErrorMessage'], 'something is wrong')
 
     def test_package_hook_uninstalled(self):
@@ -72,8 +71,7 @@ class T(unittest.TestCase):
             r.load(f)
 
         self.assertEqual(r['ProblemType'], 'Package')
-        self.assertEqual(r['Package'], pkg)
-        self.assertEqual(r['SourcePackage'], apport.packaging.get_source(pkg))
+        self.assertEqual(r['Package'], pkg + ' (not installed)')
         self.assertEqual(r['ErrorMessage'], 'something is wrong')
 
     def test_package_hook_logs(self):
@@ -116,7 +114,7 @@ class T(unittest.TestCase):
         self.assertTrue(filekey)
         self.assertTrue(log1key)
         self.assertTrue(log2key)
-        self.assertTrue('0234lkjas' in r[filekey])
+        self.assertIn('0234lkjas', r[filekey])
         self.assertEqual(len(r[filekey]), os.path.getsize(sys.argv[0]))
         self.assertEqual(r[log1key], 'Log 1\nbla')
         self.assertEqual(r[log2key], 'Yet\nanother\nlog')
@@ -164,12 +162,8 @@ class T(unittest.TestCase):
         self.assertEqual(r['ProblemType'], 'KernelCrash')
         self.assertEqual(r['VmCoreLog'], 'vmcore successfully dumped')
         self.assertEqual(r['VmCore'], b'\x01' * 100)
-        self.assertTrue('linux' in r['Package'])
-
-        self.assertTrue(os.uname()[2].split('-')[0] in r['Package'])
-
-        r.add_package_info(r['Package'])
-        self.assertTrue(' ' in r['Package'])  # appended version number
+        self.assertIn('linux', r['Package'])
+        self.assertIn(os.uname()[2].split('-')[0], r['Package'])
 
     def test_kernel_crashdump_kdump(self):
         '''kernel_crashdump using kdump-tools.'''
@@ -198,12 +192,66 @@ class T(unittest.TestCase):
                                              'Architecture', 'DistroRelease']))
         self.assertEqual(r['ProblemType'], 'KernelCrash')
         self.assertEqual(r['VmCoreDmesg'], '1' * 100)
-        self.assertTrue('linux' in r['Package'])
+        self.assertIn('linux', r['Package'])
 
-        self.assertTrue(os.uname()[2].split('-')[0] in r['Package'])
+        self.assertIn(os.uname()[2].split('-')[0], r['Package'])
 
         r.add_package_info(r['Package'])
-        self.assertTrue(' ' in r['Package'])  # appended version number
+        self.assertIn(os.uname()[2].split('-')[0], r['Package'])
+
+    def test_kernel_crashdump_log_symlink(self):
+        '''attempted DoS with vmcore.log symlink
+
+        We must only accept plain files, otherwise vmcore.log might be a
+        symlink to the .crash file, which would recursively fill itself.
+        '''
+        f = open(os.path.join(apport.fileutils.report_dir, 'vmcore'), 'wb')
+        f.write(b'\x01' * 100)
+        f.close()
+        os.symlink('vmcore', os.path.join(apport.fileutils.report_dir, 'vmcore.log'))
+
+        self.assertNotEqual(subprocess.call('%s/kernel_crashdump' % datadir,
+                                            stderr=subprocess.PIPE),
+                            0, 'kernel_crashdump unexpectedly succeeded')
+
+        self.assertEqual(apport.fileutils.get_new_reports(), [])
+
+    def test_kernel_crashdump_kdump_log_symlink(self):
+        '''attempted DoS with dmesg symlink with kdump-tools'''
+
+        timedir = datetime.strftime(datetime.now(), '%Y%m%d%H%M')
+        vmcore_dir = os.path.join(apport.fileutils.report_dir, timedir)
+        os.mkdir(vmcore_dir)
+
+        dmesgfile = os.path.join(vmcore_dir, 'dmesg.' + timedir)
+        os.symlink('../kernel.crash', dmesgfile)
+
+        self.assertNotEqual(subprocess.call('%s/kernel_crashdump' % datadir,
+                                            stderr=subprocess.PIPE),
+                            0, 'kernel_crashdump unexpectedly succeeded')
+        self.assertEqual(apport.fileutils.get_new_reports(), [])
+
+    @unittest.skipIf(os.geteuid() != 0, 'this test needs to be run as user')
+    def test_kernel_crashdump_kdump_log_dir_symlink(self):
+        '''attempted DoS with dmesg dir symlink with kdump-tools'''
+
+        timedir = datetime.strftime(datetime.now(), '%Y%m%d%H%M')
+        vmcore_dir = os.path.join(apport.fileutils.report_dir, timedir)
+        os.mkdir(vmcore_dir + '.real')
+        # pretend that a user tries information disclosure by pre-creating a
+        # symlink to another dir
+        os.symlink(vmcore_dir + '.real', vmcore_dir)
+        os.lchown(vmcore_dir, 65534, 65534)
+
+        dmesgfile = os.path.join(vmcore_dir, 'dmesg.' + timedir)
+        f = open(dmesgfile, 'wt')
+        f.write('1' * 100)
+        f.close()
+
+        self.assertNotEqual(subprocess.call('%s/kernel_crashdump' % datadir,
+                                            stderr=subprocess.PIPE),
+                            0, 'kernel_crashdump unexpectedly succeeded')
+        self.assertEqual(apport.fileutils.get_new_reports(), [])
 
     @classmethod
     def _gcc_version_path(klass):
@@ -214,8 +262,14 @@ class T(unittest.TestCase):
         out = gcc.communicate()[0].decode()
         assert gcc.returncode == 0, '"gcc --version" must work for this test suite'
 
-        gcc_ver = '.'.join(out.splitlines()[0].split()[2].split('.')[:2])
+        ver_fields = out.splitlines()[0].split()[2].split('.')
+        # try major/minor first
+        gcc_ver = '.'.join(ver_fields[:2])
         gcc_path = '/usr/bin/gcc-' + gcc_ver
+        if not os.path.exists(gcc_path):
+            # fall back to only major
+            gcc_ver = ver_fields[0]
+            gcc_path = '/usr/bin/gcc-' + gcc_ver
 
         gcc = subprocess.Popen([gcc_path, '--version'], stdout=subprocess.PIPE)
         gcc.communicate()
@@ -249,7 +303,8 @@ class T(unittest.TestCase):
         r.add_package_info()
 
         self.assertEqual(r['Package'].split()[0], 'gcc-' + gcc_version)
-        self.assertTrue(r['SourcePackage'].startswith('gcc'))
+        self.assertNotEqual(r['Package'].split()[1], '')  # has package version
+        self.assertIn('libc', r['Dependencies'])
 
     def test_gcc_ide_hook_file_binary(self):
         '''gcc_ice_hook with a temporary file with binary data.'''
@@ -298,7 +353,6 @@ class T(unittest.TestCase):
         r.add_package_info()
 
         self.assertEqual(r['Package'].split()[0], 'gcc-' + gcc_version)
-        self.assertTrue(r['SourcePackage'].startswith('gcc'))
 
     def test_kernel_oops_hook(self):
         test_source = '''------------[ cut here ]------------
@@ -320,9 +374,8 @@ Modules linked in: oops cpufreq_stats ext2 i915 drm nf_conntrack_ipv4 ipt_REJECT
         self.assertEqual(r['ProblemType'], 'KernelOops')
         self.assertEqual(r['OopsText'], test_source)
 
-        r.add_package_info(r['Package'])
+        self.assertIn('linux', r['Package'])
+        self.assertIn(os.uname()[2].split('-')[0], r['Package'])
 
-        self.assertTrue(r['Package'].startswith('linux-image-'))
-        self.assertIn('Uname', r)
 
 unittest.main()

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Use the coredump in a crash report to regenerate the stack traces. This is
 # helpful to get a trace with debug symbols.
@@ -53,6 +53,8 @@ def parse_args():
                            help=_('Report download/install progress when installing packages into sandbox'))
     argparser.add_argument('--timestamps', action='store_true',
                            help=_('Prepend timestamps to log messages, for batch operation'))
+    argparser.add_argument('--dynamic-origins', action='store_true',
+                           help=_('Create and use third-party repositories from origins specified in reports'))
     argparser.add_argument('-C', '--cache', metavar='DIR',
                            help=_('Cache directory for packages downloaded in the sandbox'))
     argparser.add_argument('--sandbox-dir', metavar='DIR',
@@ -178,7 +180,7 @@ def gen_source_stacktrace(report, sandbox):
         for frame in report['Stacktrace'].splitlines():
             m = src_frame.match(frame)
             if m:
-                result += frame + '\n' + get_code(srcdir, m.group(1), int(m.group(2)))
+                result += frame + '\n' + get_code(srcdir, os.path.basename(m.group(1)), int(m.group(2)))
             else:
                 m = other_frame.search(frame)
                 if m:
@@ -295,7 +297,8 @@ apport.memdbg('sanity checks passed')
 if options.sandbox:
     sandbox, cache, outdated_msg = apport.sandboxutils.make_sandbox(
         report, options.sandbox, options.cache, options.sandbox_dir,
-        options.extra_package, options.verbose)
+        options.extra_package, options.verbose, log_timestamps,
+        options.dynamic_origins)
 else:
     sandbox = None
     outdated_msg = None

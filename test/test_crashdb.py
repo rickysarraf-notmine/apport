@@ -295,7 +295,7 @@ databases = {
         # ID#4: dup of ID#3
         self.assertEqual(self.crashes.check_duplicate(4), (3, None))
         # not marked as regression
-        self.assertFalse('comment' in self.crashes.reports[3])
+        self.assertEqual(self.crashes.reports[3]['comment'], '')
 
         # check DB consistency; #1 and #4 are dupes and do not appear
         self.assertEqual(self.crashes._duplicate_db_dump(),
@@ -312,13 +312,12 @@ databases = {
         self.assertEqual(self.crashes.duplicate_of(4), None)
         self.assertEqual(self.crashes.reports[4]['comment'], 'regression, already fixed in #3')
 
-        # check DB consistency; ID#3 should now be updated to be fixed in 4.1,
-        # and as 4 is a regression, appear as a new crash
+        # check DB consistency; ID#4 is a regression, thus appears as the new
+        # master bug for the sig of 3/4
         self.assertEqual(self.crashes._duplicate_db_dump(),
                          {self.crashes.download(0).crash_signature(): (0, None),
                           self.crashes.download(2).crash_signature(): (2, None),
-                          self.crashes.download(3).crash_signature(): (3, '4.1'),
-                          self.crashes.download(4).crash_signature(): (4, None)})
+                          self.crashes.download(3).crash_signature(): (4, None)})
 
         # add two more  Python crash dups and verify that they are dup'ed
         # to the correct ID
@@ -328,7 +327,7 @@ databases = {
         self.assertEqual(self.crashes.check_duplicate(5), (3, '4.1'))
         self.assertEqual(self.crashes.duplicate_of(5), 3)
         # not marked as regression, happened earlier than #3
-        self.assertFalse('comment' in self.crashes.reports[5])
+        self.assertEqual(self.crashes.reports[5]['comment'], '')
 
         r = copy.copy(self.crashes.download(3))
         r['Package'] = 'python-goo 5.1'
@@ -337,15 +336,14 @@ databases = {
         self.assertEqual(self.crashes.check_duplicate(6), (4, None))
         self.assertEqual(self.crashes.duplicate_of(6), 4)
         # not marked as regression, as it's now a dupe of new master bug 4
-        self.assertFalse('comment' in self.crashes.reports[6])
+        self.assertEqual(self.crashes.reports[6]['comment'], '')
 
         # check DB consistency; #5 and #6 are dupes of #3 and #4, so no new
         # entries
         self.assertEqual(self.crashes._duplicate_db_dump(),
                          {self.crashes.download(0).crash_signature(): (0, None),
                           self.crashes.download(2).crash_signature(): (2, None),
-                          self.crashes.download(3).crash_signature(): (3, '4.1'),
-                          self.crashes.download(4).crash_signature(): (4, None)})
+                          self.crashes.download(3).crash_signature(): (4, None)})
 
         # check with unknown fixed version
         self.crashes.reports[3]['fixed_version'] = ''
@@ -357,14 +355,13 @@ databases = {
                          'http://pygoo.bugs.example.com/7')
         self.assertEqual(self.crashes.check_duplicate(7), (3, ''))
         # not marked as regression
-        self.assertFalse('comment' in self.crashes.reports[6])
+        self.assertEqual(self.crashes.reports[6]['comment'], '')
 
         # final consistency check
         self.assertEqual(self.crashes._duplicate_db_dump(),
                          {self.crashes.download(0).crash_signature(): (0, None),
                           self.crashes.download(2).crash_signature(): (2, None),
-                          self.crashes.download(3).crash_signature(): (3, ''),
-                          self.crashes.download(4).crash_signature(): (4, None)})
+                          self.crashes.download(3).crash_signature(): (4, None)})
 
     def test_check_duplicate_utf8(self):
         '''check_duplicate() with UTF-8 strings'''

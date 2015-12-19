@@ -1,6 +1,122 @@
 This file summarizes the major and interesting changes for each release. For a
 detailed list of changes, please see ChangeLog.
 
+2.19.3 (2015-12-08)
+-------------------
+ * apport: Fix comparison against SIGQUIT to work for current Python versions.
+ * apt/dpkg: Fix source record lookup in install_packages. Thanks Brian Murray!
+ * hookutils.py, attach_gsettings_schema(): Don't replace the schema variable;
+   fixes attaching relocatable schemas. Thanks Sébastien Bacher!
+ * generic hook: Limit JournalErrors to the 1.000 last lines. This avoids long
+   report load times when processes cause massive log spew. (LP: #1516947)
+ * Add key filtering to ProblemReport.load().
+ * Don't read the entire report when determining the CrashCounter. This avoids
+   long delays for existing large reports.
+ * test_python_crashes.py: Be less sensitive to the precise names of
+   gvfs-metadata D-Bus service files.
+ * Move backend_apt_dpkg -dbgsym test cases to Ubuntu 15.10.
+ * Tests: Move to unittest's builtin "mock" module.
+
+2.19.2 (2015-10-27)
+-------------------
+ * SECURITY FIX: When determining the path of a Python module for a program
+   like "python -m module_name", avoid actually importing and running the
+   module; this could lead to local root privilege escalation. Thanks to
+   Gabriel Campana for discovering this and the fix!
+   (CVE-2015-1341, LP: #1507480)
+ * apt/dpkg: Don't mark packages downloaded from Launchpad for installation by
+   apt. Thanks Brian Murray.
+ * Fix backend_apt_dpkg.test_install_packages_system for recent "Fall back to
+   direct Launchpad ddeb download" fix. coreutils-dbgsym should now always be
+   available independent of whether the local system has ddeb apt sources.
+ * test_backend_apt_dpkg.py: Reset internal apt caches between tests. Avoids
+   random test failures due to leaking paths from previous test cases.
+
+2.19.1 (2015-10-07)
+-------------------
+ * Consistently intercept "report file already exists" errors in all writers of
+   report files (package_hook, kernel_crashdump, and similar) to avoid
+   unhandled exceptions on those. (LP: #1500450)
+ * apt/dpkg: Fall back to direct Launchpad ddeb download if we can't find it in
+   the apt cache. Thanks Brian Murray! (LP: #1500557)
+ * doc/data-format.tex: Clarify that key names are being treated as case
+   sensitive (unlike RFC822).
+
+2.19 (2015-09-24)
+-----------------
+ * apport: Drop re-nicing. This might decrease the time a user has to wait for
+   apport to finish the core dump for a crashed/hanging foreground process.
+   (See LP #1278780)
+ * kernel_crashdump: Enforce that the log/dmesg files are not a symlink. This
+   prevents normal users from pre-creating a symlink to the predictable .crash
+   file, and thus triggering a "fill up disk" DoS attack when the .crash report
+   tries to include itself. Thanks to halfdog for discovering this!
+   (CVE-2015-1338, part of LP #1492570)
+ * SECURITY FIX: Fix all writers of report files (package_hook,
+   kernel_crashdump, and similar) to open the report file exclusively, i. e.
+   fail if they already exist. This prevents privilege escalation through
+   symlink attacks. Note that this will also prevent overwriting previous
+   reports with the same same. Thanks to halfdog for discovering this!
+   (CVE-2015-1338, LP: #1492570)
+ * apport: Ignore process restarts from systemd's watchdog. Their traces are
+   usually useless as they don't have any information about the actual reasaon
+   why processes hang (like VM suspends or kernel lockups with bad hardware)
+   (LP: #1433320)
+ * Switch all executables to use Python 3 by default.
+
+2.18.1 (2015-09-10)
+-------------------
+ * test_hooks.py: Adjust for gcc executable names that don't include the minor
+   version number.
+ * When determinining the logind session and $XDG_SESSION_ID is not set, fall
+   back to reading it from /proc/pid/cgroup.
+ * whoopsie-upload-all: Intercept OSError too (e. g. "No space left on
+   device"). (LP: #1476258)
+ * apport-retrace: Only consider the file name of a source file, not its path;
+   the latter often contains parts like "../" or directories which are specific
+   to a build machine. This fixes most broken StacktraceSource results.
+   (LP: #1462491)
+ * packaging.py: Only consider first word in /etc/os-release's NAME value. This
+   works around Debian's inconsistent value. (LP: #1408245)
+ * Unify and simplify Package: field generation in kernel_crashdump,
+   kernel_oops, and package_hook by using the new Report.add_package() method.
+   (LP: #1485787)
+ * sandboxutils.py, make_sandbox(): Make "Cannot find package which ships
+   Executable/InterpreterPath" fatal, to save some unnecessary package unpack
+   cycles. (LP: #1487174)
+
+2.18 (2015-07-17)
+-----------------
+ * Fix backend_apt_dpkg.test_install_packages_permanent_sandbox test to more
+   carefully restore the environment and apt config.
+ * Enable suid_dumpable in the init.d script to also get Apport reports about
+   suid, unreadable, and otherwise protected binaries. These will be "system
+   reports" owned and readable by root only.
+ * init.d script: Fix tab usage inconsistencies.
+ * apport-gtk: Use GtkWidget::valign property instead of GtkMisc::yalign which
+   is deprecated in GTK 3.16. Thanks Iain Lane.
+ * sandboxutils, make_sandbox(): Don't exit with 0 (success) if the
+   ExecutablePath does not exist. (LP: #1462469)
+ * sandboxutils, make_sandbox(): Fix second round of package installs to go
+   into permanent root dir as well.
+ * apt/dpkg install_packages(): If a requested package version is not available
+   from apt in the given archive, try to download it from Launchpad. Thanks to
+   Brian Murray!
+ * kerneloops: Fix crash when determining the version of a custom kernel.
+   Thanks Brian Murray. (LP: #1468154)
+ * apt/dpkg install_packages(): Ignore -dbg packages whose descriptions contain
+   "transitional". (LP: #1469635)
+ * Keep "[origin: ...]" information in Package: and Dependencies: fields for
+   native-origins.d/ origins, so that it's possible to retrace them. Thanks
+   Brian Murray! (LP: #1470572)
+ * Add support for retracing with discovering and enabling foreign Launchpad
+   PPA origins, as specified in reports' Package:/Dependencies: fields. Thanks
+   Brian Murray!
+ * hookutils.attach_wifi(): Shorten value of CRDA if iw isn't available on the
+   system. Thanks Brian Murray.
+ * Fix wrong assertion in crashdb.test_check_duplicate() which surfaces under
+   Python 3.5. (LP: #1474539)
+
 2.17.3 (2015-05-20)
 -------------------
  * SECURITY UPDATE: When /proc/sys/fs/suid_dumpable is enabled, crashing a

@@ -10,7 +10,7 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-import atexit, os, os.path, shutil, sys, tempfile
+import atexit, os, os.path, re, shutil, tempfile
 import apport
 
 
@@ -103,7 +103,8 @@ def needed_runtime_packages(report, sandbox, pkgmap_cache_dir, pkg_versions, ver
 
 
 def make_sandbox(report, config_dir, cache_dir=None, sandbox_dir=None,
-                 extra_packages=[], verbose=False, log_timestamps=False):
+                 extra_packages=[], verbose=False, log_timestamps=False,
+                 dynamic_origins=False):
     '''Build a sandbox with the packages that belong to a particular report.
 
     This downloads and unpacks all packages from the report's Package and
@@ -140,8 +141,14 @@ def make_sandbox(report, config_dir, cache_dir=None, sandbox_dir=None,
     are not derived from the report.
 
     If verbose is True (False by default), this will write some additional
-    logging to stdout. If log_timestamps is True, these log messages will be
-    prefixed with the current time.
+    logging to stdout.
+
+    If log_timestamps is True, these log messages will be prefixed with the
+    current time.
+
+    If dynamic_origins is True (False by default), the sandbox will be built
+    with packages from foreign origins that appear in the report's
+    Packages:/Dependencies:.
 
     Return a tuple (sandbox_dir, cache_dir, outdated_msg).
     '''
@@ -179,15 +186,22 @@ def make_sandbox(report, config_dir, cache_dir=None, sandbox_dir=None,
     if config_dir == 'system':
         config_dir = None
 
+    origins = None
+    if dynamic_origins:
+        pkg_list = report.get('Package', '') + '\n' + report.get('Dependencies', '')
+        m = re.compile('\[origin: ([a-zA-Z0-9][a-zA-Z0-9\+\.\-]+)\]')
+        origins = set(m.findall(pkg_list))
+        if origins:
+            apport.log("Origins: %s" % origins)
+
     # unpack packages, if any, using cache and sandbox
     try:
         outdated_msg = apport.packaging.install_packages(
             sandbox_dir, config_dir, report['DistroRelease'], pkgs,
             verbose, cache_dir, permanent_rootdir,
-            architecture=report.get('Architecture'))
+            architecture=report.get('Architecture'), origins=origins)
     except SystemError as e:
-        sys.stderr.write(str(e) + '\n')
-        sys.exit(1)
+        apport.fatal(str(e))
 
     pkg_versions = report_package_versions(report)
     pkgs = needed_runtime_packages(report, sandbox_dir, pkgmap_cache_dir, pkg_versions, verbose)
@@ -203,17 +217,17 @@ def make_sandbox(report, config_dir, cache_dir=None, sandbox_dir=None,
                 apport.log('Installing extra package %s to get %s' % (pkg, path), log_timestamps)
                 pkgs.append((pkg, pkg_versions.get(pkg)))
             else:
-                apport.warning('Cannot find package which ships %s', path)
+                apport.fatal('Cannot find package which ships %s %s', path, report[path])
 
     # unpack packages for executable using cache and sandbox
     if pkgs:
         try:
             outdated_msg += apport.packaging.install_packages(
                 sandbox_dir, config_dir, report['DistroRelease'], pkgs,
-                cache_dir=cache_dir, architecture=report.get('Architecture'))
+                verbose, cache_dir, permanent_rootdir,
+                architecture=report.get('Architecture'), origins=origins)
         except SystemError as e:
-            sys.stderr.write(str(e) + '\n')
-            sys.exit(1)
+            apport.fatal(str(e))
 
     # sanity check: for a packaged binary we require having the executable in
     # the sandbox; TODO: for an unpackage binary we don't currently copy its
@@ -222,9 +236,8 @@ def make_sandbox(report, config_dir, cache_dir=None, sandbox_dir=None,
     if 'Package' in report:
         for path in ('InterpreterPath', 'ExecutablePath'):
             if path in report and not os.path.exists(sandbox_dir + report[path]):
-                apport.error('%s %s does not exist (report specified package %s)',
+                apport.fatal('%s %s does not exist (report specified package %s)',
                              path, sandbox_dir + report[path], report['Package'])
-                sys.exit(0)
 
     if outdated_msg:
         report['RetraceOutdatedPackages'] = outdated_msg
