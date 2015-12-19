@@ -44,10 +44,10 @@ def path_to_key(path):
     This will replace invalid punctuation symbols with valid ones.
     '''
     if sys.version[0] >= '3':
-        if type(path) == type(b''):
+        if isinstance(path, bytes):
             path = path.decode('UTF-8')
     else:
-        if type(path) != type(b''):
+        if not isinstance(path, bytes):
             path = path.encode('UTF-8')
     return path.translate(_path_key_trans)
 
@@ -389,8 +389,8 @@ def command_output(command, input=None, stderr=subprocess.STDOUT,
     if sp.returncode == 0:
         res = out.strip()
     else:
-        res = (b'Error: command ' + str(command).encode() + b' failed with exit code '
-               + str(sp.returncode).encode() + b': ' + out)
+        res = (b'Error: command ' + str(command).encode() + b' failed with exit code ' +
+               str(sp.returncode).encode() + b': ' + out)
 
     if decode_utf8:
         res = res.decode('UTF-8', errors='replace')
@@ -609,23 +609,23 @@ def attach_gsettings_schema(report, schema):
                                  env=env, stdout=subprocess.PIPE)
     for l in gsettings.stdout:
         try:
-            (schema, key, value) = l.split(None, 2)
+            (schema_name, key, value) = l.split(None, 2)
             value = value.rstrip()
         except ValueError:
             continue  # invalid line
-        defaults.setdefault(schema, {})[key] = value
+        defaults.setdefault(schema_name, {})[key] = value
 
     gsettings = subprocess.Popen(['gsettings', 'list-recursively', schema],
                                  stdout=subprocess.PIPE)
     for l in gsettings.stdout:
         try:
-            (schema, key, value) = l.split(None, 2)
+            (schema_name, key, value) = l.split(None, 2)
             value = value.rstrip()
         except ValueError:
             continue  # invalid line
 
-        if value != defaults.get(schema, {}).get(key, ''):
-            cur_value += '%s %s %s\n' % (schema, key, value)
+        if value != defaults.get(schema_name, {}).get(key, ''):
+            cur_value += '%s %s %s\n' % (schema_name, key, value)
 
     report['GsettingsChanges'] = cur_value
 
@@ -661,7 +661,11 @@ def attach_wifi(report):
                re.sub('Access Point: (.*)', 'Access Point: <hidden>',
                       command_output(['iwconfig']))))
     report['RfKill'] = command_output(['rfkill', 'list'])
-    report['CRDA'] = command_output(['iw', 'reg', 'get'])
+    if os.path.exists('/sbin/iw'):
+        iw_output = command_output(['iw', 'reg', 'get'])
+    else:
+        iw_output = 'N/A'
+    report['CRDA'] = iw_output
 
     attach_file_if_exists(report, '/var/log/wpa_supplicant.log', key='WpaSupplicantLog')
 
@@ -864,7 +868,15 @@ def in_session_of_problem(report):
     '''
     session_id = os.environ.get('XDG_SESSION_ID')
     if not session_id:
-        return None
+        # fall back to reading cgroup
+        with open('/proc/self/cgroup') as f:
+            for l in f:
+                l = l.strip()
+                if 'name=systemd:' in l and l.endswith('.scope') and '/session-' in l:
+                    session_id = l.split('/session-', 1)[1][:-6]
+                    break
+            else:
+                return None
 
     # report time is in local TZ
     orig_ctime = locale.getlocale(locale.LC_TIME)

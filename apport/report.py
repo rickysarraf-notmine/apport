@@ -10,7 +10,7 @@
 # the full text of the license.
 
 import subprocess, tempfile, os.path, re, pwd, grp, os, time
-import fnmatch, glob, traceback, errno, sys, atexit, locale
+import fnmatch, glob, traceback, errno, sys, atexit, locale, imp
 
 import xml.dom, xml.dom.minidom
 from xml.parsers.expat import ExpatError
@@ -259,6 +259,25 @@ class Report(problem_report.ProblemReport):
 
         return suffix
 
+    def add_package(self, package):
+        '''Add Package: field
+
+        Determine the version of the given package (uses "(not installed") for
+        uninstalled packages) and add Package: field to report.
+        This also checks for any modified files.
+
+        Return determined package version (None for uninstalled).
+        '''
+        try:
+            version = packaging.get_version(package)
+        except ValueError:
+            # package not installed
+            version = None
+        self['Package'] = '%s %s%s' % (package, version or '(not installed)',
+                                       self._customized_package_suffix(package))
+
+        return version
+
     def add_package_info(self, package=None):
         '''Add packaging information.
 
@@ -281,13 +300,8 @@ class Report(problem_report.ProblemReport):
             if not package:
                 return
 
-        try:
-            version = packaging.get_version(package)
-        except ValueError:
-            # package not installed
-            version = None
-        self['Package'] = '%s %s%s' % (package, version or '(not installed)',
-                                       self._customized_package_suffix(package))
+        version = self.add_package(package)
+
         if version or 'SourcePackage' not in self:
             try:
                 self['SourcePackage'] = packaging.get_source(package)
@@ -449,22 +463,26 @@ class Report(problem_report.ProblemReport):
     def _python_module_path(klass, module):
         '''Determine path of given Python module'''
 
-        module = module.replace('/', '.')
+        module = module.replace('/', '.').split('.')
+        pathlist = sys.path
 
-        try:
-            m = __import__(module)
-            m
-        except:
-            return None
+        path = None
+        while module:
+            name = module.pop(0)
 
-        # chop off the first component, as it's already covered by m
-        submodule = module.split('.')[1:]
-        if submodule:
-            path = eval('m.%s.__file__' % '.'.join(submodule))
-        else:
-            path = m.__file__
+            try:
+                (fd, path, desc) = imp.find_module(name, pathlist)
+            except ImportError:
+                path = None
+                break
+            if fd:
+                fd.close()
+            pathlist = [path]
 
-        if path.endswith('.pyc'):
+            if not module and desc[2] == imp.PKG_DIRECTORY:
+                    module = ['__init__']
+
+        if path and path.endswith('.pyc'):
             path = path[:-1]
         return path
 
@@ -1591,10 +1609,11 @@ class Report(problem_report.ProblemReport):
         '''
         # determine cgroup
         try:
-            with open('/proc/%s/environ' % pid, 'rb') as f:
-                for l in f.read().split(b'\0'):
-                    if l.startswith(b'XDG_SESSION_ID='):
-                        my_session = l.split(b'=', 1)[1].strip().decode()
+            with open('/proc/%s/cgroup' % pid) as f:
+                for l in f:
+                    l = l.strip()
+                    if 'name=systemd:' in l and l.endswith('.scope') and '/session-' in l:
+                        my_session = l.split('/session-', 1)[1][:-6]
                         break
                 else:
                     return None

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Collect information about a gcc internal compiler exception (ICE).
 #
@@ -31,5 +31,8 @@ else:
     pr['PreprocessedSource'] = (sourcefile, False)
 
 # write report
-with open(apport.fileutils.make_report_path(pr), 'wb') as f:
-    pr.write(f)
+try:
+    with apport.fileutils.make_report_file(pr) as f:
+        pr.write(f)
+except (IOError, OSError) as e:
+    apport.fatal('Cannot create report: ' + str(e))

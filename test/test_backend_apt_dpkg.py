@@ -1,6 +1,15 @@
 import unittest, gzip, imp, subprocess, tempfile, shutil, os, os.path, time
-import glob, urllib
+import glob, sys
 from apt import apt_pkg
+
+try:
+    from urllib import urlopen
+    URLError = IOError
+    (urlopen)  # pyflakes
+except ImportError:
+    # python3
+    from urllib.request import urlopen
+    from urllib.error import URLError
 
 if os.environ.get('APPORT_TEST_LOCAL'):
     impl = imp.load_source('', 'backends/packaging-apt-dpkg.py').impl
@@ -11,18 +20,21 @@ else:
 def _has_internet():
     '''Return if there is sufficient network connection for the tests.
 
-    This checks if http://ddebs.ubuntu.com/ can be downloaded from, to check if
-    we can run the online tests.
+    This checks if https://api.launchpad.net/devel/ubuntu/ can be downloaded
+    from, to check if we can run the online tests.
     '''
     if os.environ.get('SKIP_ONLINE_TESTS'):
         return False
     if _has_internet.cache is None:
         _has_internet.cache = False
         try:
-            f = urllib.request.urlopen('http://ddebs.ubuntu.com/dbgsym-release-key.asc', timeout=30)
-            if f.readline().startswith(b'-----BEGIN PGP'):
+            if sys.version > '3':
+                f = urlopen('https://api.launchpad.net/devel/ubuntu/', timeout=30)
+            else:
+                f = urlopen('https://api.launchpad.net/devel/ubuntu/')
+            if f.readline().startswith(b'{"all_specifications'):
                 _has_internet.cache = True
-        except (IOError, urllib.error.URLError):
+        except URLError:
             pass
     return _has_internet.cache
 
@@ -34,12 +46,9 @@ class T(unittest.TestCase):
         # save and restore configuration file
         self.orig_conf = impl.configuration
         self.workdir = tempfile.mkdtemp()
-
-        try:
-            impl.get_available_version('coreutils-dbgsym')
-            self.has_dbgsym = True
-        except ValueError:
-            self.has_dbgsym = False
+        # reset internal caches between tests
+        impl._apt_cache = None
+        impl._sandbox_apt_cache = None
 
     def tearDown(self):
         impl.configuration = self.orig_conf
@@ -479,11 +488,13 @@ deb http://secondary.mirror tuxy extra
     def test_install_packages_versioned(self):
         '''install_packages() with versions and with cache'''
 
-        self._setup_foonux_config(updates=True)
+        self._setup_foonux_config(release='wily', updates=True)
+        v_coreutils = '8.23-4ubuntu2'
+        v_libc = '2.21-0ubuntu4'
         obsolete = impl.install_packages(self.rootdir, self.configdir,
                                          'Foonux 1.2',
-                                         [('coreutils', '8.21-1ubuntu5'),  # should not come from updates
-                                          ('libc6', '2.19-0ubuntu6'),
+                                         [('coreutils', v_coreutils),  # should not come from updates
+                                          ('libc6', v_libc),
                                           ('tzdata', None),  # should come from -updates, > 2014b-1
                                          ], False, self.cachedir)
 
@@ -507,17 +518,17 @@ deb http://secondary.mirror tuxy extra
                                                     'usr/share/doc/libc6/copyright')))
 
         # their versions are as expected
-        self.assertEqual(sandbox_ver('coreutils'), '8.21-1ubuntu5')
-        self.assertEqual(sandbox_ver('libc6'), '2.19-0ubuntu6')
-        self.assertEqual(sandbox_ver('libc6-dbg'), '2.19-0ubuntu6')
+        self.assertEqual(sandbox_ver('coreutils'), v_coreutils)
+        self.assertEqual(sandbox_ver('libc6'), v_libc)
+        self.assertEqual(sandbox_ver('libc6-dbg'), v_libc)
         self.assertGreater(sandbox_ver('tzdata'), '2015')
 
         with open(os.path.join(self.rootdir, 'packages.txt')) as f:
             pkglist = f.read().splitlines()
-        self.assertIn('coreutils 8.21-1ubuntu5', pkglist)
-        self.assertIn('coreutils-dbgsym 8.21-1ubuntu5', pkglist)
-        self.assertIn('libc6 2.19-0ubuntu6', pkglist)
-        self.assertIn('libc6-dbg 2.19-0ubuntu6', pkglist)
+        self.assertIn('coreutils ' + v_coreutils, pkglist)
+        self.assertIn('coreutils-dbgsym ' + v_coreutils, pkglist)
+        self.assertIn('libc6 ' + v_libc, pkglist)
+        self.assertIn('libc6-dbg ' + v_libc, pkglist)
         self.assertIn('tzdata ' + sandbox_ver('tzdata'), pkglist)
         self.assertEqual(len(pkglist), 5, str(pkglist))
 
@@ -538,18 +549,18 @@ deb http://secondary.mirror tuxy extra
                 cache_versions[name] = ver
             except ValueError:
                 pass  # not a .deb, ignore
-        self.assertEqual(cache_versions['coreutils'], '8.21-1ubuntu5')
-        self.assertEqual(cache_versions['coreutils-dbgsym'], '8.21-1ubuntu5')
+        self.assertEqual(cache_versions['coreutils'], v_coreutils)
+        self.assertEqual(cache_versions['coreutils-dbgsym'], v_coreutils)
         self.assertIn('tzdata', cache_versions)
-        self.assertEqual(cache_versions['libc6'], '2.19-0ubuntu6')
-        self.assertEqual(cache_versions['libc6-dbg'], '2.19-0ubuntu6')
+        self.assertEqual(cache_versions['libc6'], v_libc)
+        self.assertEqual(cache_versions['libc6-dbg'], v_libc)
 
         # installs cached packages
         os.unlink(os.path.join(self.rootdir, 'usr/bin/stat'))
         os.unlink(os.path.join(self.rootdir, 'packages.txt'))
         obsolete = impl.install_packages(self.rootdir, self.configdir,
                                          'Foonux 1.2',
-                                         [('coreutils', '8.21-1ubuntu5'),
+                                         [('coreutils', v_coreutils),
                                          ], False, self.cachedir)
         self.assertEqual(obsolete, '')
         self.assertTrue(os.path.exists(
@@ -586,7 +597,7 @@ deb http://secondary.mirror tuxy extra
         os.unlink(os.path.join(self.rootdir, 'usr/bin/stat'))
         os.unlink(os.path.join(self.rootdir, 'packages.txt'))
         impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
-                              [('coreutils', '8.21-1ubuntu5'),
+                              [('coreutils', v_coreutils),
                                ('dpkg', None),
                               ], False, self.cachedir)
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
@@ -598,7 +609,7 @@ deb http://secondary.mirror tuxy extra
     def test_install_packages_unversioned(self):
         '''install_packages() without versions and no cache'''
 
-        self._setup_foonux_config()
+        self._setup_foonux_config(release='wily')
         obsolete = impl.install_packages(self.rootdir, self.configdir,
                                          'Foonux 1.2',
                                          [('coreutils', None),
@@ -628,9 +639,9 @@ deb http://secondary.mirror tuxy extra
         # keeps track of package versions
         with open(os.path.join(self.rootdir, 'packages.txt')) as f:
             pkglist = f.read().splitlines()
-        self.assertIn('coreutils 8.21-1ubuntu5', pkglist)
-        self.assertIn('coreutils-dbgsym 8.21-1ubuntu5', pkglist)
-        self.assertIn('tzdata 2014b-1', pkglist)
+        self.assertIn('coreutils 8.23-4ubuntu2', pkglist)
+        self.assertIn('coreutils-dbgsym 8.23-4ubuntu2', pkglist)
+        self.assertIn('tzdata 2015g-1', pkglist)
         self.assertEqual(len(pkglist), 3, str(pkglist))
 
     @unittest.skipUnless(_has_internet(), 'online test')
@@ -663,7 +674,7 @@ deb http://secondary.mirror tuxy extra
                                         'var', 'cache', 'apt', 'archives'))
         cache_names = [p.split('_')[0] for p in cache]
         self.assertTrue('coreutils' in cache_names)
-        self.assertEqual('coreutils-dbgsym' in cache_names, self.has_dbgsym)
+        self.assertIn('coreutils-dbgsym', cache_names)
         self.assertTrue('tzdata' in cache_names)
 
         # works with relative paths and existing cache
@@ -740,17 +751,20 @@ deb http://secondary.mirror tuxy extra
                 os.path.join(self.rootdir, 'usr/bin/stat')))
 
         # Prevent packages from downloading.
+        orig_apt_proxy = apt_pkg.config.get('Acquire::http::Proxy')
         apt_pkg.config.set('Acquire::http::Proxy', 'http://nonexistent')
-        orig_env = os.environ.copy()
+        orig_http_proxy = os.environ.get('http_proxy')
         os.environ['http_proxy'] = 'http://nonexistent'
         try:
+            orig_no_proxy = os.environ['no_proxy']
             del os.environ['no_proxy']
         except KeyError:
-            pass
+            orig_no_proxy = None
+
         self.assertRaises(SystemExit, impl.install_packages, self.rootdir,
                           self.configdir, 'Foonux 1.2', [('libc6', None)], False,
                           self.cachedir, permanent_rootdir=True)
-        os.environ = orig_env
+
         # These packages exist, so attempting to install them should not fail.
         impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
                               [('coreutils', None), ('tzdata', None)], False, self.cachedir,
@@ -768,7 +782,14 @@ deb http://secondary.mirror tuxy extra
                           self.configdir, 'Foonux 1.2', [('aspell-doc', None)], False,
                           self.cachedir, permanent_rootdir=True)
 
-        apt_pkg.config.set('Acquire::http::Proxy', '')
+        # restore original proxy settings
+        if orig_http_proxy:
+            os.environ['http_proxy'] = orig_http_proxy
+        else:
+            del os.environ['http_proxy']
+        if orig_no_proxy:
+            os.environ['no_proxy'] = orig_no_proxy
+        apt_pkg.config.set('Acquire::http::Proxy', orig_apt_proxy)
 
     @unittest.skipUnless(_has_internet(), 'online test')
     def test_install_packages_permanent_sandbox_repack(self):
@@ -794,14 +815,14 @@ deb http://secondary.mirror tuxy extra
     def test_install_packages_armhf(self):
         '''install_packages() for foreign architecture armhf'''
 
-        self._setup_foonux_config()
+        self._setup_foonux_config(release='wily')
         obsolete = impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
-                                         [('coreutils', '8.21-1ubuntu5'),
-                                          ('libc6', '2.19-0ubuntu5'),
+                                         [('coreutils', None),
+                                          ('libc6', '2.21-0ubuntu0'),
                                          ], False, self.cachedir,
                                          architecture='armhf')
 
-        self.assertEqual(obsolete, 'libc6 version 2.19-0ubuntu5 required, but 2.19-0ubuntu6 is available\n')
+        self.assertEqual(obsolete, 'libc6 version 2.21-0ubuntu0 required, but 2.21-0ubuntu4 is available\n')
 
         self.assertTrue(os.path.exists(os.path.join(self.rootdir,
                                                     'usr/bin/stat')))
@@ -812,15 +833,127 @@ deb http://secondary.mirror tuxy extra
         # caches packages
         cache = os.listdir(os.path.join(self.cachedir, 'Foonux 1.2', 'apt',
                                         'var', 'cache', 'apt', 'archives'))
-        self.assertTrue('coreutils_8.21-1ubuntu5_armhf.deb' in cache, cache)
-        self.assertTrue('libc6_2.19-0ubuntu6_armhf.deb' in cache, cache)
+        self.assertTrue('coreutils_8.23-4ubuntu2_armhf.deb' in cache, cache)
+        self.assertTrue('libc6_2.21-0ubuntu4_armhf.deb' in cache, cache)
+
+    @unittest.skipUnless(_has_internet(), 'online test')
+    def test_install_packages_from_launchpad(self):
+        '''install_packages() using packages only available on Launchpad'''
+
+        self._setup_foonux_config()
+        obsolete = impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+                                         [('oxideqt-codecs',
+                                           '1.6.6-0ubuntu0.14.04.1'),
+                                          ('distro-info-data',
+                                           '0.18ubuntu0.2'),
+                                          ('qemu-utils',
+                                           '2.0.0+dfsg-2ubuntu1.11'),
+                                          ('unity-services',
+                                           '7.2.5+14.04.20150521.1-0ubuntu1'),
+                                         ], False, self.cachedir)
+
+        def sandbox_ver(pkg, debian=True):
+            if debian:
+                changelog = 'changelog.Debian.gz'
+            else:
+                changelog = 'changelog.gz'
+            with gzip.open(os.path.join(self.rootdir, 'usr/share/doc', pkg,
+                                        changelog)) as f:
+                return f.readline().decode().split()[1][1:-1]
+
+        self.assertEqual(obsolete, '')
+
+        # packages get installed
+        self.assertTrue(os.path.exists(os.path.join(self.rootdir,
+                                                    'usr/share/doc/oxideqt-codecs/copyright')))
+        self.assertTrue(os.path.exists(os.path.join(self.rootdir,
+                                                    'usr/share/distro-info/ubuntu.csv')))
+
+        # their versions are as expected
+        self.assertEqual(sandbox_ver('oxideqt-codecs'),
+                         '1.6.6-0ubuntu0.14.04.1')
+        self.assertEqual(sandbox_ver('oxideqt-codecs-dbg'),
+                         '1.6.6-0ubuntu0.14.04.1')
+        self.assertEqual(sandbox_ver('distro-info-data', debian=False),
+                         '0.18ubuntu0.2')
+
+        # keeps track of package versions
+        with open(os.path.join(self.rootdir, 'packages.txt')) as f:
+            pkglist = f.read().splitlines()
+        self.assertIn('oxideqt-codecs 1.6.6-0ubuntu0.14.04.1', pkglist)
+        self.assertIn('oxideqt-codecs-dbg 1.6.6-0ubuntu0.14.04.1', pkglist)
+        self.assertIn('distro-info-data 0.18ubuntu0.2', pkglist)
+        self.assertIn('qemu-utils-dbgsym 2.0.0+dfsg-2ubuntu1.11',
+                      pkglist)
+        self.assertIn('unity-services-dbgsym 7.2.5+14.04.20150521.1-0ubuntu1',
+                      pkglist)
+
+        # caches packages, and their versions are as expected
+        cache = os.listdir(os.path.join(self.cachedir, 'Foonux 1.2', 'apt',
+                                        'var', 'cache', 'apt', 'archives'))
+
+        # archive and launchpad versions of packages exist in the cache, so use a list
+        cache_versions = []
+        for p in cache:
+            try:
+                (name, ver) = p.split('_')[:2]
+                cache_versions.append((name, ver))
+            except ValueError:
+                pass  # not a .deb, ignore
+        self.assertIn(('oxideqt-codecs', '1.6.6-0ubuntu0.14.04.1'), cache_versions)
+        self.assertIn(('oxideqt-codecs-dbg', '1.6.6-0ubuntu0.14.04.1'), cache_versions)
+        self.assertIn(('distro-info-data', '0.18ubuntu0.2'), cache_versions)
+        self.assertIn(('qemu-utils-dbgsym', '2.0.0+dfsg-2ubuntu1.11'), cache_versions)
+
+    @unittest.skipUnless(_has_internet(), 'online test')
+    def test_install_old_packages(self):
+        '''sandbox will install older package versions from launchpad'''
+
+        self._setup_foonux_config()
+        obsolete = impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+                                         [('oxideqt-codecs',
+                                           '1.7.8-0ubuntu0.14.04.1'),
+                                         ], False, self.cachedir)
+
+        self.assertEqual(obsolete, '')
+
+        def sandbox_ver(pkg):
+            with gzip.open(os.path.join(self.rootdir, 'usr/share/doc', pkg,
+                                        'changelog.Debian.gz')) as f:
+                return f.readline().decode().split()[1][1:-1]
+
+        # the version is as expected
+        self.assertEqual(sandbox_ver('oxideqt-codecs'),
+                         '1.7.8-0ubuntu0.14.04.1')
+
+        # keeps track of package version
+        with open(os.path.join(self.rootdir, 'packages.txt')) as f:
+            pkglist = f.read().splitlines()
+        self.assertIn('oxideqt-codecs 1.7.8-0ubuntu0.14.04.1', pkglist)
+
+        obsolete = impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+                                         [('oxideqt-codecs',
+                                           '1.6.6-0ubuntu0.14.04.1'),
+                                         ], False, self.cachedir)
+
+        self.assertEqual(obsolete, '')
+
+        # the old version is installed
+        self.assertEqual(sandbox_ver('oxideqt-codecs'),
+                         '1.6.6-0ubuntu0.14.04.1')
+
+        # the old versions is tracked
+        with open(os.path.join(self.rootdir, 'packages.txt')) as f:
+            pkglist = f.read().splitlines()
+        self.assertIn('oxideqt-codecs 1.6.6-0ubuntu0.14.04.1', pkglist)
 
     @unittest.skipUnless(_has_internet(), 'online test')
     def test_get_source_tree_sandbox(self):
         self._setup_foonux_config()
         out_dir = os.path.join(self.workdir, 'out')
         os.mkdir(out_dir)
-        impl._build_apt_sandbox(self.rootdir, os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'))
+        impl._build_apt_sandbox(self.rootdir, os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'),
+                                'ubuntu', 'trusty', origins=None)
         res = impl.get_source_tree('base-files', out_dir, sandbox=self.rootdir,
                                    apt_update=True)
         self.assertTrue(os.path.isdir(os.path.join(res, 'debian')))
@@ -829,8 +962,101 @@ deb http://secondary.mirror tuxy extra
         self.assertTrue(res.endswith('/base-files-7.2ubuntu5'),
                         'unexpected version: ' + res.split('/')[-1])
 
-    def _setup_foonux_config(self, updates=False):
-        '''Set up directories and configuration for install_packages()'''
+    @unittest.skipUnless(_has_internet(), 'online test')
+    def test_get_source_tree_lp_sandbox(self):
+        self._setup_foonux_config()
+        out_dir = os.path.join(self.workdir, 'out')
+        os.mkdir(out_dir)
+        impl._build_apt_sandbox(self.rootdir, os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'),
+                                'ubuntu', 'trusty', origins=None)
+        res = impl.get_source_tree('debian-installer', out_dir, version='20101020ubuntu318.16',
+                                   sandbox=self.rootdir, apt_update=True)
+        self.assertTrue(os.path.isdir(os.path.join(res, 'debian')))
+        # this needs to be updated when the release in _setup_foonux_config
+        # changes
+        self.assertTrue(res.endswith('/debian-installer-20101020ubuntu318.16'),
+                        'unexpected version: ' + res.split('/')[-1])
+
+    @unittest.skipUnless(_has_internet(), 'online test')
+    def test_create_sources_for_a_named_ppa(self):
+        '''Add sources.list entries for a named PPA.'''
+        ppa = 'LP-PPA-daisy-pluckers-daisy-seeds'
+        self._setup_foonux_config()
+        impl._build_apt_sandbox(self.rootdir, os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'),
+                                'ubuntu', 'trusty', origins=[ppa])
+        with open(os.path.join(self.rootdir, 'etc', 'apt', 'sources.list.d', ppa + '.list')) as f:
+            sources = f.read().splitlines()
+        self.assertIn('deb http://ppa.launchpad.net/daisy-pluckers/daisy-seeds/ubuntu trusty main main/debug', sources)
+        self.assertIn('deb-src http://ppa.launchpad.net/daisy-pluckers/daisy-seeds/ubuntu trusty main', sources)
+
+        d = subprocess.Popen(['gpg', '--no-options', '--no-default-keyring',
+                              '--no-auto-check-trustdb', '--trust-model',
+                              'always', '--batch', '--list-keys', '--keyring',
+                              os.path.join(self.rootdir, 'etc', 'apt', 'trusted.gpg.d', 'LP-PPA-daisy-pluckers-daisy-seeds.gpg')],
+                             stdout=subprocess.PIPE)
+        apt_keys = d.communicate()[0].decode()
+        assert d.returncode == 0
+        self.assertIn('Launchpad PPA for Daisy Pluckers', apt_keys)
+
+    @unittest.skipUnless(_has_internet(), 'online test')
+    def test_create_sources_for_an_unnamed_ppa(self):
+        '''Add sources.list entries for an unnamed PPA.'''
+        ppa = 'LP-PPA-brian-murray'
+        self._setup_foonux_config()
+        impl._build_apt_sandbox(self.rootdir, os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'),
+                                'ubuntu', 'trusty', origins=[ppa])
+        with open(os.path.join(self.rootdir, 'etc', 'apt', 'sources.list.d', ppa + '.list')) as f:
+            sources = f.read().splitlines()
+        self.assertIn('deb http://ppa.launchpad.net/brian-murray/ppa/ubuntu trusty main', sources)
+        self.assertIn('deb-src http://ppa.launchpad.net/brian-murray/ppa/ubuntu trusty main', sources)
+
+        d = subprocess.Popen(['gpg', '--no-options', '--no-default-keyring',
+                              '--no-auto-check-trustdb', '--trust-model',
+                              'always', '--batch', '--list-keys', '--keyring',
+                              os.path.join(self.rootdir, 'etc', 'apt', 'trusted.gpg.d', 'LP-PPA-brian-murray.gpg')],
+                             stdout=subprocess.PIPE)
+        apt_keys = d.communicate()[0].decode()
+        assert d.returncode == 0
+        self.assertIn('Launchpad PPA for Brian Murray', apt_keys)
+
+    def test_use_sources_for_a_ppa(self):
+        '''Use a sources.list.d file for a PPA.'''
+        ppa = 'fooser-bar-ppa'
+        self._setup_foonux_config(ppa=True)
+        impl._build_apt_sandbox(self.rootdir, os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'),
+                                'ubuntu', 'trusty', origins=['LP-PPA-%s' % ppa])
+        with open(os.path.join(self.rootdir, 'etc', 'apt', 'sources.list.d', ppa + '.list')) as f:
+            sources = f.read().splitlines()
+        self.assertIn('deb http://ppa.launchpad.net/fooser/bar-ppa/ubuntu trusty main main/debug', sources)
+        self.assertIn('deb-src http://ppa.launchpad.net/fooser/bar-ppa/ubuntu trusty main', sources)
+
+    @unittest.skipUnless(_has_internet(), 'online test')
+    def test_install_package_from_a_ppa(self):
+        '''Install a package from a PPA.'''
+        ppa = 'LP-PPA-brian-murray'
+        self._setup_foonux_config()
+        obsolete = impl.install_packages(self.rootdir, self.configdir, 'Foonux 1.2',
+                                         [('apport',
+                                           '2.14.1-0ubuntu3.7~ppa4')
+                                         ], False, self.cachedir, origins=[ppa])
+
+        self.assertEqual(obsolete, '')
+
+        def sandbox_ver(pkg):
+            with gzip.open(os.path.join(self.rootdir, 'usr/share/doc', pkg,
+                                        'changelog.Debian.gz')) as f:
+                return f.readline().decode().split()[1][1:-1]
+
+        self.assertEqual(sandbox_ver('apport'),
+                         '2.14.1-0ubuntu3.7~ppa4')
+
+    def _setup_foonux_config(self, updates=False, release='trusty', ppa=False):
+        '''Set up directories and configuration for install_packages()
+
+           If ppa is True, then a sources.list file for a PPA will be created
+           in sources.list.d used to test copying of a sources.list file to a
+           sandbox.
+        '''
 
         self.cachedir = os.path.join(self.workdir, 'cache')
         self.rootdir = os.path.join(self.workdir, 'root')
@@ -840,24 +1066,29 @@ deb http://secondary.mirror tuxy extra
         os.mkdir(self.configdir)
         os.mkdir(os.path.join(self.configdir, 'Foonux 1.2'))
         with open(os.path.join(self.configdir, 'Foonux 1.2', 'sources.list'), 'w') as f:
-            f.write('deb http://archive.ubuntu.com/ubuntu/ trusty main\n')
-            f.write('deb-src http://archive.ubuntu.com/ubuntu/ trusty main\n')
-            f.write('deb http://ddebs.ubuntu.com/ trusty main\n')
+            f.write('deb http://archive.ubuntu.com/ubuntu/ %s main\n' % release)
+            f.write('deb-src http://archive.ubuntu.com/ubuntu/ %s main\n' % release)
+            f.write('deb http://ddebs.ubuntu.com/ %s main\n' % release)
             if updates:
-                f.write('deb http://archive.ubuntu.com/ubuntu/ trusty-updates main\n')
-                f.write('deb-src http://archive.ubuntu.com/ubuntu/ trusty-updates main\n')
-                f.write('deb http://ddebs.ubuntu.com/ trusty-updates main\n')
+                f.write('deb http://archive.ubuntu.com/ubuntu/ %s-updates main\n' % release)
+                f.write('deb-src http://archive.ubuntu.com/ubuntu/ %s-updates main\n' % release)
+                f.write('deb http://ddebs.ubuntu.com/ %s-updates main\n' % release)
+        if ppa:
+            os.mkdir(os.path.join(self.configdir, 'Foonux 1.2', 'sources.list.d'))
+            with open(os.path.join(self.configdir, 'Foonux 1.2', 'sources.list.d', 'fooser-bar-ppa.list'), 'w') as f:
+                f.write('deb http://ppa.launchpad.net/fooser/bar-ppa/ubuntu %s main main/debug\n' % release)
+                f.write('deb-src http://ppa.launchpad.net/fooser/bar-ppa/ubuntu %s main\n' % release)
         os.mkdir(os.path.join(self.configdir, 'Foonux 1.2', 'armhf'))
         with open(os.path.join(self.configdir, 'Foonux 1.2', 'armhf', 'sources.list'), 'w') as f:
-            f.write('deb http://ports.ubuntu.com/ trusty main\n')
-            f.write('deb-src http://ports.ubuntu.com/ trusty main\n')
-            f.write('deb http://ddebs.ubuntu.com/ trusty main\n')
+            f.write('deb http://ports.ubuntu.com/ %s main\n' % release)
+            f.write('deb-src http://ports.ubuntu.com/ %s main\n' % release)
+            f.write('deb http://ddebs.ubuntu.com/ %s main\n' % release)
             if updates:
-                f.write('deb http://ports.ubuntu.com/ trusty-updates main\n')
-                f.write('deb-src http://ports.ubuntu.com/ trusty-updates main\n')
-                f.write('deb http://ddebs.ubuntu.com/ trusty-updates main\n')
+                f.write('deb http://ports.ubuntu.com/ %s-updates main\n' % release)
+                f.write('deb-src http://ports.ubuntu.com/ %s-updates main\n' % release)
+                f.write('deb http://ddebs.ubuntu.com/ %s-updates main\n' % release)
         with open(os.path.join(self.configdir, 'Foonux 1.2', 'codename'), 'w') as f:
-            f.write('trusty')
+            f.write('%s' % release)
 
     def assert_elf_arch(self, path, expected):
         '''Assert that an ELF file is for an expected machine type.
@@ -878,10 +1109,10 @@ deb http://secondary.mirror tuxy extra
         assert readelf.returncode == 0
         for line in out.splitlines():
             if line.startswith('  Machine:'):
-                machine = line.split(maxsplit=1)[1]
+                machine = line.split(None, 1)[1]
                 break
         else:
-            self.fail('could not fine Machine: in readelf output')
+            self.fail('could not find Machine: in readelf output')
 
         self.assertTrue(archmap[expected] in machine,
                         '%s has unexpected machine type "%s" for architecture %s' % (

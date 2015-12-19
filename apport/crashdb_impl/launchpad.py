@@ -228,7 +228,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         if title:
             # always use UTF-8 encoding, urlencode() blows up otherwise in
             # python 2.7
-            if type(title) != type(b''):
+            if not isinstance(title, bytes):
                 title = title.encode('UTF-8')
             args['field.title'] = title
 
@@ -723,8 +723,8 @@ Please continue to report any other bugs you may find.' % master_id,
                     master.subscribe(person=p)
 
             # requesting updated stack trace?
-            if report.has_useful_stacktrace() and ('apport-request-retrace' in master_tags
-                                                   or 'apport-failed-retrace' in master_tags):
+            if report.has_useful_stacktrace() and ('apport-request-retrace' in master_tags or
+                                                   'apport-failed-retrace' in master_tags):
                 self.update(master_id, report, 'Updated stack trace from duplicate bug %i' % id,
                             key_filter=['Stacktrace', 'ThreadStacktrace',
                                         'Package', 'Dependencies', 'ProcMaps', 'ProcCmdline'])
@@ -1101,7 +1101,7 @@ def upload_blob(blob, progress_callback=None, hostname='launchpad.net'):
 
 if __name__ == '__main__':
     import unittest, subprocess
-    import mock
+    from unittest.mock import patch
 
     crashdb = None
     _segv_report = None
@@ -1701,7 +1701,7 @@ and more
             r = self.crashdb.download(id)
             self.assertNotIn('CoreDump', r)
 
-        @mock.patch.object(CrashDatabase, '_get_source_version')
+        @patch.object(CrashDatabase, '_get_source_version')
         def test_get_fixed_version(self, *args):
             '''get_fixed_version() for fixed bugs
 

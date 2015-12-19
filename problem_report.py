@@ -106,7 +106,7 @@ class ProblemReport(UserDict):
         # keeps track of keys which were added since the last ctor or load()
         self.old_keys = set()
 
-    def load(self, file, binary=True):
+    def load(self, file, binary=True, key_filter=None):
         '''Initialize problem report from a file-like object.
 
         If binary is False, binary data is not loaded; the dictionary key is
@@ -119,7 +119,9 @@ class ProblemReport(UserDict):
 
         file needs to be opened in binary mode.
 
-        Files are in RFC822 format.
+        If key_filter is given, only those keys will be loaded.
+
+        Files are in RFC822 format, but with case sensitive keys.
         '''
         self._assert_bin_mode(file)
         self.data.clear()
@@ -127,6 +129,10 @@ class ProblemReport(UserDict):
         value = None
         b64_block = False
         bd = None
+        if key_filter:
+            remaining_keys = set(key_filter)
+        else:
+            remaining_keys = None
         for line in file:
             # continuation line
             if line.startswith(b' '):
@@ -170,7 +176,18 @@ class ProblemReport(UserDict):
                     bd = None
                 if key:
                     assert value is not None
-                    self.data[key] = self._try_unicode(value)
+                    if remaining_keys is not None:
+                        try:
+                            remaining_keys.remove(key)
+                            self.data[key] = self._try_unicode(value)
+                            if not remaining_keys:
+                                key = None
+                                break
+                        except KeyError:
+                            pass
+                    else:
+                        self.data[key] = self._try_unicode(value)
+
                 (key, value) = line.split(b':', 1)
                 if not _python2:
                     key = key.decode('ASCII')
@@ -629,8 +646,8 @@ class ProblemReport(UserDict):
         # (tuple (string|file [, bool]))
         assert (isinstance(v, CompressedValue) or hasattr(v, 'isalnum') or
                 (hasattr(v, '__getitem__') and (
-                    len(v) == 1 or (len(v) >= 2 and v[1] in (True, False)))
-                    and (hasattr(v[0], 'isalnum') or hasattr(v[0], 'read'))))
+                    len(v) == 1 or (len(v) >= 2 and v[1] in (True, False))) and
+                    (hasattr(v[0], 'isalnum') or hasattr(v[0], 'read'))))
 
         return self.data.__setitem__(k, v)
 
