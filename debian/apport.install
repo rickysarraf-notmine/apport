@@ -1,4 +1,4 @@
-etc
+etc/
 lib/udev/
 usr/share/apport/apport
 usr/share/apport/apport-checkreports
@@ -14,6 +14,7 @@ usr/share/apport/java_uncaught_exception
 usr/share/apport/recoverable_problem
 usr/share/apport/root_info_wrapper
 usr/share/apport/iwlwifi_error_dump
+usr/share/apport/whoopsie-upload-all
 usr/share/doc/apport
 usr/share/locale
 usr/share/icons
@@ -32,3 +33,4 @@ usr/lib/pm-utils
 ../../java/apport.jar usr/share/apport/
 ../../java/crash.jar usr/share/apport/testsuite/
 ../../java/crash.class usr/share/apport/testsuite/
+usr/share/java/apport.jar usr/share/apport/
