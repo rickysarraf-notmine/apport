@@ -1,4 +1,5 @@
-etc/
+etc/bash_completion.d/apport_completion usr/share/bash-completion/completions/
+etc
 lib/udev/
 usr/share/apport/apport
 usr/share/apport/apport-checkreports
