@@ -274,6 +274,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="spacing">6</property>
+
                     <child>
                       <object class="GtkButton" id="show_details">
                         <property name="label" translatable="yes">Show Details</property>
@@ -289,6 +290,7 @@
                         <property name="position">0</property>
                       </packing>
                     </child>
+
                     <child>
                       <object class="GtkButton" id="examine">
                         <property name="label" translatable="yes">_Examine locally</property>
@@ -304,6 +306,26 @@
                         <property name="position">1</property>
                       </packing>
                     </child>
+
+                    <!-- click to show exisitng reports in Debian BTS -->
+                    <child>
+                      <object class="GtkButton" id="existing_reports">
+                        <property name="label" translatable="no">Existing Reports</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="use_action_appearance">False</property>
+                        <property name="use_underline">True</property>
+                        <property name="tooltip_text">Fetch and browse existing bug reports in Debian BTS</property> 
+                        <!-- <signal name="clicked" handler="on_existing_reports_clicked" swapped="no"/> -->
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+
                     <child>
                       <object class="GtkButton" id="cancel_button">
                         <property name="label" translatable="yes">Cancel</property>
@@ -314,9 +336,10 @@
                       <packing>
                         <property name="expand">False</property>
                         <property name="fill">True</property>
-                        <property name="position">2</property>
+                        <property name="position">3</property>
                       </packing>
                     </child>
+
                   </object>
                 </child>
               </object>

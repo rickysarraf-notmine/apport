@@ -242,14 +242,17 @@ def is_closing_session(pid, uid):
     away, etc. These crash reports are mostly noise, so should be ignored.
     '''
     with open('/proc/%s/environ' % pid, 'rb') as e:
-        env = e.read().split(b'\0')
+        try:
+            env = e.read().split(b'\0')
+        except UnicodeDecodeError:
+            return False
     for e in env:
         if e.startswith(b'DBUS_SESSION_BUS_ADDRESS='):
             dbus_addr = e.split(b'=', 1)[1].decode()
             break
-    else:
-        error_log('is_closing_session(): no DBUS_SESSION_BUS_ADDRESS in environment')
-        return False
+        else:
+            error_log('is_closing_session(): no DBUS_SESSION_BUS_ADDRESS in environment')
+            return False
 
     orig_uid = os.geteuid()
     os.setresuid(-1, os.getuid(), -1)

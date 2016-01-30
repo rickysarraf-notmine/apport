@@ -13,6 +13,7 @@
 
 import os.path, sys, subprocess, os, re
 
+from display_bugreports import BugReportListWindow
 from gi.repository import GLib, Wnck, GdkX11, Gdk
 Gdk  # pyflakes; needed for GdkX11
 try:
@@ -351,7 +352,8 @@ class GTKUserInterface(apport.ui.UserInterface):
             d.set_focus_on_map(False)
 
         return_value = {'report': False, 'blacklist': False,
-                        'restart': False, 'examine': False}
+                        'restart': False, 'examine': False,
+                        'existing_reports': False}
 
         def dialog_crash_dismissed(widget):
             self.w('dialog_crash_new').hide()
@@ -360,6 +362,10 @@ class GTKUserInterface(apport.ui.UserInterface):
                 return
             elif widget is self.w('examine'):
                 return_value['examine'] = True
+                Gtk.main_quit()
+                return
+            elif widget is self.w('existing_reports'):
+                return_value['existing_reports'] = True
                 Gtk.main_quit()
                 return
 
@@ -374,6 +380,7 @@ class GTKUserInterface(apport.ui.UserInterface):
         self.w('dialog_crash_new').connect('destroy', dialog_crash_dismissed)
         self.w('continue_button').connect('clicked', dialog_crash_dismissed)
         self.w('closed_button').connect('clicked', dialog_crash_dismissed)
+        self.w('existing_reports').connect('clicked', dialog_crash_dismissed)
         self.w('examine').connect('clicked', dialog_crash_dismissed)
         Gtk.main()
         return return_value
@@ -398,6 +405,40 @@ class GTKUserInterface(apport.ui.UserInterface):
             Gtk.main_iteration_do(False)
         self.md = None
         return result
+
+
+    def ui_unreportable_message(self, title, text):
+        '''
+        This message dialog is little different from others
+        '''
+        self.umd = Gtk.MessageDialog(type = Gtk.MessageType.ERROR, \
+                buttons = Gtk.ButtonsType.OK_CANCEL)
+
+        if 'http://' in text or 'https://' in text:
+            if type(text) != type(b''):
+                text = text.encode('UTF-8')
+            text = GLib.markup_escape_text(text)
+            text = re.sub(r'(https?://[a-zA-Z0-9._-]+(?:[a-zA-Z0-9_#?%/-])*)',
+                          r'<a href="\1">\1</a>', text)
+            self.umd.set_markup(text)
+        else:
+            self.umd.set_property('text', text)
+        self.umd.set_title(title)
+
+        btnbox = self.umd.vbox.get_children()[1]
+        btn_cancel = btnbox.get_children()[0].get_children()[0]
+        btn_ok = btnbox.get_children()[0].get_children()[1]
+
+        btn_cancel.set_label('Cancel')
+        btn_ok.set_label('Install')
+        btn_ok.set_tooltip_text('Click this to install required debug symbols')
+
+        response = self.umd.run()
+        if response == Gtk.ResponseType.OK:
+            self.umd.destroy()
+            self.examine()
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
 
     def ui_info_message(self, title, text):
         self._ui_message_dialog(title, text, Gtk.MessageType.INFO)
@@ -559,7 +600,19 @@ class GTKUserInterface(apport.ui.UserInterface):
             # test mode
             return have_display and program is not None
 
-        subprocess.call([program, '-e', command])
+        if program == 'xfce4-terminal' or program == 'xterm':
+            subprocess.call([program, '-e', command])
+        else:
+            cmds = [program, '-x']
+            for s in command.split():
+                cmds.append(s.strip("'"))
+
+            subprocess.call(cmds)
+
+    def ui_display_existing_reports(self, pkg):
+        win = BugReportListWindow(pkg.split(' ')[0])
+        win.show_all()
+        Gtk.main()
 
     #
     # Event handlers

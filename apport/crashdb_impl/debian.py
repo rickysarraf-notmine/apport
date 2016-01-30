@@ -46,8 +46,14 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             report['UnreportableReason'] = 'Please configure sender settings in /etc/apport/crashdb.conf'
 
         # At this time, we are not ready to take CrashDumps
+        try:
+            buggyPackage = report['Package'].split(' ')[0]
+            buggyVersion = report['Package'].split(' ')[1]
+        except (KeyError, ValueError):
+            buggyPackage = "UNKNOWN"
+
         if 'Stacktrace' in report and not report.has_useful_stacktrace():
-            report['UnreportableReason'] = 'Incomplete backtrace. Please install the debug symbol packages'
+            report['UnreportableReason'] = 'Incomplete backtrace. Please install the debug symbols, for package %s and its dependencies' % (buggyPackage)
 
         return apport.crashdb.CrashDatabase.accepts(self, report)
 
@@ -62,7 +68,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         # Frame the report in the format the BTS understands
         try:
-            (buggyPackage, buggyVersion) = report['Package'].split(' ')
+            buggyPackage = report['Package'].split(' ')[0]
+            buggyVersion = report['Package'].split(' ')[1]
         except (KeyError, ValueError):
             return False
 

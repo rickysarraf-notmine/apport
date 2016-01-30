@@ -983,24 +983,46 @@ Debug::NoLocking "true";
                             if not pkg_found:
                                 obsolete += 'no debug symbol package found for %s\n' % pkg
 
+        aptPkgDir = '/var/cache/apt/archives/'
+
+        def sysCacheDebs():
+            debs = []
+            for f in os.listdir(aptPkgDir):
+                if f == '.' or f == '..':
+                    pass
+                else:
+                    debs.append(f)
+
+            return debs
+
+        def makeCopy(src, tgt):
+            # if tgt has been created we don't need to create it again
+            if not os.path.exists(tgt):
+                shutil.copy(src, tgt)
+
         # unpack packages, weed out the ones that are already installed (for
         # permanent sandboxes)
         for p in real_pkgs.copy():
-            if ver:
-                if pkg_versions.get(p) != ver:
-                    cache[p].mark_install(False, False)
-                elif pkg_versions.get(p) != cache[p].candidate.version:
-                    cache[p].mark_install(False, False)
-                else:
+            if pkg_versions.get(p) != cache[p].candidate.version:
+                # Check if the package we're gonna download exists in the
+                # system apt cache, i.e., /var/cache/apt/archives
+                # If so we just need to make a symbolic link
+                debfile = cache[p].name + '_' + \
+                        cache[p].candidate.version + '_' + \
+                        cache[p].candidate.architecture + '.deb'
+                if debfile in sysCacheDebs():
+                    src = aptPkgDir + debfile
+                    tgt = aptroot + aptPkgDir + debfile
+                    makeCopy(src, tgt)
                     real_pkgs.remove(p)
+                else:
+                    cache[p].mark_install(False, False)
             else:
-                if pkg_versions.get(p) != cache[p].candidate.version:
-                    cache[p].mark_install(False, False)
-                else:
-                    real_pkgs.remove(p)
+                real_pkgs.remove(p)
 
         last_written = time.time()
         # fetch packages
+
         try:
             cache.fetch_archives(fetcher=fetcher)
         except apt.cache.FetchFailedException as e:

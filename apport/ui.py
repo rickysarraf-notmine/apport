@@ -125,8 +125,11 @@ def thread_collect_info(report, reportfile, package, ui, symptom_script=None,
                 elif not apport.packaging.is_distro_package(report['Package'].split()[0]) and  \
                         not apport.packaging.is_native_origin_package(report['Package'].split()[0]):
                     # TRANS: %s is the name of the operating system
-                    report['UnreportableReason'] = _(
-                        'This is not an official %s package. Please remove any third party package and try again.') % report['DistroRelease'].split()[0]
+                    #report['UnreportableReason'] = _(
+                    #    'This is not an official %s package. Please remove any third party package and try again.') % report['DistroRelease'].split()[0]
+                    pass
+                    # See Debian Bug #777590
+
         except ValueError:
             # this happens if we are collecting information on an uninstalled
             # package
@@ -286,6 +289,9 @@ class UserInterface:
                 # collect() does that on invalid reports
                 return
 
+            if response['existing_reports']:
+                self.existing_reports()
+                return
             if response['examine']:
                 self.examine()
                 return
@@ -877,6 +883,11 @@ class UserInterface:
             os.execlp('sh', 'sh', '-c', self.report.get('RespawnCommand', self.report['ProcCmdline']))
             sys.exit(1)
 
+    def existing_reports(self):
+        pkg = self.report['Package']
+        #print(pkg)
+        self.ui_display_existing_reports(pkg)
+
     def examine(self):
         '''Locally examine crash report.'''
 
@@ -1301,7 +1312,9 @@ class UserInterface:
                 title = _('Problem in %s') % self.report['Package'].split()[0]
             else:
                 title = ''
-            self.ui_info_message(title, _('The problem cannot be reported:\n\n%s') %
+            #self.ui_info_message(title, _('The problem cannot be reported:\n\n%s') %
+            #                     self.report['UnreportableReason'])
+            self.ui_unreportable_message(title, _('The problem cannot be reported:\n\n%s') %
                                  self.report['UnreportableReason'])
             return True
         return False
