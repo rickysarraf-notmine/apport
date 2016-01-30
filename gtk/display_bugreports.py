@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 from gi.repository import Gtk
-import btsconn 
 import platform
 import sys
+import debianbts
 
 class BugReport():
     '''
@@ -11,10 +11,10 @@ class BugReport():
     '''
 
     def __init__(self, r):
-        self.subject = r['subject']
-        self.severity = r['severity']
-        self.bug_num = r['bug_num']
-        self.package = r['package']
+        self.subject = r.subject
+        self.severity = r.severity
+        self.bug_num = r.bug_num
+        self.package = r.package
 
 
 class BugReportListBoxRow(Gtk.ListBoxRow):
@@ -80,7 +80,17 @@ class BugReportDetails(Gtk.Window):
         innerBox.add(l_sub)
         innerBox.add(l_severity)
 
-        logs = btsconn.get_bug_log(self.report.bug_num)
+        #logs = btsconn.get_bug_log(self.report.bug_num)
+        #for l in logs:
+        #    l_msgnum = Gtk.Label("", xalign=0)
+        #    l_msgnum.set_markup("<b>Message #:</b> %s" % l['msg_num'])
+
+        #    l_msgbody = Gtk.Label(l['body'], xalign=0)
+        #    l_msgbody.set_line_wrap(True)
+
+        #    innerBox.add(l_msgnum)
+        #    innerBox.add(l_msgbody)
+        logs = debianbts.get_bug_log(self.report.bug_num)
         for l in logs:
             l_msgnum = Gtk.Label("", xalign=0)
             l_msgnum.set_markup("<b>Message #:</b> %s" % l['msg_num'])
@@ -90,6 +100,7 @@ class BugReportDetails(Gtk.Window):
 
             innerBox.add(l_msgnum)
             innerBox.add(l_msgbody)
+
 
 
 class BugReportListWindow(Gtk.Window):
@@ -125,9 +136,12 @@ class BugReportListWindow(Gtk.Window):
         self.addRows(listbox)
 
     def addRows(self, listbox):
-        reportList = btsconn.get_status(self.pkg)
+        #reportList = btsconn.get_status(self.pkg)
+
+        bugs = debianbts.get_bugs('package', self.pkg)
+        reports = debianbts.get_status(bugs)
         
-        for r in reportList:
+        for r in reports:
             listbox.add(BugReportListBoxRow(BugReport(r)))
 
 def main(pkg):

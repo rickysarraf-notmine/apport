@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Collect information about a kernel oops.
 #
@@ -26,15 +26,10 @@ oops = sys.stdin.read()
 pr = apport.Report('KernelOops')
 pr['Failure'] = 'oops'
 pr['Tags'] = 'kernel-oops'
-pr['Annotation'] = _('Your system might become unstable'
+pr['Annotation'] = _('Your system might become unstable '
                      'now and might need to be restarted.')
 package = apport.packaging.get_kernel_package()
-try:
-    package_version = apport.packaging.get_version(package)
-except ValueError as e:
-    if 'does not exist' in e.message:
-        package_version = 'unknown'
-pr['Package'] = '%s %s' % (package, package_version)
+pr.add_package(package)
 pr['SourcePackage'] = 'linux'
 
 pr['OopsText'] = oops
@@ -42,7 +37,8 @@ u = os.uname()
 pr['Uname'] = '%s %s %s' % (u[0], u[2], u[4])
 
 # write report
-report_path = apport.fileutils.make_report_path(pr, uid=checksum)
-if not os.path.exists(report_path):
-    with open(report_path, 'wb') as f:
+try:
+    with apport.fileutils.make_report_file(pr, uid=checksum) as f:
         pr.write(f)
+except (IOError, OSError) as e:
+    apport.fatal('Cannot create report: ' + str(e))

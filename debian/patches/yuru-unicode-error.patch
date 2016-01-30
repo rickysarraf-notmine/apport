@@ -1,7 +1,7 @@
 Bug#781164
 --- a/apport/report.py
 +++ b/apport/report.py
-@@ -1600,7 +1600,7 @@
+@@ -1619,7 +1619,7 @@
                      return None
              # determine session creation time
              session_start_time = os.stat('/run/systemd/sessions/' + my_session).st_mtime

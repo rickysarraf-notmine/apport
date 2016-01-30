@@ -1,3 +1,17 @@
+apport (2.19.3-1) experimental; urgency=medium
+
+  * [d3d3ab6] Add Conflicts/Replaces/Provides: core-dump-handler, to
+    ensure mutual uninstallability with systemd-coredump and corekeeper
+  * [45bae38] Imported Upstream version 2.19.3
+  * [451b83f] Refresh patches
+  * [f5107b3] Update kde install files
+  * [d3c59b5] Update apport.install file
+  * [3a42735] Add dh-python to Build Depends
+  * [87bdf77] Install apport_completion to usr
+  * [09b7a16] Add problem-report packages to Recommends
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sun, 20 Dec 2015 14:30:34 +0530
+
 apport (2.17.3-1) experimental; urgency=medium
 
   * [10887e7] Imported Upstream version 2.17.3

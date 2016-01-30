@@ -68,7 +68,7 @@ class PackageInfo:
     def get_architecture(self, package):
         '''Return the architecture of a package.
 
-        This might differ on multiarch architectures (e. g.  an i386 Firefox
+        This might differ on multiarch architectures (e. g. an i386 Firefox
         package on a x86_64 system)
         '''
         raise NotImplementedError('this method must be implemented by a concrete subclass')
@@ -192,7 +192,8 @@ class PackageInfo:
 
     def install_packages(self, rootdir, configdir, release, packages,
                          verbose=False, cache_dir=None,
-                         permanent_rootdir=False, architecture=None):
+                         permanent_rootdir=False, architecture=None,
+                         origins=None):
         '''Install packages into a sandbox (for apport-retrace).
 
         In order to work without any special permissions and without touching
@@ -221,6 +222,9 @@ class PackageInfo:
         the given architecture (as specified in a report's "Architecture"
         field). If not given it defaults to the host system's architecture.
 
+        If origins is given, the sandbox will be created with apt data sources
+        for foreign origins.
+
         Return a string with outdated packages, or None if all packages were
         installed.
 
@@ -234,6 +238,16 @@ class PackageInfo:
         '''Return known package names which match given glob.'''
 
         raise NotImplementedError('this method must be implemented by a concrete subclass')
+
+    def is_native_origin_package(self, package):
+        '''Check if a package is one which has been white listed.
+
+        Return True for a package which came from an origin which is listed in
+        native-origins.d, False if it comes from a third-party source.
+        '''
+        # Default implementation does nothing, i. e. native origins are not
+        # supported.
+        return False
 
     def get_uninstalled_package(self):
         '''Return a valid package name which is not installed.
@@ -271,6 +285,8 @@ class PackageInfo:
                         name = l.split('=', 1)[1]
                         if name.startswith('"'):
                             name = name[1:-2].strip()
+                        # work around inconsistent "Debian GNU/Linux" in os-release
+                        name = name.split()[0]
                     elif l.startswith('VERSION_ID='):
                         version = l.split('=', 1)[1]
                         if version.startswith('"'):

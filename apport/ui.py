@@ -13,8 +13,6 @@ implementation (like GTK, Qt, or CLI).
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-__version__ = '2.17.3'
-
 import glob, sys, os.path, optparse, traceback, locale, gettext, re
 import errno, zlib
 import subprocess, threading, webbrowser
@@ -33,6 +31,8 @@ if sys.version_info.major == 2:
 else:
     from configparser import ConfigParser
     PY3 = True
+
+__version__ = '2.19.3'
 
 
 def excstr(exception):
@@ -122,7 +122,8 @@ def thread_collect_info(report, reportfile, package, ui, symptom_script=None,
             if 'CrashDB' not in report and 'APPORT_DISABLE_DISTRO_CHECK' not in os.environ:
                 if 'Package' not in report:
                     report['UnreportableReason'] = _('This package does not seem to be installed correctly')
-                elif not apport.packaging.is_distro_package(report['Package'].split()[0]):
+                elif not apport.packaging.is_distro_package(report['Package'].split()[0]) and  \
+                        not apport.packaging.is_native_origin_package(report['Package'].split()[0]):
                     # TRANS: %s is the name of the operating system
                     #report['UnreportableReason'] = _(
                     #    'This is not an official %s package. Please remove any third party package and try again.') % report['DistroRelease'].split()[0]
@@ -1112,8 +1113,8 @@ class UserInterface:
             # check that we were able to determine package names
             if 'UnreportableReason' not in self.report:
                 if (('SourcePackage' not in self.report and 'Dependencies' not in self.report) or
-                    (not self.report.get('ProblemType', '').startswith('Kernel')
-                     and 'Package' not in self.report)):
+                    (not self.report.get('ProblemType', '').startswith('Kernel') and
+                     'Package' not in self.report)):
                     self.ui_error_message(_('Invalid problem report'),
                                           _('Could not determine the package or source package name.'))
                     # TODO This is not called consistently, is it really needed?
