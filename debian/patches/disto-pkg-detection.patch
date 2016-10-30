@@ -1,8 +1,10 @@
 Debian Bug #777590
 Currently is_distro_package() is returning False. Need to investigate why it is broken on Debian
---- a/apport/ui.py
-+++ b/apport/ui.py
-@@ -125,8 +125,11 @@
+Index: apport/apport/ui.py
+===================================================================
+--- apport.orig/apport/ui.py	2016-10-30 14:03:03.848855186 +0530
++++ apport/apport/ui.py	2016-10-30 14:03:03.842187441 +0530
+@@ -130,8 +130,11 @@
                  elif not apport.packaging.is_distro_package(report['Package'].split()[0]) and  \
                          not apport.packaging.is_native_origin_package(report['Package'].split()[0]):
                      # TRANS: %s is the name of the operating system

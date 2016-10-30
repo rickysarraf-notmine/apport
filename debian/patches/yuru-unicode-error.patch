@@ -1,7 +1,9 @@
 Bug#781164
---- a/apport/report.py
-+++ b/apport/report.py
-@@ -1619,7 +1619,7 @@
+Index: apport/apport/report.py
+===================================================================
+--- apport.orig/apport/report.py	2016-10-30 14:03:11.473455887 +0530
++++ apport/apport/report.py	2016-10-30 14:03:11.466788085 +0530
+@@ -1615,7 +1615,7 @@
                      return None
              # determine session creation time
              session_start_time = os.stat('/run/systemd/sessions/' + my_session).st_mtime
