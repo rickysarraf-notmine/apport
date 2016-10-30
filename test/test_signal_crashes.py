@@ -8,7 +8,7 @@
 # the full text of the license.
 
 import tempfile, shutil, os, subprocess, signal, time, stat, sys
-import resource, errno, grp, unittest
+import resource, errno, grp, unittest, socket, array
 import apport.fileutils
 
 test_executable = '/usr/bin/yes'
@@ -529,11 +529,14 @@ CoreDump: base64
 
             app = subprocess.Popen([apport_path, str(test_proc), '42', '0'],
                                    stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-            app.stdin.write(b'boo')
-            app.stdin.close()
-            err = app.stderr.read().decode()
-            self.assertNotEqual(app.wait(), 0, err)
-            app.stderr.close()
+            err = app.communicate(b'foo')[1]
+            self.assertEqual(app.returncode, 0, err)
+            if os.getuid() > 0:
+                self.assertIn(b'executable was modified after program start', err)
+            else:
+                with open('/var/log/apport.log') as f:
+                    lines = f.readlines()
+                self.assertIn('executable was modified after program start', lines[-1])
         finally:
             os.kill(test_proc, 9)
             os.waitpid(test_proc, 0)
@@ -736,48 +739,63 @@ CoreDump: base64
             self.do_crash(False, command=myexe, expect_corefile=False, uid=8)
             self.assertEqual(apport.fileutils.get_all_reports(), [])
 
-    @unittest.skipUnless(os.path.exists('/usr/bin/lxc-usernsexec'), 'this test needs lxc')
-    @unittest.skipUnless(os.path.exists('/bin/busybox'), 'this test needs busybox')
-    @unittest.skipIf(os.access('/etc/shadow', os.R_OK), 'this test needs to be run as user')
-    def test_ns_forward_privilege(self):
-        c = os.path.join(self.workdir, 'c')
-        os.makedirs(os.path.join(c, 'dev'))
-        os.mkdir(os.path.join(c, 'mnt'))
-        os.makedirs(os.path.join(c, 'usr/share/apport'))
-        shutil.copy('/bin/busybox', c)
-        with open(os.path.join(c, 'usr/share/apport/apport'), 'w') as f:
-            f.write('''#!/busybox sh
-set -x
-exec 2>/apport.trace
-cat /mnt/1/root/etc/shadow > /mnt/1/root/tmp/pwned
-chmod 644 /mnt/1/root/tmp/pwned
-''')
-            os.fchmod(f.fileno(), 0o755)
+    def test_coredump_from_socket(self):
+        '''forwarding of a core dump through socket
 
-        ns_apport = subprocess.Popen(
-            ['lxc-usernsexec', '-m', 'u:0:%i:1' % os.getuid(),
-             '-m', 'g:0:%i:1' % os.getgid(), '--',
-             'lxc-unshare', '-s', 'MOUNT|PID|NETWORK|UTSNAME|IPC', '--', '/bin/sh'],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
-        ns_apport.stdin.write(('''set -x
-cd %s
-mount -o bind . .
-cd .
-mount --rbind /proc mnt
-touch dev/null
-pivot_root . .
-./busybox ls -lh /
-./busybox sh -c 'kill -SEGV $$'
-./busybox sleep 5
-if [ -e /apport.trace ]; then
-    echo "=== apport trace ===="
-    ./busybox cat /apport.trace
-fi
-''' % c).encode())
-        out = ns_apport.communicate()[0].decode()
-        self.assertEqual(ns_apport.returncode, 0, out)
-        self.assertFalse(os.path.exists('/tmp/pwned'), out)
+        This is being used in a container via systemd activation, where the
+        core dump gets read from /run/apport.socket.
+        '''
+        socket_path = os.path.join(self.workdir, 'apport.socket')
+        test_proc = self.create_test_process()
+        try:
+            # emulate apport on the host which forwards the crash to the apport
+            # socket in the container
+            server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            server.bind(socket_path)
+            server.listen(1)
+
+            if os.fork() == 0:
+                client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                client.connect(socket_path)
+                with tempfile.TemporaryFile() as fd:
+                    fd.write(b'hel\x01lo')
+                    fd.flush()
+                    fd.seek(0)
+                    args = '%s 11 0' % test_proc
+                    fd_msg = (socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array('i', [fd.fileno()]))
+                    client.sendmsg([args.encode()], [fd_msg])
+                os._exit(0)
+
+            # call apport like systemd does via socket activation
+            def child_setup():
+                os.environ['LISTEN_FDNAMES'] = 'connection'
+                os.environ['LISTEN_FDS'] = '1'
+                os.environ['LISTEN_PID'] = str(os.getpid())
+                # socket from server becomes fd 3 (SD_LISTEN_FDS_START)
+                conn = server.accept()[0]
+                os.dup2(conn.fileno(), 3)
+
+            app = subprocess.Popen([apport_path], preexec_fn=child_setup,
+                                   pass_fds=[3], stderr=subprocess.PIPE)
+            log = app.communicate()[1]
+            self.assertEqual(app.returncode, 0, log)
+            server.close()
+        finally:
+            os.kill(test_proc, 9)
+            os.waitpid(test_proc, 0)
+
+        reports = self.get_temp_all_reports()
+        self.assertEqual(len(reports), 1)
+        pr = apport.Report()
+        with open(reports[0], 'rb') as f:
+            pr.load(f)
+        os.unlink(reports[0])
+        self.assertEqual(pr['Signal'], '11')
+        self.assertEqual(pr['ExecutablePath'], test_executable)
+        self.assertEqual(pr['CoreDump'], b'hel\x01lo')
+
+        # should not create report on the host
+        self.assertEqual(apport.fileutils.get_all_system_reports(), [])
 
     #
     # Helper methods
