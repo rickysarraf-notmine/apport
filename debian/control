@@ -41,8 +41,8 @@ Standards-Version: 3.9.2
 X-Python-Version: >= 2.7
 X-Python3-Version: >= 3.0
 Homepage: https://wiki.ubuntu.com/Apport
-Vcs-Git: git://anonscm.debian.org/collab-maint/apport.git
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=collab-maint/apport.git
+Vcs-Git: https://anonscm.debian.org/git/collab-maint/apport.git
+Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/apport.git
 
 Package: apport
 Architecture: all
