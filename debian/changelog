@@ -1,3 +1,15 @@
+apport (2.20.3-1) experimental; urgency=medium
+
+  * [f07f4fb] New upstream version 2.20.3
+  * [a8d3a34] Refresh patches against 2.20.3
+  * [6536968] Drop debian/apport.init in favor of upstream's init
+  * [9559d50] Update .install file
+  * [027abd0] Bump Debhelper compatibility to 9
+  * [7c0847d] Fix Vcs URLs
+  * [2557c7b] Bump Standards Version to 3.9.5
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Sun, 30 Oct 2016 15:11:40 +0530
+
 apport (2.19.3-1) experimental; urgency=medium
 
   * [d3d3ab6] Add Conflicts/Replaces/Provides: core-dump-handler, to
