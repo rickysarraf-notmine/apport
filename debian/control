@@ -37,7 +37,7 @@ Build-Depends-Indep:
  python3-gi,
  default-jdk | java-sdk
 Maintainer: Ritesh Raj Sarraf <rrs@debian.org>
-Standards-Version: 3.9.2
+Standards-Version: 3.9.5
 X-Python-Version: >= 2.7
 X-Python3-Version: >= 3.0
 Homepage: https://wiki.ubuntu.com/Apport
