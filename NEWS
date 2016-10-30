@@ -1,6 +1,73 @@
 This file summarizes the major and interesting changes for each release. For a
 detailed list of changes, please see ChangeLog.
 
+2.20.3 (2016-07-28)
+-------------------
+ * problem_report.py: Fail with proper exception when trying to assign a list
+   to a report key, or when trying to assing a tuple with more than 4 entries.
+   (LP: #1596713)
+ * test_backend_apt_dpkg.py: Install GPG key for ddebs.ubuntu.com to avoid apt
+   authentication errors.
+
+2.20.2 (2016-06-19)
+-------------------
+ * problem_report.py: Make assertion of invalid key names more verbose.
+ * hookutils.py: Fix generation of valid report key names from arbitrary paths
+   in attach_file() and related functions. This will now replace all invalid
+   characters with dots, not just a few known invalid ones. (LP: #1566975)
+ * problem_report.py: Instead of AssertionError, raise a ValueError for invalid
+   key names and TypeError for invalid kinds of values. Thanks Barry Warsaw.
+ * Don't ignore OSError in Report.add_gdb_info(), as we do want to fail with an
+   useful error message if gdb cannot be called in apport-retrace. Move the
+   catching to the UI as not having gdb installed is still fine for reporting
+   clients. (LP: #1579949)
+ * Show gdb error messages in Report.add_gdb_info() OSError exception when gdb
+   fails. (LP: #1579897)
+ * hookutils, attach_root_command_outputs(): Return str again, like before
+   2.15.2. (LP: #1370259)
+ * Stop issuing "set architecture" gdb commands on ARM and Power; these only
+   applied to 32 bit platforms and are apparently not needed any more with
+   recent gdb versions. (LP: #1585702)
+ * Disable report.test_add_gdb_info_abort_libnih test case for now, as libnih
+   is broken under current Ubuntu (LP: #1580601)
+ * do-release: Drop generation of ChangeLog. Interesting changes are already
+   documented here, and the details can be seen in the bzr log.
+
+2.20.1 (2016-03-31)
+-------------------
+ * Fix signal_crashes.test_modify_after_start test when running as root.
+ * Relax report.test_add_gdb_info gdb warning check, as this changed with gdb
+   7.10.90.
+ * crash-digger: Untag bugs which cannot be retraced instead of stopping
+   crash-digger. This led to too many pointless manual restarts on broken bug
+   reports.
+ * Disambiguate overly generic Python exceptions in duplicate signature
+   computation: dbus-glib's DBusException wraps a "real" server-side exception,
+   so add the class of that to disambiguate different crashes; for OSError
+   that is not a known subclass like FileNotFoundError, add the errno.
+   (LP: #989819)
+
+2.20 (2016-02-12)
+-----------------
+ * Reimplement forwarding crashes into a container, via activating the new
+   apport-forward.socket in the container and handing over the core dump fd.
+   This is a much safer way than the original implementation with nsexec.
+   Thanks Stéphane Graber! (LP: #1445064)
+ * Drop obsolete signal_crashes.test_ns_forward_privilege() test case. This
+   code was dropped long ago.
+
+2.19.4 (2016-01-26)
+-------------------
+ * Fix fileutils.test_find_package_desktopfile test for symlinks and other
+   unowned files in /usr/share/applications/.
+ * Fix ui.test_run_crash_anonymity test case to not fail if the base64 encoded
+   core dump happens to contain the user name, as that's just by chance.
+ * Fix test_hooks.py for unreleased gcc versions which have a different
+   --version format.
+ * hookutils.py, attach_hardware(): Stop attaching /var/log/udev. This was an
+   upstart-ism, mostly redundant with the udev db and is not being written
+   under systemd. (LP: #1537211)
+
 2.19.3 (2015-12-08)
 -------------------
  * apport: Fix comparison against SIGQUIT to work for current Python versions.

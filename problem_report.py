@@ -641,13 +641,15 @@ class ProblemReport(UserDict):
 
     def __setitem__(self, k, v):
         assert hasattr(k, 'isalnum')
-        assert k.replace('.', '').replace('-', '').replace('_', '').isalnum()
+        if not k.replace('.', '').replace('-', '').replace('_', '').isalnum():
+            raise ValueError("key '%s' contains invalid characters (only numbers, letters, '.', '_', and '-' are allowed)" % k)
         # value must be a string or a CompressedValue or a file reference
-        # (tuple (string|file [, bool]))
-        assert (isinstance(v, CompressedValue) or hasattr(v, 'isalnum') or
-                (hasattr(v, '__getitem__') and (
-                    len(v) == 1 or (len(v) >= 2 and v[1] in (True, False))) and
-                    (hasattr(v[0], 'isalnum') or hasattr(v[0], 'read'))))
+        # (tuple (string|file [, bool, [, max_size [, fail_on_empty]]]))
+        if not (isinstance(v, CompressedValue) or hasattr(v, 'isalnum') or
+                (isinstance(v, tuple) and (
+                    len(v) == 1 or (len(v) >= 2 and len(v) <= 4 and v[1] in (True, False))) and
+                    (hasattr(v[0], 'isalnum') or hasattr(v[0], 'read')))):
+            raise TypeError("value for key %s must be a string, CompressedValue, or a file reference" % k)
 
         return self.data.__setitem__(k, v)
 

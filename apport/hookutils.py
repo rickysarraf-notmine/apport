@@ -30,12 +30,7 @@ from apport.packaging_impl import impl as packaging
 import apport
 import apport.fileutils
 
-try:
-    _path_key_trans = ''.maketrans('#/-_+ ', '....._')
-except AttributeError:
-    # Python 2 variant
-    import string
-    _path_key_trans = string.maketrans('#/-_+ ', '....._')
+_invalid_key_chars_re = re.compile(r'[^0-9a-zA-Z_.-]')
 
 
 def path_to_key(path):
@@ -49,7 +44,7 @@ def path_to_key(path):
     else:
         if not isinstance(path, bytes):
             path = path.encode('UTF-8')
-    return path.translate(_path_key_trans)
+    return _invalid_key_chars_re.sub('.', path.replace(' ', '_'))
 
 
 def attach_file_if_exists(report, path, key=None, overwrite=True, force_unicode=False):
@@ -250,7 +245,6 @@ def attach_hardware(report):
     attach_file(report, '/proc/interrupts', 'ProcInterrupts')
     attach_file(report, '/proc/cpuinfo', 'ProcCpuinfo')
     attach_file(report, '/proc/cmdline', 'ProcKernelCmdLine')
-    attach_file(report, '/var/log/udev', 'UdevLog', force_unicode=True)
 
     if os.path.exists('/sys/bus/pci'):
         report['Lspci'] = command_output(['lspci', '-vvnn'])
@@ -259,14 +253,14 @@ def attach_hardware(report):
     report['UdevDb'] = command_output(['udevadm', 'info', '--export-db'])
 
     # anonymize partition labels
-    l = report['UdevLog']
+    l = report['UdevDb']
     l = re.sub('ID_FS_LABEL=(.*)', 'ID_FS_LABEL=<hidden>', l)
     l = re.sub('ID_FS_LABEL_ENC=(.*)', 'ID_FS_LABEL_ENC=<hidden>', l)
     l = re.sub('by-label/(.*)', 'by-label/<hidden>', l)
     l = re.sub('ID_FS_LABEL=(.*)', 'ID_FS_LABEL=<hidden>', l)
     l = re.sub('ID_FS_LABEL_ENC=(.*)', 'ID_FS_LABEL_ENC=<hidden>', l)
     l = re.sub('by-label/(.*)', 'by-label/<hidden>', l)
-    report['UdevLog'] = l
+    report['UdevDb'] = l
 
     attach_dmi(report)
 
@@ -460,6 +454,11 @@ def attach_root_command_outputs(report, command_map):
                 # this can happen if the user dismisses authorization in
                 # _root_command_prefix
                 continue
+            # opportunistically convert to strings, like command_output()
+            try:
+                buf = buf.decode('UTF-8')
+            except UnicodeDecodeError:
+                pass
             if buf:
                 report[keyname] = buf
             f.close()
@@ -598,7 +597,7 @@ def attach_gconf(report, package):
 
 
 def attach_gsettings_schema(report, schema):
-    '''Attach user-modified gsttings keys of a schema.'''
+    '''Attach user-modified gsettings keys of a schema.'''
 
     cur_value = report.get('GsettingsChanges', '')
 

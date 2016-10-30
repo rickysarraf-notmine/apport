@@ -91,24 +91,25 @@ def _read_maps(pid):
     return maps
 
 
-def _command_output(command, input=None, stderr=subprocess.STDOUT):
+def _command_output(command, input=None):
     '''Run command and capture its output.
 
     Try to execute given command (argv list) and return its stdout, or return
     a textual error if it failed.
     '''
-    sp = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr)
+    sp = subprocess.Popen(command, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT)
 
-    (out, err) = sp.communicate(input)
+    out = sp.communicate(input)[0]
     if sp.returncode == 0:
         return out
     else:
-        if err:
-            err = err.decode('UTF-8', errors='replace')
+        if out:
+            out = out.decode('UTF-8', errors='replace')
         else:
-            err = ''
+            out = ''
         raise OSError('Error: command %s failed with exit code %i: %s' % (
-            str(command), sp.returncode, err))
+            str(command), sp.returncode, out))
 
 
 def _check_bug_pattern(report, pattern):
@@ -679,7 +680,8 @@ class Report(problem_report.ProblemReport):
         chroot() or root privileges, it just instructs gdb to search for the
         files there.
 
-        Raises a IOError if the core dump is invalid/truncated.
+        Raises a IOError if the core dump is invalid/truncated, or OSError if
+        calling gdb fails.
         '''
         if 'CoreDump' not in self or 'ExecutablePath' not in self:
             return
@@ -703,11 +705,8 @@ class Report(problem_report.ProblemReport):
             value_keys.append(name)
             gdb_cmd += ['--ex', 'p -99', '--ex', cmd]
 
-        # call gdb
-        try:
-            out = _command_output(gdb_cmd).decode('UTF-8', errors='replace')
-        except OSError:
-            return
+        # call gdb (might raise OSError)
+        out = _command_output(gdb_cmd).decode('UTF-8', errors='replace')
 
         # check for truncated stack trace
         if 'is truncated: expected core file size' in out:
@@ -1325,7 +1324,12 @@ class Report(problem_report.ProblemReport):
                             f = os.path.realpath(f)
                         sig += ':%s@%s' % (f, m.group(2))
 
-            return self['ExecutablePath'] + ':' + trace[-1].split(':')[0] + sig
+            exc_name = trace[-1].split(':')[0]
+            try:
+                exc_name += '(%s)' % self['_PythonExceptionQualifier']
+            except KeyError:
+                pass
+            return self['ExecutablePath'] + ':' + exc_name + sig
 
         if self['ProblemType'] == 'KernelOops' and 'Failure' in self:
             if 'suspend' in self['Failure'] or 'resume' in self['Failure']:
@@ -1509,14 +1513,6 @@ class Report(problem_report.ProblemReport):
                     'WARNING: Please install gdb-multiarch for processing '
                     'reports from foreign architectures. Results with "gdb" '
                     'will be very poor.\n')
-
-            # check for foreign architecture
-            arch = self.get('Uname', 'none').split()[-1]
-            if 'arm' in arch:
-                command += ['--ex', 'set architecture arm', '--ex', 'set gnutarget elf32-littlearm']
-            elif 'ppc' in arch:
-                command += ['--ex', 'set architecture powerpc:common', '--ex', 'set gnutarget elf32-powerpc']
-            # note, i386 vs. x86_64 is auto-detected just fine
 
         if sandbox:
             command += ['--ex', 'set debug-file-directory %s/usr/lib/debug' % sandbox,
