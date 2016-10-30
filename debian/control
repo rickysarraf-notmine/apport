@@ -1,7 +1,7 @@
 Source: apport
 Section: utils
 Priority: optional
-Build-Depends: debhelper (>= 7.0.50~),
+Build-Depends: debhelper (>= 9.0.0~),
  gdb,
  python-twisted-core,
  gir1.2-glib-2.0 (>= 1.29.17),
