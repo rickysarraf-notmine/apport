@@ -1,6 +1,11 @@
 etc/bash_completion.d/apport_completion usr/share/bash-completion/completions/
-etc
+etc/cron.daily/apport
+etc/init.d/apport
+etc/apport/crashdb.conf
+etc/apport/blacklist.d/README.blacklist
+etc/default/apport
 lib/udev/
+lib/systemd/system/apport-forward.socket
 usr/share/apport/apport
 usr/share/apport/apport-checkreports
 usr/share/apport/package_hook
