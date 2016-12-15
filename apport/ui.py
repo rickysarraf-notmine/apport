@@ -18,6 +18,7 @@ import errno, zlib
 import subprocess, threading, webbrowser
 import signal
 import time
+import ast
 
 import apport, apport.fileutils, apport.REThread
 
@@ -32,7 +33,7 @@ else:
     from configparser import ConfigParser
     PY3 = True
 
-__version__ = '2.20.3'
+__version__ = '2.20.4'
 
 
 def excstr(exception):
@@ -41,6 +42,7 @@ def excstr(exception):
     if sys.version_info.major == 2:
         return str(exception).decode(locale.getpreferredencoding(), 'replace')
     return str(exception)
+
 
 symptom_script_dir = os.environ.get('APPORT_SYMPTOMS_DIR',
                                     '/usr/share/apport/symptoms')
@@ -187,6 +189,7 @@ class UserInterface:
         self.report = None
         self.report_file = None
         self.cur_package = None
+        self.offer_restart = False
 
         try:
             self.crashdb = apport.crashdb.get_crashdb(None)
@@ -217,6 +220,9 @@ class UserInterface:
         otherwise.
         '''
         result = False
+        # for iterating over /var/crash (as opposed to running on or clicking
+        # on a particular .crash file) we offer restarting
+        self.offer_restart = True
 
         if os.geteuid() == 0:
             reports = apport.fileutils.get_new_system_reports()
@@ -919,11 +925,11 @@ class UserInterface:
         # specification?
         if self.report['CrashDB'].lstrip().startswith('{'):
             try:
-                spec = eval(self.report['CrashDB'], {})
+                spec = ast.literal_eval(self.report['CrashDB'])
                 assert isinstance(spec, dict)
                 assert 'impl' in spec
-            except:
-                self.report['UnreportableReason'] = 'A package hook defines an invalid crash database definition:\n%s' % self.report['CrashDB']
+            except Exception as e:
+                self.report['UnreportableReason'] = 'A package hook defines an invalid crash database definition:\n%s\n%s' % (self.report['CrashDB'], e)
                 return False
             try:
                 self.crashdb = apport.crashdb.load_crashdb(None, spec)

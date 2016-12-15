@@ -2,7 +2,7 @@
 
 '''GTK Apport user interface.'''
 
-# Copyright (C) 2007-2012 Canonical Ltd.
+# Copyright (C) 2007-2016 Canonical Ltd.
 # Author: Martin Pitt <martin.pitt@ubuntu.com>
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -13,6 +13,9 @@
 
 import os.path, sys, subprocess, os, re
 
+import gi
+gi.require_version('Wnck', '3.0')
+gi.require_version('GdkX11', '3.0')
 from gi.repository import GLib, Wnck, GdkX11, Gdk
 Gdk  # pyflakes; needed for GdkX11
 try:
@@ -221,7 +224,7 @@ class GTKUserInterface(apport.ui.UserInterface):
             if xid:
                 self.set_modal_for(xid)
 
-        if report_type == 'Hang':
+        if report_type == 'Hang' and self.offer_restart:
             self.w('ignore_future_problems').set_active(False)
             self.w('ignore_future_problems').hide()
             self.w('closed_button').show()
@@ -279,7 +282,7 @@ class GTKUserInterface(apport.ui.UserInterface):
 
                 pid = apport.ui.get_pid(self.report)
                 still_running = pid and apport.ui.still_running(pid)
-                if 'ProcCmdline' not in self.report or still_running:
+                if 'ProcCmdline' not in self.report or still_running or not self.offer_restart:
                     self.w('closed_button').hide()
                     self.w('continue_button').set_label(_('Continue'))
                 else:
@@ -367,7 +370,7 @@ class GTKUserInterface(apport.ui.UserInterface):
                 return_value['report'] = True
             if self.w('ignore_future_problems').get_active():
                 return_value['blacklist'] = True
-            if widget == self.w('continue_button') and self.desktop_info:
+            if widget == self.w('continue_button') and self.desktop_info and self.offer_restart:
                 return_value['restart'] = True
             Gtk.main_quit()
 
@@ -586,6 +589,7 @@ class GTKUserInterface(apport.ui.UserInterface):
         self.w('window_report_upload').hide()
         sys.exit(0)
         return True
+
 
 if __name__ == '__main__':
     if not have_display:

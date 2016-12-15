@@ -57,7 +57,7 @@ def attach_file_if_exists(report, path, key=None, overwrite=True, force_unicode=
     new key with '_' appended will be added instead.
 
     If the contents is valid UTF-8, or force_unicode is True, then the value
-    will a string, otherwise it will be bytes.
+    will be a string, otherwise it will be bytes.
     '''
     if not key:
         key = path_to_key(path)
@@ -253,14 +253,14 @@ def attach_hardware(report):
     report['UdevDb'] = command_output(['udevadm', 'info', '--export-db'])
 
     # anonymize partition labels
-    l = report['UdevDb']
-    l = re.sub('ID_FS_LABEL=(.*)', 'ID_FS_LABEL=<hidden>', l)
-    l = re.sub('ID_FS_LABEL_ENC=(.*)', 'ID_FS_LABEL_ENC=<hidden>', l)
-    l = re.sub('by-label/(.*)', 'by-label/<hidden>', l)
-    l = re.sub('ID_FS_LABEL=(.*)', 'ID_FS_LABEL=<hidden>', l)
-    l = re.sub('ID_FS_LABEL_ENC=(.*)', 'ID_FS_LABEL_ENC=<hidden>', l)
-    l = re.sub('by-label/(.*)', 'by-label/<hidden>', l)
-    report['UdevDb'] = l
+    labels = report['UdevDb']
+    labels = re.sub('ID_FS_LABEL=(.*)', 'ID_FS_LABEL=<hidden>', labels)
+    labels = re.sub('ID_FS_LABEL_ENC=(.*)', 'ID_FS_LABEL_ENC=<hidden>', labels)
+    labels = re.sub('by-label/(.*)', 'by-label/<hidden>', labels)
+    labels = re.sub('ID_FS_LABEL=(.*)', 'ID_FS_LABEL=<hidden>', labels)
+    labels = re.sub('ID_FS_LABEL_ENC=(.*)', 'ID_FS_LABEL_ENC=<hidden>', labels)
+    labels = re.sub('by-label/(.*)', 'by-label/<hidden>', labels)
+    report['UdevDb'] = labels
 
     attach_dmi(report)
 
@@ -360,7 +360,7 @@ def command_available(command):
 
 def command_output(command, input=None, stderr=subprocess.STDOUT,
                    keep_locale=False, decode_utf8=True):
-    '''Try to execute given command (array) and return its stdout.
+    '''Try to execute given command (list) and return its stdout.
 
     In case of failure, a textual error gets returned. This function forces
     LC_MESSAGES to C, to avoid translated output in bug reports.
@@ -399,7 +399,7 @@ def _root_command_prefix():
 
 
 def root_command_output(command, input=None, stderr=subprocess.STDOUT, decode_utf8=True):
-    '''Try to execute given command (array) as root and return its stdout.
+    '''Try to execute given command (list) as root and return its stdout.
 
     This passes the command through pkexec, unless the caller is already root.
 
@@ -523,6 +523,7 @@ def xsession_errors(pattern=None):
             if pattern.search(line):
                 lines += line
     return lines
+
 
 PCI_MASS_STORAGE = 0x01
 PCI_NETWORK = 0x02
@@ -715,7 +716,7 @@ def attach_mac_events(report, profiles=None):
     if 'AuditLog' not in report and os.path.exists('/var/run/auditd.pid'):
         attach_root_command_outputs(report, {'AuditLog': 'egrep "' + mac_regex + '" /var/log/audit/audit.log'})
 
-    attach_file(report, '/proc/version_signature', 'ProcVersionSignature')
+    attach_file_if_exists(report, '/proc/version_signature', 'ProcVersionSignature')
     attach_file(report, '/proc/cmdline', 'ProcCmdline')
 
     for match in re.findall(aa_re, report.get('KernLog', '') + report.get('AuditLog', '')):
@@ -818,8 +819,8 @@ def nonfree_kernel_modules(module_list='/proc/modules'):
 
     nonfree = []
     for m in mods:
-        l = _get_module_license(m)
-        if l and not ('GPL' in l or 'BSD' in l or 'MPL' in l or 'MIT' in l):
+        s = _get_module_license(m)
+        if s and not ('GPL' in s or 'BSD' in s or 'MPL' in s or 'MIT' in s):
             nonfree.append(m)
 
     return nonfree
@@ -869,10 +870,10 @@ def in_session_of_problem(report):
     if not session_id:
         # fall back to reading cgroup
         with open('/proc/self/cgroup') as f:
-            for l in f:
-                l = l.strip()
-                if 'name=systemd:' in l and l.endswith('.scope') and '/session-' in l:
-                    session_id = l.split('/session-', 1)[1][:-6]
+            for line in f:
+                line = line.strip()
+                if 'name=systemd:' in line and line.endswith('.scope') and '/session-' in line:
+                    session_id = line.split('/session-', 1)[1][:-6]
                     break
             else:
                 return None

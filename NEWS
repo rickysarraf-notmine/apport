@@ -1,6 +1,54 @@
 This file summarizes the major and interesting changes for each release. For a
 detailed list of changes, please see ChangeLog.
 
+2.20.4 (2016-12-14)
+-------------------
+ * SECURITY FIX: Restrict a report's CrashDB field to literals.
+   Use ast.literal_eval() instead of the generic eval(), to prevent arbitrary
+   code execution from malicious .crash files. A user could be tricked into
+   opening a crash file whose CrashDB field contains an exec(), open(), or
+   similar commands; this is fairly easy as we install a MIME handler for
+   these. Thanks to Donncha O'Cearbhaill for discovering this!
+   (CVE-2016-9949, LP: #1648806)
+ * SECURITY FIX: Fix path traversal vulnerability with hooks execution.
+   Ensure that Package: and SourcePackage: fields loaded from reports do not
+   contain directories. Until now, an attacker could trick a user into opening a
+   malicious .crash file containing
+
+     Package: ../../../../some/dir/foo
+
+   which would execute /some/dir/foo.py with arbitrary code.
+   Thanks to Donncha O'Cearbhaill for discovering this!
+   (CVE-2016-9950, LP: #1648806)
+ * SECURITY FIX: apport-{gtk,kde}: Only offer "Relaunch" for recent /var/crash
+   crashes.
+   It only makes sense to offer relaunching for crashes that just happened and
+   the apport UI got triggered on those. When opening a .crash file copied from
+   somewhere else or after the crash happened, this is even actively dangerous
+   as a malicious crash file can specify any arbitrary command to run.
+   Thanks to Donncha O'Cearbhaill for discovering this!
+   (CVE-2016-9951, LP: #1648806)
+ * test_backend_apt_dpkg.py: Move tests from Ubuntu 15.10 "wily" (which is EOL
+   now) to 16.04 LTS "xenial".
+ * packaging-apt-dpkg.py: Explicitly set Dir::State::Status to the host
+   dpkg status file for get_source_tree(), to work with apt 1.3~pre4.
+ * packaging-apt-dpkg.py: Change the proxy settings to use "DIRECT" instead
+   of "direct". The latter never really worked, but APT did not complain about
+   it.
+ * data/iwlwifi_error_dump: Fix add_package() call.
+ * hookutils.py, attach_mac_events(): Only attach /proc/version_signature if
+   that actually exists.
+ * test/test_report.py: Slightly relax stack trace checks to also work with
+   glibc 2.24.
+ * apport-gtk: Specify module version with GI imports to avoid warnings. Thanks
+   Anatoly Techtonik. (LP: #1502173)
+ * test/run: Prefer pycodestyle over pep8.
+ * backends/packaging-apt-dpkg.py: provide a fallback method if using zgrep to
+   search for a file in Contents.gz fails due to a lack of memory.  Thanks
+   Brian Murray.
+ * bin/apport-retrace: When --core-file is used instead of loading the core
+   file and adding it to the apport report just pass the file reference to gdb.
+
 2.20.3 (2016-07-28)
 -------------------
  * problem_report.py: Fail with proper exception when trying to assign a list
