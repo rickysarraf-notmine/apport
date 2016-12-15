@@ -1,3 +1,11 @@
+apport (2.20.4-1) experimental; urgency=medium
+
+  * [5ad7def] New upstream version 2.20.4
+    Fixes following vulnerabilities CVE-2016-9949, CVE-2016-9950,
+    CVE-2016-9951
+
+ -- Ritesh Raj Sarraf <rrs@debian.org>  Thu, 15 Dec 2016 13:46:01 +0530
+
 apport (2.20.3-1) experimental; urgency=medium
 
   * [f07f4fb] New upstream version 2.20.3
