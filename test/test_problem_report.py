@@ -288,9 +288,10 @@ Last: foo
         report.seek(0)
 
         self.assertRaises(IOError, pr.extract_keys, report, 'Bin', os.path.join(self.workdir, 'nonexistant'))
-        # Test exception handling : Non-binary and inexistant key
-        tests = {ValueError: 'Txt', ValueError: ['Foo', 'Txt'], KeyError: 'Bar', KeyError: ['Foo', 'Bar']}
-        for exc, keys_arg in tests.items():
+        # Test exception handling: Non-binary and nonexistent key
+        tests = [(ValueError, 'Txt'), (ValueError, ['Foo', 'Txt']),
+                 (KeyError, 'Bar'), (KeyError, ['Foo', 'Bar'])]
+        for exc, keys_arg in tests:
             report.seek(0)
             self.assertRaises(exc, pr.extract_keys, report, keys_arg, self.workdir)
 
@@ -1057,6 +1058,7 @@ BadFile: base64
         self.assertEqual(pr['DataYes'], 'yesyes')
         self.assertEqual(pr['GoodFile'], bin_data)
         self.assertEqual(sorted(pr.keys()), ['DataYes', 'GoodFile'])
+
 
 if __name__ == '__main__':
     unittest.main()

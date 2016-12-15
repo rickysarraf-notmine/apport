@@ -13,6 +13,7 @@ This is used on Debian and derivatives such as Ubuntu.
 # the full text of the license.
 
 import subprocess, os, glob, stat, sys, tempfile, shutil, time
+import errno
 import hashlib
 import json
 
@@ -557,6 +558,7 @@ class __AptDpkgPackageInfo(PackageInfo):
         if sandbox:
             f = tempfile.NamedTemporaryFile()
             f.write(('''Dir "%s";
+Dir::State::Status "/var/lib/dpkg/status";
 Debug::NoLocking "true";
  ''' % sandbox).encode())
             f.flush()
@@ -749,8 +751,8 @@ Debug::NoLocking "true";
         apt.apt_pkg.config.set('APT::Architecture', architecture)
         apt.apt_pkg.config.set('Acquire::Languages', 'none')
         # directly connect to Launchpad when downloading deb files
-        apt.apt_pkg.config.set('Acquire::http::Proxy::api.launchpad.net', 'direct')
-        apt.apt_pkg.config.set('Acquire::http::Proxy::launchpad.net', 'direct')
+        apt.apt_pkg.config.set('Acquire::http::Proxy::api.launchpad.net', 'DIRECT')
+        apt.apt_pkg.config.set('Acquire::http::Proxy::launchpad.net', 'DIRECT')
 
         if verbose:
             fetchProgress = apt.progress.text.AcquireProgress()
@@ -1220,9 +1222,21 @@ Debug::NoLocking "true";
 
             # zgrep is magnitudes faster than a 'gzip.open/split() loop'
             package = None
-            zgrep = subprocess.Popen(['zgrep', '-m1', '^%s[[:space:]]' % file, map],
-                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out = zgrep.communicate()[0].decode('UTF-8')
+            try:
+                zgrep = subprocess.Popen(['zgrep', '-m1', '^%s[[:space:]]' % file, map],
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out = zgrep.communicate()[0].decode('UTF-8')
+            except OSError as e:
+                if e.errno != errno.ENOMEM:
+                    raise
+                file_b = file.encode()
+                import gzip
+                with gzip.open('%s' % map, 'rb') as contents:
+                    out = ''
+                    for line in contents:
+                        if line.startswith(file_b):
+                            out = line
+                            break
             # we do not check the return code, since zgrep -m1 often errors out
             # with 'stdout: broken pipe'
             if out:
@@ -1452,5 +1466,6 @@ Debug::NoLocking "true";
                 self._distro_name = self._distro_name.replace(' ', '-')
 
         return self._distro_name
+
 
 impl = __AptDpkgPackageInfo()

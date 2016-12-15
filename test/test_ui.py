@@ -441,6 +441,18 @@ bOgUs=
         self.assertTrue('nonexisting' in self.ui.report['UnreportableReason'],
                         self.ui.report.get('UnreportableReason', '<not set>'))
 
+        # string with unsafe contents
+        with open(os.path.join(self.hookdir, 'source_bash.py'), 'w') as f:
+            f.write('''def add_info(report, ui):
+    report['CrashDB'] = """{'impl': 'memory', 'trap': exec('open("/tmp/pwned", "w").close()')}"""
+''')
+
+        self.ui.report = apport.Report('Bug')
+        self.ui.cur_package = 'bash'
+        self.ui.collect_info()
+        self.assertIn('package hook', self.ui.report['UnreportableReason'])
+        self.assertFalse(os.path.exists('/tmp/pwned'))
+
     def test_handle_duplicate(self):
         '''handle_duplicate()'''
 
@@ -472,6 +484,22 @@ bOgUs=
         sys.argv = []
         self.ui = TestSuiteUserInterface()
         self.assertEqual(self.ui.run_argv(), False)
+
+    def test_run_restart(self):
+        '''running the frontend with pending reports offers restart'''
+
+        r = self._gen_test_crash()
+        report_file = os.path.join(apport.fileutils.report_dir, 'test.crash')
+        with open(report_file, 'wb') as f:
+            r.write(f)
+        sys.argv = []
+        self.ui = TestSuiteUserInterface()
+        self.ui.present_details_response = {'report': False,
+                                            'blacklist': False,
+                                            'examine': False,
+                                            'restart': False}
+        self.ui.run_argv()
+        self.assertEqual(self.ui.offer_restart, True)
 
     def test_run_report_bug_noargs(self):
         '''run_report_bug() without specifying arguments'''
@@ -761,6 +789,7 @@ bOgUs=
         self.assertEqual(self.ui.msg_title, None)
         self.assertEqual(self.ui.opened_url, None)
         self.assertEqual(self.ui.ic_progress_pulses, 0)
+        self.assertEqual(self.ui.offer_restart, False)
 
         # report in crash notification dialog, send full report
         with open(report_file, 'wb') as f:
@@ -806,6 +835,7 @@ bOgUs=
         self.assertEqual(self.ui.ic_progress_pulses, 0)
 
         self.assertTrue(self.ui.report.check_ignored())
+        self.assertEqual(self.ui.offer_restart, False)
 
     def test_run_crash_abort(self):
         '''run_crash() for an abort() without assertion message'''
@@ -921,6 +951,43 @@ bOgUs=
         self.assertTrue('It stinks.' in self.ui.msg_text, '%s: %s' %
                         (self.ui.msg_title, self.ui.msg_text))
         self.assertEqual(self.ui.msg_severity, 'info')
+
+    def test_run_crash_malicious_crashdb(self):
+        '''run_crash() on a crash with malicious CrashDB'''
+
+        self.report['ExecutablePath'] = '/bin/bash'
+        self.report['Package'] = 'bash 1'
+        self.report['CrashDB'] = "{'impl': 'memory', 'crash_config': open('/tmp/pwned', 'w').close()}"
+        self.update_report_file()
+        self.ui.present_details_response = {'report': True,
+                                            'blacklist': False,
+                                            'examine': False,
+                                            'restart': False}
+
+        self.ui.run_crash(self.report_file.name)
+
+        self.assertFalse(os.path.exists('/tmp/pwned'))
+        self.assertIn('invalid crash database definition', self.ui.msg_text)
+
+    def test_run_crash_malicious_package(self):
+        '''Package: path traversal'''
+
+        bad_hook = tempfile.NamedTemporaryFile(suffix='.py')
+        bad_hook.write(b"def add_info(r, u):\n  open('/tmp/pwned', 'w').close()")
+        bad_hook.flush()
+
+        self.report['ExecutablePath'] = '/bin/bash'
+        self.report['Package'] = '../' * 20 + os.path.splitext(bad_hook.name)[0]
+        self.update_report_file()
+        self.ui.present_details_response = {'report': True,
+                                            'blacklist': False,
+                                            'examine': False,
+                                            'restart': False}
+
+        self.ui.run_crash(self.report_file.name)
+
+        self.assertFalse(os.path.exists('/tmp/pwned'))
+        self.assertIn('invalid Package:', self.ui.msg_text)
 
     def test_run_crash_ignore(self):
         '''run_crash() on a crash with the Ignore field'''
